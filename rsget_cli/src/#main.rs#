@@ -29,7 +29,7 @@ fn main() {
              .index(1))
         .get_matches();
     let url = String::from(matches.value_of("URL").unwrap());
-    let panda_stream: Box<Streamable> = match rsget_lib::utils::sites::get_site(&url){
+    let stream: Box<Streamable> = match rsget_lib::utils::sites::get_site(&url){
         Some(b) => b,
         None => {
             info!("Site not implemented");
@@ -39,10 +39,12 @@ fn main() {
     //let panda_stream = rsget_lib::plugins::panda::PandaTv::new(url);
     
     let path = String::from(matches.value_of("path").unwrap_or("./"));
-    let file_name = String::from(matches.value_of("filename").unwrap_or(&panda_stream.get_default_name()));
-    match panda_stream.download(format!("{}{}",
-                                        path,
-                                        strip_characters(&file_name, "<>:\"/\\|?*\0"))
+    let file_name = String::from(matches.value_of("filename")
+                                 .unwrap_or(&panda_stream.get_default_name()));
+    
+    match stream.download(format!("{}{}",
+                                  path,
+                                  strip_characters(&file_name, "<>:\"/\\|?*\0"))
     ) {
         Some(_) => std::process::exit(0),
         None => {

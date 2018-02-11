@@ -12,6 +12,9 @@ extern crate serde_derive;
 extern crate serde;
 extern crate serde_json;
 
+#[macro_use]
+extern crate lazy_static;
+
 pub trait Downloadable {
     fn new(url: String) -> Self;
     fn get_title(&self) -> Option<String>;
@@ -21,7 +24,7 @@ pub trait Downloadable {
 }
 
 pub trait Streamable {
-    fn new(url: String) -> Self;
+    fn new(url: String) -> Self where Self: Sized;
     fn get_title(&self) -> Option<String>;
     fn get_author(&self) -> Option<String>;
     //fn get_stream(&self) -> <T: Stream>
@@ -31,5 +34,5 @@ pub trait Streamable {
     fn get_default_name(&self) -> String;
     fn download(&self, path: String) -> Option<()>;
 }
-mod utils;
+pub mod utils;
 pub mod plugins;
