@@ -30,14 +30,10 @@ fn get_redirect_url(url: String) -> String {
 }
 
 
-pub fn flv_download(url: String, path: String) -> Option<()> 
+pub fn flv_download(core: &mut Core, url: String, path: String) -> Option<()> 
 {
     let real_url = get_redirect_url(url);
-    
-    let mut core = match Core::new() {
-        Ok(c) => c,
-        Err(why) => panic!("why: {}", why),
-    };
+
     let client = hyper::Client::new(&core.handle());
     
     let mut file = match File::create(&path) {

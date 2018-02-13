@@ -6,6 +6,8 @@ use serde_json;
 use utils::downloaders::flv_download;
 use chrono::prelude::*;
 
+use tokio_core::reactor::Core;
+
 use std;
 
 #[allow(dead_code)]
@@ -134,7 +136,7 @@ impl Streamable for Xingyan {
                 self.get_ext())
     }
 
-    fn download(&self, path: String) -> Option<()> {
+    fn download(&self, core: &mut Core, path: String) -> Option<()> {
         if !self.is_online() {
             None
         } else {
@@ -143,7 +145,7 @@ impl Streamable for Xingyan {
                      self.get_author().unwrap(),
                      self.room_id
             );
-            flv_download(self.get_stream(), path)
+            flv_download(core, self.get_stream(), path)
         }
     }
 }

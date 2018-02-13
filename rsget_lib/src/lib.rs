@@ -12,8 +12,7 @@ extern crate serde_derive;
 extern crate serde;
 extern crate serde_json;
 
-#[macro_use]
-extern crate lazy_static;
+use tokio_core::reactor::Core;
 
 pub trait Downloadable {
     fn new(url: String) -> Self;
@@ -32,7 +31,7 @@ pub trait Streamable {
     fn get_stream(&self) -> String;
     fn get_ext(&self) -> String;
     fn get_default_name(&self) -> String;
-    fn download(&self, path: String) -> Option<()>;
+    fn download(&self, core: &mut Core, path: String) -> Option<()>;
 }
 pub mod utils;
 pub mod plugins;

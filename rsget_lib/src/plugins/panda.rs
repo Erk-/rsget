@@ -8,6 +8,8 @@ use serde_json::{Value};
 use utils::downloaders::flv_download;
 use chrono::prelude::*;
 
+use tokio_core::reactor::Core;
+
 use std;
 
 #[allow(dead_code)]
@@ -174,8 +176,14 @@ impl Streamable for PandaTv {
         let json_url = format!("http://www.panda.tv/api_room_v2?roomid={}&__plat=pc_web&_={}",
                                &cap[1],
                                ts);
-        let resp = reqwest::get(&json_url);
-        let jres: Result<PandaTvRoom, reqwest::Error> = resp.unwrap().json();
+        let mut resp = match reqwest::get(&json_url){
+            Ok(res) => res,
+            Err(why) => {
+                info!("Error when getting site info ({})", why);
+                std::process::exit(1)
+            }
+        };
+        let jres: Result<PandaTvRoom, reqwest::Error> = resp.json();
         match jres {
             Ok(some) => {
                 PandaTv {
@@ -186,7 +194,7 @@ impl Streamable for PandaTv {
                 
             },
             Err(why) => {
-                debug!("{}", why);
+                info!("Error when deserailising ({})", why);
                 std::process::exit(1)
             }
         }
@@ -235,7 +243,7 @@ impl Streamable for PandaTv {
                 self.get_ext())
     }
 
-    fn download(&self, path: String) -> Option<()> {
+    fn download(&self, core: &mut Core, path: String) -> Option<()> {
         if self.panda_tv_room.data.videoinfo.status != "2" {
             None
         } else {
@@ -244,9 +252,7 @@ impl Streamable for PandaTv {
                      self.get_author().unwrap(),
                      self.room_id
             );
-            flv_download(self.get_stream(), path)
+            flv_download(core, self.get_stream(), path)
         }
     }
 }
-
-
