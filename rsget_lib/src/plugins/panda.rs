@@ -185,11 +185,11 @@ impl Streamable for PandaTv {
         };
         let jres: Result<PandaTvRoom, reqwest::Error> = resp.json();
         match jres {
-            Ok(some) => {
+            Ok(jre) => {
                 PandaTv {
                     url: String::from(url.as_str()),
                     room_id: String::from(&cap[0]),
-                    panda_tv_room: some,
+                    panda_tv_room: jre,
                 }
                 
             },
