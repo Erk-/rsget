@@ -39,6 +39,11 @@ fn main() {
         },
     };
     
+    if !stream.is_online() {
+        info!("Stream not online");
+        std::process::exit(1)
+    }
+    
     let path = String::from(matches.value_of("path").unwrap_or("./"));
     let file_name = String::from(matches.value_of("filename")
                                  .unwrap_or(&stream.get_default_name()));
@@ -48,9 +53,11 @@ fn main() {
         Err(why) => panic!("why: {}", why),
     };
     
-    match stream.download(&mut core, format!("{}{}",
+    match stream.download(&mut core,
+                          format!("{}{}",
                                   path,
-                                  strip_characters(&file_name, "<>:\"/\\|?*\0"))
+                                  strip_characters(&file_name, "<>:\"/\\|?*\0")
+                          )
     ) {
         Some(_) => std::process::exit(0),
         None => {
