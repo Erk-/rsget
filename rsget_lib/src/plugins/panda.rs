@@ -244,7 +244,7 @@ impl Streamable for PandaTv {
     }
 
     fn download(&self, core: &mut Core, path: String) -> Option<()> {
-        if self.panda_tv_room.data.videoinfo.status != "2" {
+        if !self.is_online() {
             None
         } else {
             println!("{} by {} ({})",

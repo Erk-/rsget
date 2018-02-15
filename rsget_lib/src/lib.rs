@@ -6,6 +6,7 @@ extern crate hyper;
 extern crate tokio_core;
 extern crate indicatif; 
 extern crate chrono;
+extern crate md5;
 
 #[macro_use]
 extern crate serde_derive;
