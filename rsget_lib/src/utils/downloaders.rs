@@ -7,12 +7,7 @@ use hyper::header::Location;
 
 use indicatif::ProgressBar;
 
-fn get_redirect_url(url: String) -> String {
-    let mut core = match Core::new() {
-        Ok(c) => c,
-        Err(why) => panic!("why: {}", why),
-    };
-    
+fn get_redirect_url(core: &mut Core, url: String) -> String {
     let client = hyper::Client::new(&core.handle());
 
     let uri = match url.parse() {
@@ -22,25 +17,23 @@ fn get_redirect_url(url: String) -> String {
 
     let work = client.get(uri);
     let res = core.run(work).unwrap();
-    
+
     match res.headers().get::<Location>() {
         Some(loc) => loc.parse::<String>().unwrap(),
         None => url,
     }
 }
 
-
-pub fn flv_download(core: &mut Core, url: String, path: String) -> Option<()> 
-{
-    let real_url = get_redirect_url(url);
+pub fn flv_download(core: &mut Core, url: String, path: String) -> Option<()> {
+    let real_url = get_redirect_url(core, url);
 
     let client = hyper::Client::new(&core.handle());
-    
+
     let mut file = match File::create(&path) {
         Ok(file) => file,
         Err(why) => panic!("WHY: {}", why),
     };
-    
+
     let uri = match real_url.parse() {
         Ok(u) => u,
         Err(why) => panic!("why: {}", why),
@@ -51,10 +44,8 @@ pub fn flv_download(core: &mut Core, url: String, path: String) -> Option<()>
         res.body().for_each(|chunk| {
             spinner.tick();
             size = size + (chunk.len() as f64);
-            spinner.set_message(&format!("Size: {:.2} MB", size/1000.0/1000.0));
-            file
-                .write_all(&chunk)
-                .map_err(From::from)            
+            spinner.set_message(&format!("Size: {:.2} MB", size / 1000.0 / 1000.0));
+            file.write_all(&chunk).map_err(From::from)
         })
     });
     match core.run(work) {
@@ -62,6 +53,6 @@ pub fn flv_download(core: &mut Core, url: String, path: String) -> Option<()>
         Err(why) => {
             warn!("Core: {}", why);
             None
-        },
+        }
     }
 }
