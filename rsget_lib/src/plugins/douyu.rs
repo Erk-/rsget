@@ -133,7 +133,7 @@ struct DouyuData {
     room_name: String,
     owner_uid: String,
     owner_avatar: String,
-    black: Vec<usize>, // Not sure about this one,
+    #[serde(skip_deserializing)] black: Vec<usize>, // Not sure about this one,
     vertical_src: String,
     room_dm_delay: usize,
     owner_weight: String,
@@ -144,7 +144,7 @@ struct DouyuData {
     gift_ver: String,
     low_credit: String,
     #[serde(skip_deserializing)] gift: Vec<DouyuGift>,
-    rtmp_multi_bitrate: DouyuMultiBR,
+    #[serde(skip_deserializing)] rtmp_multi_bitrate: String, //DouyuMultiBR, TODO: fix this it is broken at the moment
     cdns: Vec<String>,
     online: usize,
     credit_illegal: String,
@@ -226,6 +226,8 @@ impl Streamable for Douyu {
                 std::process::exit(1)
             }
         };
+
+        //println!("json: {}", &resp.text().unwrap());
 
         let jres: Result<DouyuRoom, reqwest::Error> = resp.json();
         match jres {
