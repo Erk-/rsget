@@ -110,11 +110,12 @@ struct DouyuData {
     use_p2p: String,
     show_details: String,
     nickname: String,
+    rtmp_url: String,
     ggad: DouyuGgad,
     anchor_city: String,
     specific_status: String,
     url: String,
-    Servers: Vec<DouyuServer>,
+    servers: Vec<DouyuServer>,
     rtmp_cdn: String,
     specific_catalog: String,
     cate_id1: usize,
@@ -143,6 +144,7 @@ struct DouyuData {
     cur_credit: String,
     gift_ver: String,
     low_credit: String,
+    #[serde(skip_deserializing)]
     gift: Vec<DouyuGift>,
     rtmp_multi_bitrate: DouyuMultiBR,
     cdns: Vec<String>,
@@ -240,8 +242,7 @@ impl Streamable for Douyu {
     }
 
     fn get_title(&self) -> Option<String> {
-        //Some(self.panda_tv_room.data.roominfo.name.clone())
-        None
+        Some(String::from("test"))
     }
 
     fn get_author(&self) -> Option<String> {
@@ -253,7 +254,7 @@ impl Streamable for Douyu {
     }
     
     fn get_stream(&self) -> String {
-        self.data.data.rtmp_live.clone()
+        format!("{}/{}", &self.data.data.rtmp_url, &self.data.data.rtmp_live)
     }
 
     fn get_ext(&self) -> String {
