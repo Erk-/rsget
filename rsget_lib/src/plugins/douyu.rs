@@ -81,8 +81,7 @@ struct DouyuGift {
     ch: String,
     effect: String,
     himg: String,
-    #[serde(rename = "type")]
-    adtype: String,
+    #[serde(rename = "type")] adtype: String,
     gt: String,
     mobile_small_effect_icon: String,
     grgb: String,
@@ -144,8 +143,7 @@ struct DouyuData {
     cur_credit: String,
     gift_ver: String,
     low_credit: String,
-    #[serde(skip_deserializing)]
-    gift: Vec<DouyuGift>,
+    #[serde(skip_deserializing)] gift: Vec<DouyuGift>,
     rtmp_multi_bitrate: DouyuMultiBR,
     cdns: Vec<String>,
     online: usize,
@@ -172,12 +170,14 @@ impl Streamable for Douyu {
     fn new(url: String) -> Douyu {
         let room_id_re = Regex::new(r"com/([a-zA-Z0-9]+)").unwrap();
         let cap = room_id_re.captures(&url).unwrap();
-        
+
         let client = reqwest::Client::new();
         let mut headers = Headers::new();
-        headers.set(UserAgent::new("Mozilla/5.0 (compatible; MSIE 10.0; \
-                                    Windows Phone 8.0; Trident/6.0; IEMobile/10.0; \
-                                    ARM; Touch; NOKIA; Lumia 920)"));
+        headers.set(UserAgent::new(
+            "Mozilla/5.0 (compatible; MSIE 10.0; \
+             Windows Phone 8.0; Trident/6.0; IEMobile/10.0; \
+             ARM; Touch; NOKIA; Lumia 920)",
+        ));
 
         let room_id = match cap[1].parse::<u32>() {
             Ok(rid) => rid,
@@ -188,22 +188,27 @@ impl Streamable for Douyu {
                         info!("Failed getting url");
                         debug!("Failed getting url because of {}", why);
                         std::process::exit(1)
-                    },
+                    }
                 };
                 let re_room_id = Regex::new(r#""room_id" *:([0-9]+),"#).unwrap();
                 let cap = re_room_id.captures(&html).unwrap();
                 cap[1].parse::<u32>().unwrap()
             }
         };
-        
+
         let start = SystemTime::now();
-        let since_the_epoch = start.duration_since(UNIX_EPOCH)
+        let since_the_epoch = start
+            .duration_since(UNIX_EPOCH)
             .expect("Time went backwards");
         let ts = since_the_epoch.as_secs();
 
-        let suffix =
-            format!("room/{}?aid=wp&cdn={}&client_sys=wp&time={}", &room_id, "ws", ts);
- 
+        let suffix = format!(
+            "room/{}?aid=wp&cdn={}&client_sys=wp&time={}",
+            &room_id,
+            "ws",
+            ts
+        );
+
         let api_secret = "zNzMV1y4EMxOHS6I5WKm".as_bytes();
         let mut hasher: md5::Context = md5::Context::new();
 
@@ -213,26 +218,20 @@ impl Streamable for Douyu {
         let sign = format!("{:x}", hasher.compute());
 
         let json_url = format!("https://capi.douyucdn.cn/api/v1/{}&auth={}", &suffix, &sign);
-        
-        let mut resp = match client
-            .get(&json_url)
-            .headers(headers.clone())
-            .send() {
-                Ok(res) => res,
-                Err(why) => {
-                    info!("1 Error when getting site info ({})", why);
-                    std::process::exit(1)
-                }
-            };
-        
+
+        let mut resp = match client.get(&json_url).headers(headers.clone()).send() {
+            Ok(res) => res,
+            Err(why) => {
+                info!("1 Error when getting site info ({})", why);
+                std::process::exit(1)
+            }
+        };
+
         let jres: Result<DouyuRoom, reqwest::Error> = resp.json();
         match jres {
-            Ok(jre) => {
-                Douyu {
-                    data: jre,
-                    room_id: room_id,
-                }
-                
+            Ok(jre) => Douyu {
+                data: jre,
+                room_id: room_id,
             },
             Err(why) => {
                 info!("Error when deserailising ({})", why);
@@ -252,7 +251,7 @@ impl Streamable for Douyu {
     fn is_online(&self) -> bool {
         self.data.data.online != 0
     }
-    
+
     fn get_stream(&self) -> String {
         format!("{}/{}", &self.data.data.rtmp_url, &self.data.data.rtmp_live)
     }
@@ -260,38 +259,40 @@ impl Streamable for Douyu {
     fn get_ext(&self) -> String {
         String::from("flv")
     }
-    
+
     fn get_default_name(&self) -> String {
         let local: DateTime<Local> = Local::now();
-        format!("{}-{:04}-{:02}-{:02}-{:02}-{:02}-{}-{}.{}",
+        format!(
+            "{}-{:04}-{:02}-{:02}-{:02}-{:02}-{}-{}.{}",
+            self.room_id,
+            local.year(),
+            local.month(),
+            local.day(),
+            local.hour(),
+            local.minute(),
+            self.get_author().unwrap(),
+            self.get_title().unwrap_or(String::from("TEST")),
+            self.get_ext()
+        )
+    }
+
+    fn download(&self, core: &mut Core, path: String) -> Option<()> {
+        if !self.is_online() {
+            None
+        } else {
+            let local: DateTime<Local> = Local::now();
+            println!(
+                "{} by {} ({}) <{:04}-{:02}-{:02}-{:02}-{:02}>",
+                self.get_title().unwrap(),
+                self.get_author().unwrap(),
                 self.room_id,
                 local.year(),
                 local.month(),
                 local.day(),
                 local.hour(),
                 local.minute(),
-                self.get_author().unwrap(),
-                self.get_title().unwrap_or(String::from("TEST")),
-                self.get_ext())
-    }
-    
-    fn download(&self, core: &mut Core, path: String) -> Option<()> {
-        if !self.is_online() {
-            None
-        } else {
-            let local: DateTime<Local> = Local::now();
-            println!("{} by {} ({}) <{:04}-{:02}-{:02}-{:02}-{:02}>",
-                     self.get_title().unwrap(),
-                     self.get_author().unwrap(),
-                     self.room_id,
-                     local.year(),
-                     local.month(),
-                     local.day(),
-                     local.hour(),
-                     local.minute(),
             );
             flv_download(core, self.get_stream(), path)
         }
-
     }
 }

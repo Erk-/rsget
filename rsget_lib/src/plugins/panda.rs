@@ -3,7 +3,7 @@ use reqwest;
 use std::time::{SystemTime, UNIX_EPOCH};
 use regex::Regex;
 use serde_json;
-use serde_json::{Value};
+use serde_json::Value;
 
 use utils::downloaders::flv_download;
 use chrono::prelude::*;
@@ -77,8 +77,7 @@ struct PandaTvPictures {
 struct PandaTvRoomInfo {
     id: String,
     name: String,
-    #[serde(rename = "type")]
-    pub rtype: String,
+    #[serde(rename = "type")] pub rtype: String,
     bulletin: String,
     details: String,
     person_num: String,
@@ -102,8 +101,7 @@ struct PandaTvRoomInfo {
     rtype_value: String,
     show_pbarrage: usize,
     person_time: usize,
-    #[serde(skip_deserializing)]
-    pk_stat: usize,
+    #[serde(skip_deserializing)] pk_stat: usize,
     limitage: usize,
     cate: String,
 }
@@ -124,8 +122,7 @@ struct PandaTvUserInfo {
 struct PandaTvChatConfig {
     min_level: usize,
     all_forbid: usize,
-    #[serde(skip_deserializing)]
-    speak_interval: usize,
+    #[serde(skip_deserializing)] speak_interval: usize,
 }
 
 #[allow(dead_code)]
@@ -162,7 +159,7 @@ struct PandaTvRoom {
 pub struct PandaTv {
     pub url: String,
     pub room_id: String,
-    panda_tv_room: PandaTvRoom
+    panda_tv_room: PandaTvRoom,
 }
 
 impl Streamable for PandaTv {
@@ -170,13 +167,16 @@ impl Streamable for PandaTv {
         let room_id_re = Regex::new(r"/([0-9]+)").unwrap();
         let cap = room_id_re.captures(&url).unwrap();
         let start = SystemTime::now();
-        let since_the_epoch = start.duration_since(UNIX_EPOCH)
+        let since_the_epoch = start
+            .duration_since(UNIX_EPOCH)
             .expect("Time went backwards");
         let ts = since_the_epoch.as_secs();
-        let json_url = format!("http://www.panda.tv/api_room_v2?roomid={}&__plat=pc_web&_={}",
-                               &cap[1],
-                               ts);
-        let mut resp = match reqwest::get(&json_url){
+        let json_url = format!(
+            "http://www.panda.tv/api_room_v2?roomid={}&__plat=pc_web&_={}",
+            &cap[1],
+            ts
+        );
+        let mut resp = match reqwest::get(&json_url) {
             Ok(res) => res,
             Err(why) => {
                 info!("Error when getting site info ({})", why);
@@ -185,13 +185,10 @@ impl Streamable for PandaTv {
         };
         let jres: Result<PandaTvRoom, reqwest::Error> = resp.json();
         match jres {
-            Ok(jre) => {
-                PandaTv {
-                    url: String::from(url.as_str()),
-                    room_id: String::from(&cap[0]),
-                    panda_tv_room: jre,
-                }
-                
+            Ok(jre) => PandaTv {
+                url: String::from(url.as_str()),
+                room_id: String::from(&cap[0]),
+                panda_tv_room: jre,
             },
             Err(why) => {
                 info!("Error when deserailising ({})", why);
@@ -211,46 +208,58 @@ impl Streamable for PandaTv {
     fn is_online(&self) -> bool {
         self.panda_tv_room.data.videoinfo.status == "2"
     }
-    
+
     fn get_stream(&self) -> String {
-        let plflag: Vec<&str> = self.panda_tv_room.data.videoinfo.plflag.split('_').collect();
-        let data2: Value = serde_json::from_str(
-            &self.panda_tv_room.data.videoinfo.plflag_list
-        ).unwrap();
+        let plflag: Vec<&str> = self.panda_tv_room
+            .data
+            .videoinfo
+            .plflag
+            .split('_')
+            .collect();
+        let data2: Value =
+            serde_json::from_str(&self.panda_tv_room.data.videoinfo.plflag_list).unwrap();
         let rid = &data2["auth"]["rid"].as_str().unwrap();
         let sign = &data2["auth"]["sign"].as_str().unwrap();
         let ts = &data2["auth"]["time"].as_str().unwrap();
 
-        format!("http://pl{}.live.panda.tv/live_panda/{}.flv?sign={}&ts={}&rid={}",
-                plflag[1], self.panda_tv_room.data.videoinfo.room_key,
-                sign, ts, rid)
+        format!(
+            "http://pl{}.live.panda.tv/live_panda/{}.flv?sign={}&ts={}&rid={}",
+            plflag[1],
+            self.panda_tv_room.data.videoinfo.room_key,
+            sign,
+            ts,
+            rid
+        )
     }
 
     fn get_ext(&self) -> String {
         String::from("flv")
     }
-    
+
     fn get_default_name(&self) -> String {
         let local: DateTime<Local> = Local::now();
-        format!("{}-{:04}-{:02}-{:02}-{:02}-{:02}-{}.{}",
-                self.get_author().unwrap(),
-                local.year(),
-                local.month(),
-                local.day(),
-                local.hour(),
-                local.minute(),
-                self.get_title().unwrap(),
-                self.get_ext())
+        format!(
+            "{}-{:04}-{:02}-{:02}-{:02}-{:02}-{}.{}",
+            self.get_author().unwrap(),
+            local.year(),
+            local.month(),
+            local.day(),
+            local.hour(),
+            local.minute(),
+            self.get_title().unwrap(),
+            self.get_ext()
+        )
     }
 
     fn download(&self, core: &mut Core, path: String) -> Option<()> {
         if !self.is_online() {
             None
         } else {
-            println!("{} by {} ({})",
-                     self.get_title().unwrap(),
-                     self.get_author().unwrap(),
-                     self.room_id
+            println!(
+                "{} by {} ({})",
+                self.get_title().unwrap(),
+                self.get_author().unwrap(),
+                self.room_id
             );
             flv_download(core, self.get_stream(), path)
         }

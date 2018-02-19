@@ -66,14 +66,14 @@ struct XingyanInfo {
     roominfo: XingyanRoomInfo,
     videoinfo: XingyanVideoInfo,
     hostinfo: XingyanHostInfo,
-    leftads: Vec<XingyanAds>
+    leftads: Vec<XingyanAds>,
 }
 
 
 pub struct Xingyan {
     pub url: String,
     pub room_id: String,
-    host_info: XingyanInfo
+    host_info: XingyanInfo,
 }
 
 
@@ -86,8 +86,7 @@ impl Streamable for Xingyan {
         let res: Result<String, reqwest::Error> = resp.unwrap().text();
         match res {
             Ok(some) => {
-                let hostinfo_re =
-                    Regex::new(r"<script>window.HOSTINFO=(.*);</script>").unwrap();
+                let hostinfo_re = Regex::new(r"<script>window.HOSTINFO=(.*);</script>").unwrap();
                 let hi_cap = hostinfo_re.captures(&some).unwrap();
                 let hi: XingyanInfo = serde_json::from_str(&hi_cap[1]).unwrap();
                 Xingyan {
@@ -95,7 +94,7 @@ impl Streamable for Xingyan {
                     room_id: String::from(&cap[1]),
                     host_info: hi,
                 }
-            },
+            }
             Err(why) => {
                 debug!("{}", why);
                 std::process::exit(1)
@@ -114,7 +113,7 @@ impl Streamable for Xingyan {
     fn is_online(&self) -> bool {
         self.host_info.roominfo.playstatus != "0"
     }
-    
+
     fn get_stream(&self) -> String {
         self.host_info.videoinfo.streamurl.clone()
     }
@@ -122,28 +121,31 @@ impl Streamable for Xingyan {
     fn get_ext(&self) -> String {
         String::from("flv")
     }
-    
+
     fn get_default_name(&self) -> String {
         let local: DateTime<Local> = Local::now();
-        format!("{}-{:04}-{:02}-{:02}-{:02}-{:02}-{}.{}",
-                self.get_author().unwrap(),
-                local.year(),
-                local.month(),
-                local.day(),
-                local.hour(),
-                local.minute(),
-                self.get_title().unwrap(),
-                self.get_ext())
+        format!(
+            "{}-{:04}-{:02}-{:02}-{:02}-{:02}-{}.{}",
+            self.get_author().unwrap(),
+            local.year(),
+            local.month(),
+            local.day(),
+            local.hour(),
+            local.minute(),
+            self.get_title().unwrap(),
+            self.get_ext()
+        )
     }
 
     fn download(&self, core: &mut Core, path: String) -> Option<()> {
         if !self.is_online() {
             None
         } else {
-            println!("{} by {} ({})",
-                     self.get_title().unwrap(),
-                     self.get_author().unwrap(),
-                     self.room_id
+            println!(
+                "{} by {} ({})",
+                self.get_title().unwrap(),
+                self.get_author().unwrap(),
+                self.room_id
             );
             flv_download(core, self.get_stream(), path)
         }

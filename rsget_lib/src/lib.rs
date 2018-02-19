@@ -1,17 +1,17 @@
-#[macro_use] extern crate log;
-extern crate reqwest;
-extern crate regex;
+extern crate chrono;
 extern crate futures;
 extern crate hyper;
-extern crate tokio_core;
-extern crate indicatif; 
-extern crate chrono;
+extern crate indicatif;
+#[macro_use]
+extern crate log;
 extern crate md5;
-
+extern crate regex;
+extern crate reqwest;
+extern crate serde;
 #[macro_use]
 extern crate serde_derive;
-extern crate serde;
 extern crate serde_json;
+extern crate tokio_core;
 
 use tokio_core::reactor::Core;
 
@@ -24,7 +24,9 @@ pub trait Downloadable {
 }
 
 pub trait Streamable {
-    fn new(url: String) -> Self where Self: Sized;
+    fn new(url: String) -> Self
+    where
+        Self: Sized;
     fn get_title(&self) -> Option<String>;
     fn get_author(&self) -> Option<String>;
     //fn get_stream(&self) -> <T: Stream>
