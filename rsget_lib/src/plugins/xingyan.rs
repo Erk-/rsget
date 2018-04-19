@@ -127,13 +127,13 @@ impl Streamable for Xingyan {
     fn get_default_name(&self) -> String {
         let local: DateTime<Local> = Local::now();
         format!(
-            "{}-{:04}-{:02}-{:02}-{:02}-{:02}-{}.{}",
-            self.get_author().unwrap(),
+            "{:04}-{:02}-{:02}-{:02}-{:02}-{}-{}.{}",
             local.year(),
             local.month(),
             local.day(),
             local.hour(),
             local.minute(),
+            self.get_author().unwrap(),
             self.get_title().unwrap(),
             self.get_ext()
         )
