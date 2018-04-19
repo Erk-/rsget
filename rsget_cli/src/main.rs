@@ -57,7 +57,7 @@ fn main() {
         std::process::exit(1)
     }
 
-    if matches.is_present("player") {
+    if matches.is_present("play") {
         let status = Command::new("mpv")
             .arg("--no-ytdl")
             .arg(stream.get_stream())
