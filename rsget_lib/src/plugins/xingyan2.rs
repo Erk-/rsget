@@ -12,11 +12,12 @@ use tokio_core::reactor::Core;
 #[allow(dead_code)]
 #[allow(non_snake_case)]
 #[derive(Clone, Debug, Deserialize)]
-struct XingyanRoomInfo {
+struct Xingyan2RoomInfo {
     rid: String,
     xid: usize,
     name: String,
-    notice: Option<String>,
+    xtype: String,
+    level: String,
     photo: String,
     picture: String,
     playstatus: String,
@@ -33,7 +34,7 @@ struct XingyanRoomInfo {
 #[allow(dead_code)]
 #[allow(non_snake_case)]
 #[derive(Clone, Debug, Deserialize)]
-struct XingyanAds {
+struct Xingyan2Ads {
     title: String,
     img: String,
     linkurl: String,
@@ -42,15 +43,33 @@ struct XingyanAds {
 #[allow(dead_code)]
 #[allow(non_snake_case)]
 #[derive(Clone, Debug, Deserialize)]
-struct XingyanVideoInfo {
-    streamurl: String,
-    hlsurl: String,
+struct Xingyan2StreamTrans {
+    mid: String,
+    small: String,
 }
 
 #[allow(dead_code)]
 #[allow(non_snake_case)]
 #[derive(Clone, Debug, Deserialize)]
-struct XingyanHostInfo {
+struct Xingyan2ZL {
+    streamurl: String,
+    streamtrans: Xingyan2StreamTrans,
+}
+
+#[allow(dead_code)]
+#[allow(non_snake_case)]
+#[derive(Clone, Debug, Deserialize)]
+struct Xingyan2VideoInfo {
+    streamurl: String,
+    streamtrans: Xingyan2StreamTrans,
+    hlsurl: String,
+    zl: Vec<Xingyan2ZL>,
+}
+
+#[allow(dead_code)]
+#[allow(non_snake_case)]
+#[derive(Clone, Debug, Deserialize)]
+struct Xingyan2HostInfo {
     rid: String,
     nickName: String,
     avatar: String,
@@ -62,23 +81,22 @@ struct XingyanHostInfo {
 #[allow(dead_code)]
 #[allow(non_snake_case)]
 #[derive(Clone, Debug, Deserialize)]
-struct XingyanInfo {
-    roominfo: XingyanRoomInfo,
-    videoinfo: XingyanVideoInfo,
-    hostinfo: XingyanHostInfo,
-    leftads: Vec<XingyanAds>,
+struct Xingyan2Info {
+    roominfo: Xingyan2RoomInfo,
+    videoinfo: Xingyan2VideoInfo,
+    hostinfo: Xingyan2HostInfo,
 }
 
 #[derive(Clone, Debug)]
-pub struct Xingyan {
+pub struct Xingyan2 {
     pub url: String,
     pub room_id: String,
-    host_info: XingyanInfo,
+    host_info: Xingyan2Info,
 }
 
 
-impl Streamable for Xingyan {
-    fn new(url: String) -> Result<Box<Xingyan>, StreamError> {
+impl Streamable for Xingyan2 {
+    fn new(url: String) -> Result<Box<Xingyan2>, StreamError> {
         let room_id_re = Regex::new(r"/([0-9]+)").unwrap();
         let cap = room_id_re.captures(&url).unwrap();
         let site_url = format!("https://xingyan.panda.tv/{}", &cap[1]);
@@ -88,11 +106,8 @@ impl Streamable for Xingyan {
             Ok(some) => {
                 let hostinfo_re = Regex::new(r"<script>window.HOSTINFO=(.*);</script>").unwrap();
                 let hi_cap = hostinfo_re.captures(&some).unwrap();
-                let hi: XingyanInfo = match serde_json::from_str(&hi_cap[1]) {
-                    Ok(info) => info,
-                    Err(_why) => return Err(StreamError::new("Error in deserailising")),
-                };
-                Ok(Box::new(Xingyan {
+                let hi: Xingyan2Info = serde_json::from_str(&hi_cap[1]).unwrap();
+                Ok(Box::new(Xingyan2 {
                     url: url.clone(),
                     room_id: String::from(&cap[1]),
                     host_info: hi,

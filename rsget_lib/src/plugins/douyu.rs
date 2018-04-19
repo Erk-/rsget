@@ -3,6 +3,7 @@ use reqwest;
 use std::time::{SystemTime, UNIX_EPOCH};
 use regex::Regex;
 
+use utils::error::StreamError;
 use utils::downloaders::flv_download;
 use chrono::prelude::*;
 
@@ -160,14 +161,14 @@ struct DouyuRoom {
     data: DouyuData,
 }
 
-
+#[derive(Clone, Debug)]
 pub struct Douyu {
     data: DouyuRoom,
     room_id: u32,
 }
 
 impl Streamable for Douyu {
-    fn new(url: String) -> Douyu {
+    fn new(url: String) -> Result<Box<Douyu>, StreamError> {
         let room_id_re = Regex::new(r"com/([a-zA-Z0-9]+)").unwrap();
         let cap = room_id_re.captures(&url).unwrap();
 
@@ -231,13 +232,12 @@ impl Streamable for Douyu {
 
         let jres: Result<DouyuRoom, reqwest::Error> = resp.json();
         match jres {
-            Ok(jre) => Douyu {
+            Ok(jre) => Ok(Box::new(Douyu {
                 data: jre,
                 room_id: room_id,
-            },
+            })),
             Err(why) => {
-                info!("Error when deserailising ({})", why);
-                std::process::exit(1)
+                Err(StreamError::new(&format!("Error when deserailising ({})", why)))
             }
         }
     }

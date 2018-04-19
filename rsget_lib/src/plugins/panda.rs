@@ -5,6 +5,7 @@ use regex::Regex;
 use serde_json;
 use serde_json::Value;
 
+use utils::error::StreamError;
 use utils::downloaders::flv_download;
 use chrono::prelude::*;
 
@@ -155,7 +156,7 @@ struct PandaTvRoom {
     data: PandaTvData,
 }
 
-
+#[derive(Clone, Debug)]
 pub struct PandaTv {
     pub url: String,
     pub room_id: String,
@@ -163,7 +164,7 @@ pub struct PandaTv {
 }
 
 impl Streamable for PandaTv {
-    fn new(url: String) -> PandaTv {
+    fn new(url: String) -> Result<Box<PandaTv>, StreamError> {
         let room_id_re = Regex::new(r"/([0-9]+)").unwrap();
         let cap = room_id_re.captures(&url).unwrap();
         let start = SystemTime::now();
@@ -185,14 +186,13 @@ impl Streamable for PandaTv {
         };
         let jres: Result<PandaTvRoom, reqwest::Error> = resp.json();
         match jres {
-            Ok(jre) => PandaTv {
+            Ok(jre) => Ok(Box::new(PandaTv {
                 url: String::from(url.as_str()),
                 room_id: String::from(&cap[0]),
                 panda_tv_room: jre,
-            },
+            })),
             Err(why) => {
-                info!("Error when deserailising ({})", why);
-                std::process::exit(1)
+                Err(StreamError::new(&format!("Error when deserailising ({})", why)))
             }
         }
     }

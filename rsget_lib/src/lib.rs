@@ -24,7 +24,7 @@ pub trait Downloadable {
 }
 
 pub trait Streamable {
-    fn new(url: String) -> Self
+    fn new(url: String) -> Result<Box<Self>, utils::error::StreamError>
     where
         Self: Sized;
     fn get_title(&self) -> Option<String>;

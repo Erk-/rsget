@@ -36,10 +36,11 @@ fn main() {
         )
         .get_matches();
     let url = String::from(matches.value_of("URL").unwrap());
+
     let stream: Box<Streamable> = match rsget_lib::utils::sites::get_site(&url) {
-        Some(b) => b,
-        None => {
-            info!("Site not implemented");
+        Ok(b) => b,
+        Err(why) => {
+            info!("{}", why);
             std::process::exit(1)
         }
     };
