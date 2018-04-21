@@ -13,4 +13,4 @@ build:
       - rsget_cli/target/
   artifacts:
     paths:
-- rsget_cli/target/release/rsget_cli
+      - rsget_cli/target/release/rsget_cli
