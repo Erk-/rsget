@@ -1,0 +1,14 @@
+To install this you first need cargo and the rust compiler you can get that from: https://rustup.rs/
+Then you want to download the latest release from https://gitlab.com/Erk/rsget/-/archive/master/rsget-master.zip and unpack it to a new directonary
+you will also need git, which you can get from here https://git-scm.com/ then open a powershell window and execute the following commands from the folder.
+#+BEGIN_SRC powershell
+cd rsget_cli
+cargo build --release
+#+END_SRC
+
+Then copy the file rsget_cli.exe from the target/release/ directonary to somewhere else.
+Then you can use it with rsget_cli (or what you named the file) followed by the url.
+
+It currently works for DouyuTv and PandaTv, with support fro AfreecaTv coming soon
+
+It will be released on github when I have worked a bit more on it.
