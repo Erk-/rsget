@@ -11,4 +11,6 @@ Then you can use it with rsget_cli (or what you named the file) followed by the 
 
 It currently works for DouyuTv and PandaTv, with support fro AfreecaTv coming soon
 
+To download afreeca you will need ffmpeg installed as well.
+
 It will be released on github when I have worked a bit more on it.

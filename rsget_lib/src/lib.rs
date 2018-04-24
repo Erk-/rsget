@@ -12,6 +12,7 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 extern crate tokio_core;
+extern crate url;
 
 use tokio_core::reactor::Core;
 

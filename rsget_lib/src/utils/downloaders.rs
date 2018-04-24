@@ -1,5 +1,7 @@
 use std::fs::File;
 use std::io::Write;
+use std::process::Command;
+
 use futures::{Future, Stream};
 use hyper;
 use tokio_core::reactor::Core;
@@ -52,6 +54,24 @@ pub fn flv_download(core: &mut Core, url: String, path: String) -> Option<()> {
         Ok(_) => Some(()),
         Err(why) => {
             warn!("Core: {}", why);
+            None
+        }
+    }
+}
+
+pub fn ffmpeg_download(url: String, path: String) -> Option<()> {
+    let comm = Command::new("ffmpeg")
+        .arg("-i")
+        .arg(url)
+        .arg("-c")
+        .arg("copy")
+        .arg(path)
+        .status()
+        .expect("ffmpeg failed to start");
+    match comm.code() {
+        Some(_) => Some(()),
+        None => {
+            info!("Err: Ffmpeg failed");
             None
         }
     }
