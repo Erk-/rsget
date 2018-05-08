@@ -237,7 +237,7 @@ impl Streamable for Douyu {
                 room_id: room_id,
             })),
             Err(why) => {
-                Err(StreamError::new(&format!("Error when deserailising ({})", why)))
+                Err(StreamError::Reqwest(why))
             }
         }
     }

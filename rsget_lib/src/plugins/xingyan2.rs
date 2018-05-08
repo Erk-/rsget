@@ -104,17 +104,20 @@ impl Streamable for Xingyan2 {
         let res: Result<String, reqwest::Error> = resp.unwrap().text();
         match res {
             Ok(some) => {
+                info!("Unwrapped xinhua");
                 let hostinfo_re = Regex::new(r"<script>window.HOSTINFO=(.*);</script>").unwrap();
                 let hi_cap = hostinfo_re.captures(&some).unwrap();
-                let hi: Xingyan2Info = serde_json::from_str(&hi_cap[1]).unwrap();
-                Ok(Box::new(Xingyan2 {
+                let hi: Xingyan2Info = serde_json::from_str(&hi_cap[1])?;
+                let tmp = Xingyan2 {
                     url: url.clone(),
                     room_id: String::from(&cap[1]),
                     host_info: hi,
-                }))
+                };
+                debug!("Xingyan2: \n{:?}", &tmp);
+                Ok(Box::new(tmp))
             }
             Err(why) => {
-                Err(StreamError::new(&format!("{}", why)))
+                Err(StreamError::Reqwest(why))
             }
         }
     }
@@ -128,7 +131,8 @@ impl Streamable for Xingyan2 {
     }
 
     fn is_online(&self) -> bool {
-        self.host_info.roominfo.playstatus != "0"
+        true
+        //self.host_info.roominfo.playstatus != "0"
     }
 
     fn get_stream(&self) -> String {

@@ -192,7 +192,7 @@ impl Streamable for PandaTv {
                 panda_tv_room: jre,
             })),
             Err(why) => {
-                Err(StreamError::new(&format!("Error when deserailising ({})", why)))
+                Err(StreamError::Reqwest(why))
             }
         }
     }

@@ -10,6 +10,8 @@ use url::Url;
 
 use tokio_core::reactor::Core;
 
+use std::process::Command;
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct AfreecaGetInfo {
     bid: String,
@@ -113,7 +115,7 @@ fn get_hls_key(c: reqwest::Client, room_id: String, bno: String) -> String {
 
 impl Streamable for Afreeca {
     fn new(url: String) -> Result<Box<Afreeca>, StreamError> {
-        let room_id_re = Regex::new(r"(?:http://[^/]+)?/([a-zA-Z0-9]+)").unwrap();
+        let room_id_re = Regex::new(r"(?:http://[^/]+)?/([a-zA-Z0-9]+)(?:/[0-9]+)?").unwrap();
         let cap = room_id_re.captures(&url).unwrap();
         let json_url = Url::parse("http://live.afreecatv.com:8057/afreeca/player_live_api.php").unwrap();
         info!("id: {}", &cap[1]);
@@ -127,7 +129,7 @@ impl Streamable for Afreeca {
         let mut resp = client.post(json_url)
             .form(&reqest_data)
             .send().unwrap();
-        //println!("{}", resp.text().unwrap());
+        debug!("{}", resp.text().unwrap());
         let jres: Result<AfreecaChannelInfo<AfreecaChannelInfoData>, reqwest::Error> = resp.json();
         match jres {
             Ok(jre) => {
@@ -140,7 +142,7 @@ impl Streamable for Afreeca {
                 }))},
             Err(why) => {
                 info!("Error when deserialising");
-                Err(StreamError::new(&format!("Error when deserailising ({})", why)))
+                Err(StreamError::Reqwest(why))
             }
         }
     }
@@ -180,7 +182,7 @@ impl Streamable for Afreeca {
     }
 
     fn get_ext(&self) -> String {
-        String::from("mkv")
+        String::from("mp4")
     }
 
     fn get_default_name(&self) -> String {
@@ -209,7 +211,8 @@ impl Streamable for Afreeca {
                 self.get_author().unwrap(),
                 self.room_id
             );
-            ffmpeg_download(self.get_stream(), path)
-        }
+            ffmpeg_download(self.get_stream(), path.clone())
+        }   
     }
 }
+

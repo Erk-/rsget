@@ -90,16 +90,18 @@ impl Streamable for Xingyan {
                 let hi_cap = hostinfo_re.captures(&some).unwrap();
                 let hi: XingyanInfo = match serde_json::from_str(&hi_cap[1]) {
                     Ok(info) => info,
-                    Err(_why) => return Err(StreamError::new("Error in deserailising")),
+                    Err(why) => return Err(StreamError::Json(why)),
                 };
-                Ok(Box::new(Xingyan {
+                let xy = Xingyan {
                     url: url.clone(),
                     room_id: String::from(&cap[1]),
                     host_info: hi,
-                }))
+                };
+                debug!("Debug print:\n{:?}", &xy);
+                Ok(Box::new(xy))
             }
             Err(why) => {
-                Err(StreamError::new(&format!("{}", why)))
+                Err(StreamError::Reqwest(why))
             }
         }
     }

@@ -69,10 +69,14 @@ pub fn ffmpeg_download(url: String, path: String) -> Option<()> {
         .status()
         .expect("ffmpeg failed to start");
     match comm.code() {
-        Some(_) => Some(()),
+        Some(c) => {
+            info!("Ffmpeg returned: {}", c);
+            Some(())
+        },
         None => {
             info!("Err: Ffmpeg failed");
             None
-        }
+        },
     }
 }
+
