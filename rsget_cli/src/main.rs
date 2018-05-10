@@ -1,4 +1,49 @@
+extern crate clap;
+extern crate env_logger;
+#[macro_use]
+extern crate log;
+extern crate rsget_lib;
+extern crate tokio_core;
+ 
+ 
+use rsget_lib::Streamable;
+use clap::{App, Arg}; //, SubCommand};
+use tokio_core::reactor::Core;
+use std::process::Command;
 
+fn main() {
+    env_logger::init();
+
+    let matches = App::new("ruststreamer")
+       .version("0.1")
+        .author("Valdemar Erk <v@erk.io>")
+        .about("Downloads streams")
+        .arg(
+            Arg::with_name("play")
+               .short("P")
+                .long("play")
+                .takes_value(false),
+        )
+        .arg(
+            Arg::with_name("info")
+                .help("Info")
+                .required(false)
+        )
+        .arg(
+            Arg::with_name("path")
+                .short("O")
+                .long("path")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("filename")
+                .short("o")
+                .long("output")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("URL")
+                .help("The url of the stream")
                 .required(true)
                 .index(1),
         )
