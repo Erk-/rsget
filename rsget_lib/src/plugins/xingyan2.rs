@@ -100,9 +100,8 @@ impl Streamable for Xingyan2 {
         let room_id_re = Regex::new(r"/([0-9]+)").unwrap();
         let cap = room_id_re.captures(&url).unwrap();
         let site_url = format!("https://xingyan.panda.tv/{}", &cap[1]);
-        let resp = reqwest::get(&site_url);
-        let res: Result<String, reqwest::Error> = resp.unwrap().text();
-        match res {
+        let mut resp = reqwest::get(&site_url)?;
+        match resp.text() {
             Ok(some) => {
                 info!("Unwrapped xinhua");
                 let hostinfo_re = Regex::new(r"<script>window.HOSTINFO=(.*);</script>").unwrap();
