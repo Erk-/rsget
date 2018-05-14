@@ -10,8 +10,6 @@ use url::Url;
 
 use tokio_core::reactor::Core;
 
-use std::process::Command;
-
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct AfreecaGetInfo {
     bid: String,
