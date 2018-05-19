@@ -4,6 +4,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use regex::Regex;
 
 use utils::error::StreamError;
+use utils::error::RsgetError;
+
 use utils::downloaders::flv_download;
 use chrono::prelude::*;
 
@@ -278,9 +280,9 @@ impl Streamable for Douyu {
         )
     }
 
-    fn download(&self, core: &mut Core, path: String) -> Option<()> {
+    fn download(&self, core: &mut Core, path: String) -> Result<(), StreamError> {
         if !self.is_online() {
-            None
+            Err(StreamError::Rsget(RsgetError::new("Stream offline")))
         } else {
             let local: DateTime<Local> = Local::now();
             println!(

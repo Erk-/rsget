@@ -2,8 +2,10 @@ use serde_json::Error as JsonError;
 use std::{
     error::Error as StdError,
     fmt::{Display, Error as FmtError, Formatter, Result as FmtResult},
+    io::Error as IoError,
 };
 use hyper::error::{Error as HyperError};
+use hyper::error::UriError;
 use reqwest::{
     Error as ReqwestError,
     Response as ReqwestResponse,
@@ -52,6 +54,10 @@ pub enum StreamError {
     ReqwestParse(ReqwestUrlError),
     /// RsgetError
     Rsget(RsgetError),
+    /// IO-Error
+    Io(IoError),
+    /// UriError
+    Uri(UriError),
 }
 
 impl Display for StreamError {
@@ -71,6 +77,8 @@ impl StdError for StreamError {
             StreamError::ReqwestInvalid(_) => "Request invalid",
             StreamError::ReqwestParse(ref inner) => inner.description(),
             StreamError::Rsget(ref inner) => inner.description(),
+            StreamError::Io(ref inner) => inner.description(),
+            StreamError::Uri(ref inner) => inner.description(),
         }
     }
 }
@@ -107,3 +115,14 @@ impl From<ReqwestUrlError> for StreamError {
     }
 }
 
+impl From<IoError> for StreamError {
+    fn from(err: IoError) -> Self {
+        StreamError::Io(err)
+    }
+}
+
+impl From<UriError> for StreamError {
+    fn from(err: UriError) -> Self {
+        StreamError::Uri(err)
+    }
+}

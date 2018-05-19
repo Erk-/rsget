@@ -6,12 +6,11 @@ use serde_json;
 use serde_json::Value;
 
 use utils::error::StreamError;
+use utils::error::RsgetError;
 use utils::downloaders::flv_download;
 use chrono::prelude::*;
 
 use tokio_core::reactor::Core;
-
-use std;
 
 #[allow(dead_code)]
 #[allow(non_snake_case)]
@@ -177,13 +176,7 @@ impl Streamable for PandaTv {
             &cap[1],
             ts
         );
-        let mut resp = match reqwest::get(&json_url) {
-            Ok(res) => res,
-            Err(why) => {
-                info!("Error when getting site info ({})", why);
-                std::process::exit(1)
-            }
-        };
+        let mut resp = reqwest::get(&json_url)?;
         let jres: Result<PandaTvRoom, reqwest::Error> = resp.json();
         match jres {
             Ok(jre) => Ok(Box::new(PandaTv {
@@ -252,9 +245,9 @@ impl Streamable for PandaTv {
         )
     }
 
-    fn download(&self, core: &mut Core, path: String) -> Option<()> {
+    fn download(&self, core: &mut Core, path: String) -> Result<(), StreamError> {
         if !self.is_online() {
-            None
+            Err(StreamError::Rsget(RsgetError::new("Stream offline")))
         } else {
             println!(
                 "{} by {} ({})",

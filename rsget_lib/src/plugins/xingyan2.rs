@@ -5,6 +5,8 @@ use serde_json;
 
 use utils::downloaders::flv_download;
 use utils::error::StreamError;
+use utils::error::RsgetError;
+
 use chrono::prelude::*;
 
 use tokio_core::reactor::Core;
@@ -145,7 +147,8 @@ impl Streamable for Xingyan2 {
     fn get_default_name(&self) -> String {
         let local: DateTime<Local> = Local::now();
         format!(
-            "{:04}-{:02}-{:02}-{:02}-{:02}-{}-{}.{}",
+            "{}-{:04}-{:02}-{:02}-{:02}-{:02}-{}-{}.{}",
+            self.room_id,
             local.year(),
             local.month(),
             local.day(),
@@ -157,9 +160,9 @@ impl Streamable for Xingyan2 {
         )
     }
 
-    fn download(&self, core: &mut Core, path: String) -> Option<()> {
+    fn download(&self, core: &mut Core, path: String) -> Result<(), StreamError> {
         if !self.is_online() {
-            None
+            Err(StreamError::Rsget(RsgetError::new("Stream offline")))
         } else {
             println!(
                 "{} by {} ({})",

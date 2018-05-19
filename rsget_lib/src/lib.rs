@@ -13,8 +13,10 @@ extern crate serde_derive;
 extern crate serde_json;
 extern crate tokio_core;
 extern crate url;
+extern crate hls_m3u8;
 
 use tokio_core::reactor::Core;
+use utils::error::StreamError;
 
 pub trait Downloadable {
     fn new(url: String) -> Self;
@@ -25,7 +27,7 @@ pub trait Downloadable {
 }
 
 pub trait Streamable {
-    fn new(url: String) -> Result<Box<Self>, utils::error::StreamError>
+    fn new(url: String) -> Result<Box<Self>, StreamError>
     where
         Self: Sized;
     fn get_title(&self) -> Option<String>;
@@ -35,7 +37,7 @@ pub trait Streamable {
     fn get_stream(&self) -> String;
     fn get_ext(&self) -> String;
     fn get_default_name(&self) -> String;
-    fn download(&self, core: &mut Core, path: String) -> Option<()>;
+    fn download(&self, core: &mut Core, path: String) -> Result<(), StreamError>;
 }
 pub mod utils;
 pub mod plugins;

@@ -1,5 +1,5 @@
 extern crate clap;
-extern crate env_logger;
+extern crate pretty_env_logger;
 #[macro_use]
 extern crate log;
 extern crate rsget_lib;
@@ -12,7 +12,7 @@ use tokio_core::reactor::Core;
 use std::process::Command;
 
 fn main() {
-    env_logger::init();
+    pretty_env_logger::init();
 
     let matches = App::new("ruststreamer")
        .version("0.1")
@@ -93,9 +93,9 @@ fn main() {
         &mut core,
         format!("{}{}", path, strip_characters(&file_name, "<>:\"/\\|?*\0")),
     ) {
-        Some(_) => std::process::exit(0),
-        None => {
-            info!("Download Failed");
+        Ok(_) => std::process::exit(0),
+        Err(why) => {
+            info!("Download Failed: {}", why);
             std::process::exit(1)
         }
     }

@@ -5,9 +5,9 @@ authors = ["Valdemar Erk <valdemar@erk.io>"]
 
 [dependencies]
 rsget_lib = { path = "../rsget_lib" }
-clap = "2.29.4"
-log = "0.4.0"
-env_logger = "0.5.3"
+clap = "2.31.2"
+log = "0.4.1"
+pretty_env_logger = "0.2"
 tokio-core = "0.1"
 
 [[bin]]

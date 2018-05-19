@@ -3,6 +3,7 @@ use reqwest;
 use regex::Regex;
 
 use utils::error::StreamError;
+use utils::error::RsgetError;
 use utils::downloaders::flv_download;
 use chrono::prelude::*;
 
@@ -144,9 +145,9 @@ impl Streamable for Inke {
         )
     }
 
-    fn download(&self, core: &mut Core, path: String) -> Option<()> {
+    fn download(&self, core: &mut Core, path: String) -> Result<(), StreamError> {
         if !self.is_online() {
-            None
+            Err(StreamError::Rsget(RsgetError::new("Stream offline")))
         } else {
             println!(
                 "{} by {} ({})",
