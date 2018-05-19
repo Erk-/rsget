@@ -76,3 +76,18 @@ pub fn ffmpeg_download(url: String, path: String) -> Result<(), StreamError> {
     }
 }
 
+pub fn afreeca_m3u8_download(url: String, _base_path: String, _is_live: bool) -> Result<(), StreamError> {
+    let m3u8 = reqwest::get(&url).unwrap().text().unwrap();
+    let playlist = m3u8.parse::<MediaPlaylist>();
+    let fst_seg = match playlist {
+        Ok(s) => {
+            s.segments()[0].uri().clone()
+        },
+        Err(why) => {
+            info!("{}", why);
+            return Err(StreamError::Rsget(RsgetError::new("Placeholder m3u8 error")));
+        },
+    };
+    println!("fst segment: {}", fst_seg);
+    Ok(())
+}

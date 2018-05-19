@@ -225,7 +225,7 @@ impl Streamable for Afreeca {
                 self.get_author().unwrap(),
                 self.room_id
             );
-            ffmpeg_download(self.get_stream(), path.clone())
+            afreeca_m3u8_download(self.get_stream(), path.clone(), true)
         }   
     }
 }
