@@ -1,0 +1,9 @@
+[package]
+name = "hls_test"
+version = "0.1.0"
+authors = ["Valdemar Erk <v@erk.io>"]
+
+[dependencies]
+rsget_hls = { path = "../rsget_hls" }
+log = "0.4"
+pretty_env_logger = "0.2"
