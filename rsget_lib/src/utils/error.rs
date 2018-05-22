@@ -11,6 +11,7 @@ use reqwest::{
     Response as ReqwestResponse,
     UrlError as ReqwestUrlError,
 };
+use hls_m3u8::Error as HlsError;
 
 #[derive(Debug)]
 pub struct RsgetError {
@@ -58,6 +59,8 @@ pub enum StreamError {
     Io(IoError),
     /// UriError
     Uri(UriError),
+    /// HLS Error
+    Hls(HlsError),
 }
 
 impl Display for StreamError {
@@ -79,6 +82,7 @@ impl StdError for StreamError {
             StreamError::Rsget(ref inner) => inner.description(),
             StreamError::Io(ref inner) => inner.description(),
             StreamError::Uri(ref inner) => inner.description(),
+            StreamError::Hls(ref inner) => inner.description(),
         }
     }
 }
@@ -126,3 +130,10 @@ impl From<UriError> for StreamError {
         StreamError::Uri(err)
     }
 }
+
+impl From<HlsError> for StreamError {
+    fn from(err: HlsError) -> Self {
+        StreamError::Hls(err)
+    }
+}
+

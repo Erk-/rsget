@@ -1,3 +1,64 @@
+extern crate futures;
+extern crate hyper;
+extern crate hyper_tls;
+extern crate tokio;
+extern crate rsget_lib;
+
+use futures::{future, Future, Stream};
+use std::io::Write;
+use std::fs::File;
+
+use rsget_lib::utils::error::StreamError;
+
+pub fn download_to_file(uri: &str, path: &str) -> impl Future<Item = (), Error = StreamError> {
+    let https = hyper_tls::HttpsConnector::new(4).unwrap();
+    let client = hyper::Client::builder()
+        .build::<_, hyper::Body>(https);
+    let mut file = File::create(path).unwrap();
+    client
+        .get(uri.parse().unwrap())
+        .and_then(|res| {
+            println!("Status: {}", res.status());
+            println!("Headers:\n{:#?}", res.headers());
+            res.into_body().for_each(move |chunk| {
+                file
+                    .write_all(&chunk)
+                    .map_err(|e| StreamError::from(e))
+            })
+        }).map_err(|e| StreamError::from(e))
+        .then(|_| Ok(()))
+}
+
+/*
+pub fn downloader(uri: &str, path: &str) -> impl Future<Item = (), Error = ()> {
+    test_download(uri, path).then(|_| Ok(()))
+}
+*/
+
+/*
+pub fn test_download() -> () {
+    tokio::run(future::lazy(|| {
+        let https = hyper_tls::HttpsConnector::new(4).unwrap();
+        let client = hyper::Client::builder()
+            .build::<_, hyper::Body>(https);
+        let mut file = File::create("./test.test").unwrap();
+        client
+            .get("https://hyper.rs".parse().unwrap())
+            .and_then(|res| {
+                println!("Status: {}", res.status());
+                println!("Headers:\n{:#?}", res.headers());
+                res.into_body().for_each(move |chunk| {
+                    file
+                        .write_all(&chunk)
+                        .map_err(|e| panic!("example expects stdout to work: {}", e))
+                })
+            })
+            .map_err(|e| println!("request error: {}", e))
+    }));
+    ()
+}
+*/
+/*
 extern crate hls_m3u8;
 extern crate futures;
 extern crate hyper;
@@ -8,17 +69,29 @@ extern crate hyper_tls;
 extern crate reqwest;
 
 use std::io::{self, Write};
+use std::io::Error as IoError;
 use std::{thread, time};
 use futures::{Stream, Sink, Future};
 use futures::sync::mpsc;
 use hyper::Client;
+use hyper_tls::HttpsConnector;
 use tokio_core::reactor::Core;
 use hls_m3u8::MediaPlaylist;
 use hyper::Uri;
 use regex::Regex;
 use std::fs::File;
 
+fn download_future(client: hyper::Client<HttpsConnector>, path: String, uri: Uri) -> FutureResult<Item=usize, Error=std::io::Error>  {
+    let file = File::create(&path).unwrap();
+    client.get(uri).and_then(|res| {
+        res.body().for_each(|chunk| {
+            file.write_all(&chunk).map_err(From::from)
+        })
+    });
+}
+*/
 
+/*
 fn hls_get_file(r: reqwest::Client, uri: &str) -> MediaPlaylist {
     let text = r.get(uri).send().unwrap().text().unwrap();
     text.parse::<MediaPlaylist>().unwrap()
@@ -111,6 +184,7 @@ pub fn hls_download(url: String, path: String) -> Option<()> {
         },
     }
 }
+*/
 /*
 pub fn flv_download(core: &mut Core, url: String, path: String) -> Result<(), StreamError> {
     let real_url = get_redirect_url(core, url)?;

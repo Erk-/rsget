@@ -7,3 +7,5 @@ authors = ["Valdemar Erk <v@erk.io>"]
 rsget_hls = { path = "../rsget_hls" }
 log = "0.4"
 pretty_env_logger = "0.2"
+tokio = "0.1"
+rsget_lib = { path = "./../rsget_lib" }
