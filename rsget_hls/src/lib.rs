@@ -2,31 +2,75 @@ extern crate futures;
 extern crate hyper;
 extern crate hyper_tls;
 extern crate tokio;
-extern crate rsget_lib;
+//extern crate rsget_lib;
+#[macro_use]
+extern crate log;
+
+
+use hyper::Error as HyperError;
+use std::io::Error as IoError;
 
 use futures::{future, Future, Stream};
-use std::io::Write;
 use std::fs::File;
+use std::io::{self, Write};
 
-use rsget_lib::utils::error::StreamError;
+use std::fmt::{Display, Formatter, Result as FmtResult};
+use std::error::Error as StdError;
 
-pub fn download_to_file(uri: &str, path: &str) -> impl Future<Item = (), Error = StreamError> {
+
+//use rsget_lib::utils::error::StreamError;
+
+#[derive(Debug)]
+enum MyError {
+    Hyper(HyperError),
+    Io(IoError),
+}
+
+impl Display for MyError {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        f.write_str(self.description())
+    }
+}
+
+impl StdError for MyError {
+    fn description(&self) -> &str {
+        match *self {
+            MyError::Hyper(ref inner) => inner.description(),
+            MyError::Io(ref inner) => inner.description(),
+        }
+    }
+}
+
+impl From<HyperError> for MyError {
+    fn from(err: HyperError) -> Self {
+        MyError::Hyper(err)
+    }
+}
+
+impl From<IoError> for MyError {
+    fn from(err: IoError) -> Self {
+        MyError::Io(err)
+    }
+}
+
+
+pub fn download_to_file(uri: &str, path: &str) -> impl Future<Item = (), Error = MyError> {
     let https = hyper_tls::HttpsConnector::new(4).unwrap();
     let client = hyper::Client::builder()
         .build::<_, hyper::Body>(https);
     let mut file = File::create(path).unwrap();
     client
         .get(uri.parse().unwrap())
-        .and_then(|res| {
-            println!("Status: {}", res.status());
-            println!("Headers:\n{:#?}", res.headers());
-            res.into_body().for_each(move |chunk| {
+        .and_then(move |res| {
+            //println!("Status: {}", res.status());
+            //println!("Headers:\n{:#?}", res.headers());
+            res.into_body().map_err(|e| MyError::from(e)).for_each(move |chunk| {
                 file
                     .write_all(&chunk)
-                    .map_err(|e| StreamError::from(e))
+                    .map_err(|e| MyError::from(e))
             })
-        }).map_err(|e| StreamError::from(e))
-        .then(|_| Ok(()))
+        }).map_err(|e| MyError::from(e))
+        .map(|_| ())
 }
 
 /*
