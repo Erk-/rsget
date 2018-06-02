@@ -1,17 +1,29 @@
+use std::string::FromUtf8Error;
+
 use serde_json::Error as JsonError;
 use std::{
     error::Error as StdError,
     fmt::{Display, Error as FmtError, Formatter, Result as FmtResult},
     io::Error as IoError,
 };
-use hyper::error::{Error as HyperError};
-use hyper::error::UriError;
+
+use hyper::Error as HyperError;
+
+use http::uri::InvalidUri;
+use http::header::ToStrError;
+
+//use hyper::error::{Error as HyperError};
+//use hyper::error::UriError;
 use reqwest::{
     Error as ReqwestError,
     Response as ReqwestResponse,
     UrlError as ReqwestUrlError,
 };
+
+use http::Error as HttpError;
+
 use hls_m3u8::Error as HlsError;
+
 
 #[derive(Debug)]
 pub struct RsgetError {
@@ -58,9 +70,15 @@ pub enum StreamError {
     /// IO-Error
     Io(IoError),
     /// UriError
-    Uri(UriError),
+    Uri(InvalidUri),
+    /// ToStrError
+    ToStr(ToStrError),
+    /// HTTP Error
+    Http(HttpError),
     /// HLS Error
     Hls(HlsError),
+    /// FromUtf8error
+    Utf8(FromUtf8Error),
 }
 
 impl Display for StreamError {
@@ -82,7 +100,10 @@ impl StdError for StreamError {
             StreamError::Rsget(ref inner) => inner.description(),
             StreamError::Io(ref inner) => inner.description(),
             StreamError::Uri(ref inner) => inner.description(),
+            StreamError::ToStr(ref inner) => inner.description(),
+            StreamError::Http(ref inner) => inner.description(),
             StreamError::Hls(ref inner) => inner.description(),
+            StreamError::Utf8(ref inner) => inner.description(),
         }
     }
 }
@@ -93,7 +114,6 @@ impl From<FmtError> for StreamError {
     }
 }
 
-//impl From<serde_json::Error> for Error
 
 impl From<JsonError> for StreamError {
     fn from(err: JsonError) -> Self {
@@ -125,9 +145,21 @@ impl From<IoError> for StreamError {
     }
 }
 
-impl From<UriError> for StreamError {
-    fn from(err: UriError) -> Self {
+impl From<InvalidUri> for StreamError {
+    fn from(err: InvalidUri) -> Self {
         StreamError::Uri(err)
+    }
+}
+
+impl From<ToStrError> for StreamError {
+    fn from(err: ToStrError) -> Self {
+        StreamError::ToStr(err)
+    }
+}
+
+impl From<HttpError> for StreamError {
+    fn from(err: HttpError) -> Self {
+        StreamError::Http(err)
     }
 }
 
@@ -137,3 +169,8 @@ impl From<HlsError> for StreamError {
     }
 }
 
+impl From<FromUtf8Error> for StreamError {
+    fn from(err: FromUtf8Error) -> Self {
+        StreamError::Utf8(err)
+    }
+}

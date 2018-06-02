@@ -6,8 +6,8 @@ use serde_json;
 
 use utils::error::StreamError;
 use utils::error::RsgetError;
-//use utils::downloaders::ffmpeg_download;
-use utils::downloaders::afreeca_m3u8_download;
+use utils::downloaders::ffmpeg_download;
+//use utils::downloaders::afreeca_m3u8_download;
 use chrono::prelude::*;
 
 use url::Url;
@@ -225,7 +225,7 @@ impl Streamable for Afreeca {
                 self.get_author().unwrap(),
                 self.room_id
             );
-            afreeca_m3u8_download(self.get_stream(), path.clone(), true)
+            ffmpeg_download(self.get_stream(), path.clone())
         }   
     }
 }

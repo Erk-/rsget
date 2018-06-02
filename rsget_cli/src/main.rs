@@ -24,11 +24,12 @@ fn main() {
                 .long("play")
                 .takes_value(false),
         )
-/*        .arg(
+        .arg(
             Arg::with_name("info")
+                .short("i")
                 .help("Info")
-                .required(false)
-        )*/
+                .required(false),
+        )
         .arg(
             Arg::with_name("path")
                 .short("O")
@@ -62,12 +63,12 @@ fn main() {
         info!("Stream not online");
         std::process::exit(1)
     }
-/*
+
     if matches.is_present("info") {
         println!("{}", stream.get_stream());
         std::process::exit(0)
     }
-*/
+
     if matches.is_present("play") {
         let status = Command::new("mpv")
             .arg("--no-ytdl")

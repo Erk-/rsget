@@ -11,7 +11,7 @@ pub fn get_site(input: &str) -> Result<Box<Streamable>, StreamError>
     let re_douyu: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?douyu\.com/[a-zA-Z0-9]+/?").unwrap();
     let re_afreeca: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?(?:play\.)?afreecatv.com/[a-zA-Z0-9]+/?(?:/[0-9]+)?").unwrap();
     let re_inke: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?inke\.cn/live\.html\?uid=[0-9]+").unwrap();
-
+    
     match input {
         url if re_panda.is_match(url) => {
             match panda::PandaTv::new(String::from(url)) {

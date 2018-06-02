@@ -1,6 +1,7 @@
 extern crate chrono;
 extern crate futures;
 extern crate hyper;
+extern crate hyper_tls;
 extern crate indicatif;
 #[macro_use]
 extern crate log;
@@ -11,7 +12,9 @@ extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
+extern crate tokio;
 extern crate tokio_core;
+extern crate http;
 extern crate url;
 extern crate hls_m3u8;
 

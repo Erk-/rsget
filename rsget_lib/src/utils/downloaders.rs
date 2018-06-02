@@ -5,18 +5,27 @@ use std::fs::File;
 use std::io::Write;
 use std::process::Command;
 
-use futures::{Future, Stream};
-use hyper;
+use futures::{Stream, Future};
+
 use tokio_core::reactor::Core;
-use hyper::header::Location;
-use reqwest;
-use hls_m3u8::MediaPlaylist;
+
+use hyper;
+use hyper_tls;
+
+use http::header::{self};//, HeaderName};
+use http::Request;
+
+//use hls_m3u8::MediaPlaylist;
 
 use indicatif::ProgressBar;
 
-fn get_redirect_url(core: &mut Core, url: String) -> Result<String, StreamError> {
-    let client = hyper::Client::new(&core.handle());
+use serde::de::DeserializeOwned;
+use serde_json;
 
+type HttpsClient = hyper::Client<hyper_tls::HttpsConnector<hyper::client::HttpConnector>>;
+
+fn get_redirect_url(core: &mut Core, url: String) -> Result<String, StreamError> {
+    let client = hyper::Client::new();
     let uri = url.parse()?;
 
     let work = client.get(uri);
@@ -25,35 +34,52 @@ fn get_redirect_url(core: &mut Core, url: String) -> Result<String, StreamError>
         Err(why) => return Err(StreamError::Hyper(why)),
     };
 
-    match res.headers().get::<Location>() {
+    let headers = res.headers();
+
+    if headers.contains_key(header::LOCATION) {
+        Ok(String::from(headers[header::LOCATION].to_str()?))
+    } else {
+        Ok(url)
+    }
+    /*
+    match res.headers().get(header::LOCATION) {
         Some(loc) => Ok(loc.parse::<String>().unwrap()),
         None => Ok(url),
     }
+    */
 }
 
-pub fn flv_download(core: &mut Core, url: String, path: String) -> Result<(), StreamError> {
+pub fn flv_download(_core: &mut Core, _url: String, _path: String) -> Result<(), StreamError> {
+    Err(StreamError::Rsget(RsgetError::new("NOT IMPLEMENTED!!")))
+    /*
     let real_url = get_redirect_url(core, url)?;
 
-    let client = hyper::Client::new(&core.handle());
+    let client = hyper::Client::new();
 
     let mut file = File::create(&path)?;
 
     let uri = real_url.parse()?;
     let mut size: f64 = 0.0;
     let spinner = ProgressBar::new_spinner();
-    let work = client.get(uri).and_then(|res| {
-        res.body().for_each(|chunk| {
-            spinner.tick();
-            size = size + (chunk.len() as f64);
-            spinner.set_message(&format!("Size: {:.2} MB", size / 1000.0 / 1000.0));
-            file.write_all(&chunk).map_err(From::from)
-        })
-    });
-    match core.run(work) {
-        Ok(_) => Ok(()),
-        Err(why) => Err(StreamError::Hyper(why)),
-    }
+    let work = client
+        .get(uri)
+        .map_err(|e| StreamError::from(e))
+        .and_then(|res| {
+            res.body()
+                .map_err(|e| StreamError::from(e))
+                .for_each(|chunk| {
+                    spinner.tick();
+                    size = size + (chunk.len() as f64);
+                    spinner.set_message(&format!("Size: {:.2} MB", size / 1000.0 / 1000.0));
+                    file
+                        .write_all(&chunk)
+                        .map_err(|e| StreamError::from(e))
+                })
+        });
+    core.run(work)
+        */
 }
+
 
 pub fn ffmpeg_download(url: String, path: String) -> Result<(), StreamError> {
     let comm = Command::new("ffmpeg")
@@ -76,18 +102,68 @@ pub fn ffmpeg_download(url: String, path: String) -> Result<(), StreamError> {
     }
 }
 
-pub fn afreeca_m3u8_download(url: String, _base_path: String, _is_live: bool) -> Result<(), StreamError> {
-    let m3u8 = reqwest::get(&url).unwrap().text().unwrap();
-    let playlist = m3u8.parse::<MediaPlaylist>();
-    let fst_seg = match playlist {
-        Ok(s) => {
-            s.segments()[0].uri().clone()
+pub fn download_to_string(client: HttpsClient, req: Request<hyper::Body>) -> impl Future<Item = String, Error = StreamError> {
+    let f = client.request(req)
+        .map_err(|e| StreamError::from(e))
+        .and_then(|resp| {
+            debug!("Status: {}", resp.status());
+            debug!("Headers:\n{:#?}", resp.headers());
+            resp.into_body().concat2().map_err(|e| StreamError::from(e)).map(|chunk| {
+                let v = chunk.to_vec();
+                String::from_utf8_lossy(&v).to_string()
+            })
+        });
+    f
+}
+
+pub fn download_to_file(client: HttpsClient, req: Request<hyper::Body>, path: String, spin: bool) -> impl Future<Item = (), Error = StreamError> {
+    client
+        .request(req)
+        .map_err(|e| StreamError::from(e))
+        .and_then(|res| {
+            //debug!("Status: {}", res.status());
+            //debug!("Headers:\n{:#?}", res.headers());
+            let mut file = File::create("./test.flv").unwrap();
+            res.body()
+                .map_err(|e| StreamError::from(e))
+                .for_each(move |chunk| {
+                    info!("CHUNK!");
+                    file
+                        .write_all(&chunk)
+                        .map_err(|e| StreamError::from(e))
+            })
+        }).map_err(|e| StreamError::from(e))
+        .map(|_| ())
+}
+
+pub fn download_and_de<T: DeserializeOwned>(client: HttpsClient, req: Request<hyper::Body>) -> impl Future<Item = Result<T,StreamError>, Error = StreamError> {
+    let f = client.request(req)
+        .map_err(|e| StreamError::from(e))
+        .and_then(|resp| {
+            debug!("Status: {}", resp.status());
+            debug!("Headers:\n{:#?}", resp.headers());
+            resp.into_body().concat2().map_err(|e| StreamError::from(e)).map(|chunk| {
+                let v = chunk.to_vec();
+                let ds: Result<T,StreamError> = serde_json::from_slice(&v).map_err(|e| StreamError::from(e));
+                ds
+            })
+        });
+    f
+}
+
+pub fn make_request(uri: &str, headers: Option<(&str, &str)>) -> Request<hyper::Body> {
+    let req = match headers {
+        Some(a) => {
+            Request::builder()
+                .uri(uri)
+                .header(a.0,a.1)
+                .body(Default::default())
         },
-        Err(why) => {
-            info!("{}", why);
-            return Err(StreamError::Rsget(RsgetError::new("Placeholder m3u8 error")));
-        },
+        None => {
+            Request::builder()
+                .uri(uri)
+                .body(Default::default())
+        }
     };
-    println!("fst segment: {}", fst_seg);
-    Ok(())
+    req.unwrap()
 }

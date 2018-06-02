@@ -6,11 +6,11 @@ authors = ["Valdemar Erk <v@erk.io>"]
 [dependencies]
 tokio = "0.1"
 futures = "0.1.21"
-hyper = { git = "https://github.com/hyperium/hyper" }
-hyper-tls = { git = "https://github.com/hyperium/hyper-tls" } #"0.1.3"
+http = "*"
+hyper = "0.12"#{ git = "https://github.com/hyperium/hyper" }
+hyper-tls = "0.2"#{ git = "https://github.com/hyperium/hyper-tls" } #"0.1.3"
 #rsget_lib = { path = "./../rsget_lib" }
 log = "0.4"
-
 
 hls_m3u8 = "0.1.1"
 #futures = "0.1"

@@ -1,18 +1,26 @@
 use Streamable;
-use reqwest;
 use std::time::{SystemTime, UNIX_EPOCH};
+
+use futures::Future;
 use regex::Regex;
 
 use utils::error::StreamError;
 use utils::error::RsgetError;
 
-use utils::downloaders::flv_download;
+use utils::downloaders::download_to_file;
+use utils::downloaders::download_and_de;
+use utils::downloaders::download_to_string;
+use utils::downloaders::make_request;
 use chrono::prelude::*;
 
 use tokio_core::reactor::Core;
-use hyper::header::{Headers, UserAgent};
 
-use std;
+use hyper;
+use hyper_tls;
+
+use tokio;
+use tokio::runtime::current_thread::Runtime;
+
 use md5;
 
 #[allow(dead_code)]
@@ -171,30 +179,27 @@ pub struct Douyu {
 
 impl Streamable for Douyu {
     fn new(url: String) -> Result<Box<Douyu>, StreamError> {
+        let mut runtime = Runtime::new().unwrap();
+        
+        let https = hyper_tls::HttpsConnector::new(4).unwrap();
+        let client = hyper::Client::builder()
+            .build::<_, hyper::Body>(https);
+        
         let room_id_re = Regex::new(r"com/([a-zA-Z0-9]+)").unwrap();
         let cap = room_id_re.captures(&url).unwrap();
 
-        let client = reqwest::Client::new();
-        let mut headers = Headers::new();
-        headers.set(UserAgent::new(
-            "Mozilla/5.0 (compatible; MSIE 10.0; \
+        let head = "Mozilla/5.0 (compatible; MSIE 10.0; \
              Windows Phone 8.0; Trident/6.0; IEMobile/10.0; \
-             ARM; Touch; NOKIA; Lumia 920)",
-        ));
+             ARM; Touch; NOKIA; Lumia 920)";
+        
 
         let room_id = match cap[1].parse::<u32>() {
             Ok(rid) => rid,
             Err(_) => {
-                let html = match client.get(&url).send() {
-                    Ok(mut res) => res.text().unwrap(),
-                    Err(why) => {
-                        info!("Failed getting url");
-                        debug!("Failed getting url because of {}", why);
-                        std::process::exit(1)
-                    }
-                };
                 let re_room_id = Regex::new(r#""room_id" *:([0-9]+),"#).unwrap();
-                let cap = re_room_id.captures(&html).unwrap();
+                let req = make_request(&url, None);
+                let body: String = runtime.block_on(download_to_string(client.clone(), req))?;
+                let cap = re_room_id.captures(&body).unwrap();
                 cap[1].parse::<u32>().unwrap()
             }
         };
@@ -221,25 +226,15 @@ impl Streamable for Douyu {
         let sign = format!("{:x}", hasher.compute());
 
         let json_url = format!("https://capi.douyucdn.cn/api/v1/{}&auth={}", &suffix, &sign);
-
-        let mut resp = match client.get(&json_url).headers(headers.clone()).send() {
-            Ok(res) => res,
-            Err(why) => {
-                info!("1 Error when getting site info ({})", why);
-                std::process::exit(1)
-            }
-        };
-
-        //println!("json: {}", &resp.text().unwrap());
-
-        let jres: Result<DouyuRoom, reqwest::Error> = resp.json();
+        let json_req = make_request(&json_url, Some(("User-Agent", head)));
+        let jres: Result<DouyuRoom, StreamError> = runtime.block_on(download_and_de::<DouyuRoom>(client, json_req))?;
         match jres {
             Ok(jre) => Ok(Box::new(Douyu {
                 data: jre,
                 room_id: room_id,
             })),
             Err(why) => {
-                Err(StreamError::Reqwest(why))
+                Err(StreamError::from(why))
             }
         }
     }
@@ -280,7 +275,10 @@ impl Streamable for Douyu {
         )
     }
 
-    fn download(&self, core: &mut Core, path: String) -> Result<(), StreamError> {
+    fn download(&self, _core: &mut Core, path: String) -> Result<(), StreamError> {
+        let https = hyper_tls::HttpsConnector::new(4).unwrap();
+        let client = hyper::Client::builder()
+            .build::<_, hyper::Body>(https);
         if !self.is_online() {
             Err(StreamError::Rsget(RsgetError::new("Stream offline")))
         } else {
@@ -296,7 +294,7 @@ impl Streamable for Douyu {
                 local.hour(),
                 local.minute(),
             );
-            flv_download(core, self.get_stream(), path)
+            Ok(tokio::run(download_to_file(client, make_request(&self.get_stream(), None), path, true).map_err(|_|())))
         }
     }
 }
