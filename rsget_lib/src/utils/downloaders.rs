@@ -13,10 +13,12 @@ use futures::Async::NotReady;
 use tokio_fs::file::File as TokioFile;
 
 use tokio_core::reactor::Core;
+use tokio::runtime::current_thread::Runtime;
 
 use hyper::body::Payload;
 use hyper;
 use hyper_tls;
+use hyper::header::LOCATION;
 
 use http::header::{self};//, HeaderName};
 use http::Request;
@@ -138,15 +140,44 @@ client
                     .map_err(|e| StreamError::from(e))
             })
     });
-*/
+ */
 
-pub fn download_to_file(client: HttpsClient, req: Request<hyper::Body>, _path: String, _spin: bool) -> impl Future<Item = (), Error = StreamError> {
-    let mut file = File::create("./test.flv").unwrap();
-    client
-        .request(req)
+pub fn get_redirection(client: HttpsClient, req: Request<hyper::Body>) -> Option<hyper::Uri> {
+    let mut runtime = Runtime::new().unwrap();
+    let work = client.request(req)
+        .map(|r|
+             if (r.status().is_redirection()) {
+                 Some(r.headers()[LOCATION]
+                     .to_str()
+                     .unwrap()
+                     .parse()
+                     .unwrap())
+             } else {
+                 None
+             }
+        );
+    runtime.block_on(work).unwrap()
+}
+
+pub fn download_to_file(client: HttpsClient, mut req: Request<hyper::Body>, path: String, _spin: bool) -> impl Future<Item = (), Error = StreamError> {
+    let ouri = req.uri().clone();
+    let mut file = File::create(path).unwrap();
+    let resp = match get_redirection(client.clone(), req) {
+        Some(uri) => {
+            let new_req = make_request(&uri.to_string(), None);
+            client.request(new_req)
+        },
+        None => {
+            let new_req = make_request(&ouri.to_string(), None);
+            client.request(new_req)
+        },
+    };
+    resp
         .map_err(|e| StreamError::from(e))
-        .map(|res| {
-            res.into_body().map(move |chunk| {
+        .and_then(|res| {
+            debug!("dtf Status: {}", res.status());
+            debug!("dtf Headers:\n{:#?}", res.headers());
+            res.into_body().map_err(|e| StreamError::from(e)).for_each(move |chunk| {
                     file.write_all(&chunk)
                         .map_err(|e| StreamError::from(e))
                 })
