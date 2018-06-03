@@ -25,7 +25,7 @@ use http::Request;
 
 //use hls_m3u8::MediaPlaylist;
 
-//use indicatif::ProgressBar;
+use indicatif::ProgressBar;
 
 use serde::de::DeserializeOwned;
 use serde_json;
@@ -159,7 +159,7 @@ pub fn get_redirection(client: HttpsClient, req: Request<hyper::Body>) -> Option
     runtime.block_on(work).unwrap()
 }
 
-pub fn download_to_file(client: HttpsClient, mut req: Request<hyper::Body>, path: String, _spin: bool) -> impl Future<Item = (), Error = StreamError> {
+pub fn download_to_file(client: HttpsClient, mut req: Request<hyper::Body>, path: String, spin: bool) -> impl Future<Item = (), Error = StreamError> {
     let ouri = req.uri().clone();
     let mut file = File::create(path).unwrap();
     let resp = match get_redirection(client.clone(), req) {
@@ -174,13 +174,20 @@ pub fn download_to_file(client: HttpsClient, mut req: Request<hyper::Body>, path
     };
     resp
         .map_err(|e| StreamError::from(e))
-        .and_then(|res| {
+        .and_then(move |res| {
             debug!("dtf Status: {}", res.status());
             debug!("dtf Headers:\n{:#?}", res.headers());
+            let mut size: f64 = 0.0;
+            let spinner = ProgressBar::new_spinner();
             res.into_body().map_err(|e| StreamError::from(e)).for_each(move |chunk| {
-                    file.write_all(&chunk)
-                        .map_err(|e| StreamError::from(e))
-                })
+                if spin {
+                    spinner.tick();
+                    size = size + (chunk.len() as f64);
+                    spinner.set_message(&format!("Size: {:.2} MB", size / 1000.0 / 1000.0));
+                }
+                file.write_all(&chunk)
+                    .map_err(|e| StreamError::from(e))
+            })
         }).map(|_| ())
 }
 
