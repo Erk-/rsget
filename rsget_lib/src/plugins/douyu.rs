@@ -276,6 +276,7 @@ impl Streamable for Douyu {
     }
 
     fn download(&self, _core: &mut Core, path: String) -> Result<(), StreamError> {
+        let mut runtime = Runtime::new().unwrap();
         let https = hyper_tls::HttpsConnector::new(4).unwrap();
         let client = hyper::Client::builder()
             .build::<_, hyper::Body>(https);
@@ -294,7 +295,7 @@ impl Streamable for Douyu {
                 local.hour(),
                 local.minute(),
             );
-            Ok(tokio::run(download_to_file(client, make_request(&self.get_stream(), None), path, true).map_err(|_|())))
+            runtime.block_on(download_to_file(client, make_request(&self.get_stream(), None), path, true)).map(|_|())
         }
     }
 }

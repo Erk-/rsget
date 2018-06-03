@@ -7,8 +7,14 @@ use std::process::Command;
 
 use futures::{Stream, Future};
 
+use futures::Async::Ready;
+use futures::Async::NotReady;
+
+use tokio_fs::file::File as TokioFile;
+
 use tokio_core::reactor::Core;
 
+use hyper::body::Payload;
 use hyper;
 use hyper_tls;
 
@@ -17,7 +23,7 @@ use http::Request;
 
 //use hls_m3u8::MediaPlaylist;
 
-use indicatif::ProgressBar;
+//use indicatif::ProgressBar;
 
 use serde::de::DeserializeOwned;
 use serde_json;
@@ -116,24 +122,35 @@ pub fn download_to_string(client: HttpsClient, req: Request<hyper::Body>) -> imp
     f
 }
 
-pub fn download_to_file(client: HttpsClient, req: Request<hyper::Body>, path: String, spin: bool) -> impl Future<Item = (), Error = StreamError> {
+/*
+client
+    .get(uri)
+    .map_err(|e| StreamError::from(e))
+    .and_then(|res| {
+        res.body()
+            .map_err(|e| StreamError::from(e))
+            .for_each(|chunk| {
+                spinner.tick();
+                size = size + (chunk.len() as f64);
+                spinner.set_message(&format!("Size: {:.2} MB", size / 1000.0 / 1000.0));
+                file
+                    .write_all(&chunk)
+                    .map_err(|e| StreamError::from(e))
+            })
+    });
+*/
+
+pub fn download_to_file(client: HttpsClient, req: Request<hyper::Body>, _path: String, _spin: bool) -> impl Future<Item = (), Error = StreamError> {
+    let mut file = File::create("./test.flv").unwrap();
     client
         .request(req)
         .map_err(|e| StreamError::from(e))
-        .and_then(|res| {
-            //debug!("Status: {}", res.status());
-            //debug!("Headers:\n{:#?}", res.headers());
-            let mut file = File::create("./test.flv").unwrap();
-            res.body()
-                .map_err(|e| StreamError::from(e))
-                .for_each(move |chunk| {
-                    info!("CHUNK!");
-                    file
-                        .write_all(&chunk)
+        .map(|res| {
+            res.into_body().map(move |chunk| {
+                    file.write_all(&chunk)
                         .map_err(|e| StreamError::from(e))
-            })
-        }).map_err(|e| StreamError::from(e))
-        .map(|_| ())
+                })
+        }).map(|_| ())
 }
 
 pub fn download_and_de<T: DeserializeOwned>(client: HttpsClient, req: Request<hyper::Body>) -> impl Future<Item = Result<T,StreamError>, Error = StreamError> {

@@ -13,10 +13,12 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 extern crate tokio;
+extern crate tokio_fs;
 extern crate tokio_core;
 extern crate http;
 extern crate url;
 extern crate hls_m3u8;
+
 
 use tokio_core::reactor::Core;
 use utils::error::StreamError;
