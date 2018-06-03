@@ -1,6 +1,6 @@
 [package]
 name = "rsget_cli"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Valdemar Erk <valdemar@erk.io>"]
 
 [dependencies]
@@ -9,6 +9,8 @@ clap = "2.31.2"
 log = "0.4.1"
 pretty_env_logger = "0.2"
 tokio-core = "0.1"
+hyper = "0.12"
+hyper-tls = "0.2"
 
 [[bin]]
 name = "rsget"

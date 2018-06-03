@@ -7,20 +7,11 @@ use std::process::Command;
 
 use futures::{Stream, Future};
 
-use futures::Async::Ready;
-use futures::Async::NotReady;
-
-use tokio_fs::file::File as TokioFile;
-
-use tokio_core::reactor::Core;
 use tokio::runtime::current_thread::Runtime;
 
-use hyper::body::Payload;
 use hyper;
-use hyper_tls;
 use hyper::header::LOCATION;
 
-use http::header::{self};//, HeaderName};
 use http::Request;
 
 //use hls_m3u8::MediaPlaylist;
@@ -30,64 +21,7 @@ use indicatif::ProgressBar;
 use serde::de::DeserializeOwned;
 use serde_json;
 
-type HttpsClient = hyper::Client<hyper_tls::HttpsConnector<hyper::client::HttpConnector>>;
-
-fn get_redirect_url(core: &mut Core, url: String) -> Result<String, StreamError> {
-    let client = hyper::Client::new();
-    let uri = url.parse()?;
-
-    let work = client.get(uri);
-    let res = match core.run(work) {
-        Ok(r) => r,
-        Err(why) => return Err(StreamError::Hyper(why)),
-    };
-
-    let headers = res.headers();
-
-    if headers.contains_key(header::LOCATION) {
-        Ok(String::from(headers[header::LOCATION].to_str()?))
-    } else {
-        Ok(url)
-    }
-    /*
-    match res.headers().get(header::LOCATION) {
-        Some(loc) => Ok(loc.parse::<String>().unwrap()),
-        None => Ok(url),
-    }
-    */
-}
-
-pub fn flv_download(_core: &mut Core, _url: String, _path: String) -> Result<(), StreamError> {
-    Err(StreamError::Rsget(RsgetError::new("NOT IMPLEMENTED!!")))
-    /*
-    let real_url = get_redirect_url(core, url)?;
-
-    let client = hyper::Client::new();
-
-    let mut file = File::create(&path)?;
-
-    let uri = real_url.parse()?;
-    let mut size: f64 = 0.0;
-    let spinner = ProgressBar::new_spinner();
-    let work = client
-        .get(uri)
-        .map_err(|e| StreamError::from(e))
-        .and_then(|res| {
-            res.body()
-                .map_err(|e| StreamError::from(e))
-                .for_each(|chunk| {
-                    spinner.tick();
-                    size = size + (chunk.len() as f64);
-                    spinner.set_message(&format!("Size: {:.2} MB", size / 1000.0 / 1000.0));
-                    file
-                        .write_all(&chunk)
-                        .map_err(|e| StreamError::from(e))
-                })
-        });
-    core.run(work)
-        */
-}
-
+use HttpsClient;
 
 pub fn ffmpeg_download(url: String, path: String) -> Result<(), StreamError> {
     let comm = Command::new("ffmpeg")
@@ -124,29 +58,12 @@ pub fn download_to_string(client: HttpsClient, req: Request<hyper::Body>) -> imp
     f
 }
 
-/*
-client
-    .get(uri)
-    .map_err(|e| StreamError::from(e))
-    .and_then(|res| {
-        res.body()
-            .map_err(|e| StreamError::from(e))
-            .for_each(|chunk| {
-                spinner.tick();
-                size = size + (chunk.len() as f64);
-                spinner.set_message(&format!("Size: {:.2} MB", size / 1000.0 / 1000.0));
-                file
-                    .write_all(&chunk)
-                    .map_err(|e| StreamError::from(e))
-            })
-    });
- */
-
-pub fn get_redirection(client: HttpsClient, req: Request<hyper::Body>) -> Option<hyper::Uri> {
+pub fn get_redirection(client: HttpsClient, req: Request<hyper::Body>) -> hyper::client::ResponseFuture {
     let mut runtime = Runtime::new().unwrap();
+    let ouri = req.uri().clone();
     let work = client.request(req)
         .map(|r|
-             if (r.status().is_redirection()) {
+             if r.status().is_redirection() {
                  Some(r.headers()[LOCATION]
                      .to_str()
                      .unwrap()
@@ -156,22 +73,24 @@ pub fn get_redirection(client: HttpsClient, req: Request<hyper::Body>) -> Option
                  None
              }
         );
-    runtime.block_on(work).unwrap()
-}
 
-pub fn download_to_file(client: HttpsClient, mut req: Request<hyper::Body>, path: String, spin: bool) -> impl Future<Item = (), Error = StreamError> {
-    let ouri = req.uri().clone();
-    let mut file = File::create(path).unwrap();
-    let resp = match get_redirection(client.clone(), req) {
+    let resp: Option<hyper::Uri> = runtime.block_on(work).unwrap();
+    
+    match resp {
         Some(uri) => {
             let new_req = make_request(&uri.to_string(), None);
-            client.request(new_req)
+            return client.request(new_req);
         },
         None => {
             let new_req = make_request(&ouri.to_string(), None);
-            client.request(new_req)
+            return client.request(new_req);
         },
     };
+}
+
+pub fn download_to_file(client: HttpsClient, req: Request<hyper::Body>, path: String, spin: bool) -> impl Future<Item = (), Error = StreamError> {
+    let mut file = File::create(path).unwrap();
+    let resp = get_redirection(client,req);
     resp
         .map_err(|e| StreamError::from(e))
         .and_then(move |res| {

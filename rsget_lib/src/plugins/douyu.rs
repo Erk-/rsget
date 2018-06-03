@@ -1,7 +1,6 @@
 use Streamable;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use futures::Future;
 use regex::Regex;
 
 use utils::error::StreamError;
@@ -13,15 +12,13 @@ use utils::downloaders::download_to_string;
 use utils::downloaders::make_request;
 use chrono::prelude::*;
 
-use tokio_core::reactor::Core;
+//use tokio_core::reactor::Core;
 
-use hyper;
-use hyper_tls;
-
-use tokio;
 use tokio::runtime::current_thread::Runtime;
 
 use md5;
+
+use HttpsClient;
 
 #[allow(dead_code)]
 #[allow(non_snake_case)]
@@ -178,12 +175,10 @@ pub struct Douyu {
 }
 
 impl Streamable for Douyu {
-    fn new(url: String) -> Result<Box<Douyu>, StreamError> {
-        let mut runtime = Runtime::new().unwrap();
-        
-        let https = hyper_tls::HttpsConnector::new(4).unwrap();
-        let client = hyper::Client::builder()
-            .build::<_, hyper::Body>(https);
+    fn new(client: HttpsClient, url: String) -> Result<Box<Douyu>, StreamError> {
+        let mut runtime = Runtime::new()?;
+
+        let client = client.clone();
         
         let room_id_re = Regex::new(r"com/([a-zA-Z0-9]+)").unwrap();
         let cap = room_id_re.captures(&url).unwrap();
@@ -234,7 +229,7 @@ impl Streamable for Douyu {
                 room_id: room_id,
             })),
             Err(why) => {
-                Err(StreamError::from(why))
+                Err(why)
             }
         }
     }
@@ -275,11 +270,9 @@ impl Streamable for Douyu {
         )
     }
 
-    fn download(&self, _core: &mut Core, path: String) -> Result<(), StreamError> {
+    fn download(&self, client: HttpsClient, path: String) -> Result<(), StreamError> {
         let mut runtime = Runtime::new().unwrap();
-        let https = hyper_tls::HttpsConnector::new(4).unwrap();
-        let client = hyper::Client::builder()
-            .build::<_, hyper::Body>(https);
+        let own_client = client.clone();
         if !self.is_online() {
             Err(StreamError::Rsget(RsgetError::new("Stream offline")))
         } else {
@@ -295,7 +288,13 @@ impl Streamable for Douyu {
                 local.hour(),
                 local.minute(),
             );
-            runtime.block_on(download_to_file(client, make_request(&self.get_stream(), None), path, true)).map(|_|())
+            runtime.block_on(
+                download_to_file(
+                    own_client,
+                    make_request(&self.get_stream(), None),
+                    path,
+                    true)
+            ).map(|_|())
         }
     }
 }

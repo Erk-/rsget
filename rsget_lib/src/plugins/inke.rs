@@ -1,15 +1,15 @@
 use Streamable;
-use reqwest;
 use regex::Regex;
 
 use utils::error::StreamError;
 use utils::error::RsgetError;
-use utils::downloaders::flv_download;
 use chrono::prelude::*;
 
-use tokio_core::reactor::Core;
-
-use std;
+use utils::downloaders::download_to_file;
+use utils::downloaders::download_and_de;
+use utils::downloaders::make_request;
+use HttpsClient;
+use tokio::runtime::current_thread::Runtime;
 
 #[allow(dead_code)]
 #[allow(non_snake_case)]
@@ -82,21 +82,16 @@ pub struct Inke {
 }
 
 impl Streamable for Inke {
-    fn new(url: String) -> Result<Box<Inke>, StreamError> {
+    fn new(client: HttpsClient, url: String) -> Result<Box<Inke>, StreamError> {
+        let mut runtime = Runtime::new()?;
         let re_inke: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?inke\.cn/live\.html\?uid=([0-9]+)").unwrap();
         let cap = re_inke.captures(&url).unwrap();
         let json_url = format!(
             "http://baseapi.busi.inke.cn/live/LiveInfo?uid={}",
             &cap[1]
         );
-        let mut resp = match reqwest::get(&json_url) {
-            Ok(res) => res,
-            Err(why) => {
-                info!("Error when getting site info ({})", why);
-                std::process::exit(1)
-            }
-        };
-        let jres: Result<InkeStruct, reqwest::Error> = resp.json();
+        let json_req = make_request(&json_url, None);
+        let jres = runtime.block_on(download_and_de::<InkeStruct>(client, json_req))?;
         match jres {
             Ok(jre) => Ok(Box::new(Inke {
                 url: String::from(url.as_str()),
@@ -104,7 +99,7 @@ impl Streamable for Inke {
                 inke_info: jre,
             })),
             Err(why) => {
-                Err(StreamError::Reqwest(why))
+                Err(why)
             }
         }
     }
@@ -145,7 +140,8 @@ impl Streamable for Inke {
         )
     }
 
-    fn download(&self, core: &mut Core, path: String) -> Result<(), StreamError> {
+    fn download(&self, client: HttpsClient, path: String) -> Result<(), StreamError> {
+        let mut runtime = Runtime::new()?;
         if !self.is_online() {
             Err(StreamError::Rsget(RsgetError::new("Stream offline")))
         } else {
@@ -155,7 +151,13 @@ impl Streamable for Inke {
                 self.get_author().unwrap(),
                 self.room_id
             );
-            flv_download(core, self.get_stream(), path)
+            runtime.block_on(
+                download_to_file(
+                    client,
+                    make_request(&self.get_stream(), None),
+                    path,
+                    true)
+            ).map(|_|())
         }
     }
 }

@@ -13,15 +13,13 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 extern crate tokio;
-extern crate tokio_fs;
-extern crate tokio_core;
 extern crate http;
 extern crate url;
 extern crate hls_m3u8;
 
-
-use tokio_core::reactor::Core;
 use utils::error::StreamError;
+
+pub type HttpsClient = hyper::Client<hyper_tls::HttpsConnector<hyper::client::HttpConnector>>;
 
 pub trait Downloadable {
     fn new(url: String) -> Self;
@@ -32,7 +30,7 @@ pub trait Downloadable {
 }
 
 pub trait Streamable {
-    fn new(url: String) -> Result<Box<Self>, StreamError>
+    fn new(client: HttpsClient, url: String) -> Result<Box<Self>, StreamError>
     where
         Self: Sized;
     fn get_title(&self) -> Option<String>;
@@ -42,7 +40,7 @@ pub trait Streamable {
     fn get_stream(&self) -> String;
     fn get_ext(&self) -> String;
     fn get_default_name(&self) -> String;
-    fn download(&self, core: &mut Core, path: String) -> Result<(), StreamError>;
+    fn download(&self, client: HttpsClient, path: String) -> Result<(), StreamError>;
 }
 pub mod utils;
 pub mod plugins;
