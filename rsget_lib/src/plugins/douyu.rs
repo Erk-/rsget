@@ -192,7 +192,7 @@ impl Streamable for Douyu {
             Ok(rid) => rid,
             Err(_) => {
                 let re_room_id = Regex::new(r#""room_id" *:([0-9]+),"#).unwrap();
-                let req = make_request(&url, None);
+                let req = make_request(&url, None)?;
                 let body: String = runtime.block_on(download_to_string(client.clone(), req))?;
                 let cap = re_room_id.captures(&body).unwrap();
                 cap[1].parse::<u32>().unwrap()
@@ -221,7 +221,7 @@ impl Streamable for Douyu {
         let sign = format!("{:x}", hasher.compute());
 
         let json_url = format!("https://capi.douyucdn.cn/api/v1/{}&auth={}", &suffix, &sign);
-        let json_req = make_request(&json_url, Some(("User-Agent", head)));
+        let json_req = make_request(&json_url, Some(("User-Agent", head)))?;
         let jres: Result<DouyuRoom, StreamError> = runtime.block_on(download_and_de::<DouyuRoom>(client, json_req))?;
         match jres {
             Ok(jre) => Ok(Box::new(Douyu {
@@ -291,7 +291,7 @@ impl Streamable for Douyu {
             runtime.block_on(
                 download_to_file(
                     own_client,
-                    make_request(&self.get_stream(), None),
+                    make_request(&self.get_stream(), None)?,
                     path,
                     true)
             ).map(|_|())

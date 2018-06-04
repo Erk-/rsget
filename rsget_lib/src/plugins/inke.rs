@@ -90,7 +90,7 @@ impl Streamable for Inke {
             "http://baseapi.busi.inke.cn/live/LiveInfo?uid={}",
             &cap[1]
         );
-        let json_req = make_request(&json_url, None);
+        let json_req = make_request(&json_url, None)?;
         let jres = runtime.block_on(download_and_de::<InkeStruct>(client, json_req))?;
         match jres {
             Ok(jre) => Ok(Box::new(Inke {
@@ -154,7 +154,7 @@ impl Streamable for Inke {
             runtime.block_on(
                 download_to_file(
                     client,
-                    make_request(&self.get_stream(), None),
+                    make_request(&self.get_stream(), None)?,
                     path,
                     true)
             ).map(|_|())

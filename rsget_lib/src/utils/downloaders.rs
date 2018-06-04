@@ -19,6 +19,7 @@ use http::Request;
 use indicatif::ProgressBar;
 
 use serde::de::DeserializeOwned;
+use serde::ser;
 use serde_json;
 
 use HttpsClient;
@@ -79,11 +80,11 @@ pub fn get_redirection(client: HttpsClient, req: Request<hyper::Body>) -> hyper:
     match resp {
         Some(uri) => {
             let new_req = make_request(&uri.to_string(), None);
-            return client.request(new_req);
+            return client.request(new_req.unwrap());
         },
         None => {
             let new_req = make_request(&ouri.to_string(), None);
-            return client.request(new_req);
+            return client.request(new_req.unwrap());
         },
     };
 }
@@ -125,7 +126,7 @@ pub fn download_and_de<T: DeserializeOwned>(client: HttpsClient, req: Request<hy
     f
 }
 
-pub fn make_request(uri: &str, headers: Option<(&str, &str)>) -> Request<hyper::Body> {
+pub fn make_request(uri: &str, headers: Option<(&str, &str)>) -> Result<Request<hyper::Body>, StreamError> {
     let req = match headers {
         Some(a) => {
             Request::builder()
@@ -139,5 +140,30 @@ pub fn make_request(uri: &str, headers: Option<(&str, &str)>) -> Request<hyper::
                 .body(Default::default())
         }
     };
-    req.unwrap()
+    req.map_err(|e| StreamError::from(e))
+}
+
+pub fn make_request_2<T>(uri: &str, headers: Option<(&str, &str)>, body: T) -> Result<Request<T>, StreamError> {
+    let req = match headers {
+        Some(a) => {
+            Request::builder()
+                .uri(uri)
+                .header(a.0,a.1)
+                .body(body)
+        },
+        None => {
+            Request::builder()
+                .uri(uri)
+                .body(body)
+        }
+    };
+    req.map_err(|e| StreamError::from(e))
+}
+
+pub fn serialize_request<T>(req: Request<T>) -> serde_json::Result<Request<Vec<u8>>>
+    where T: ser::Serialize,
+{
+    let (parts, body) = req.into_parts();
+    let body = serde_json::to_vec(&body)?;
+    Ok(Request::from_parts(parts, body))
 }

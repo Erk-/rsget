@@ -8,7 +8,6 @@ rsget_lib = { path = "../rsget_lib" }
 clap = "2.31.2"
 log = "0.4.1"
 pretty_env_logger = "0.2"
-tokio-core = "0.1"
 hyper = "0.12"
 hyper-tls = "0.2"
 

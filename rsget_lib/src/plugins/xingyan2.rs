@@ -107,7 +107,7 @@ impl Streamable for Xingyan2 {
         let room_id_re = Regex::new(r"/([0-9]+)").unwrap();
         let cap = room_id_re.captures(&url).unwrap();
         let site_url = format!("https://xingyan.panda.tv/{}", &cap[1]);
-        let site_req = make_request(&site_url, None);
+        let site_req = make_request(&site_url, None)?;
         let res: Result<String, StreamError> = runtime.block_on(
             download_to_string(client.clone(), site_req));
 
@@ -182,7 +182,7 @@ impl Streamable for Xingyan2 {
             runtime.block_on(
                 download_to_file(
                     client,
-                    make_request(&self.get_stream(), None),
+                    make_request(&self.get_stream(), None)?,
                     path,
                     true)
             ).map(|_|())

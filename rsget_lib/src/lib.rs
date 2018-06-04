@@ -7,11 +7,11 @@ extern crate indicatif;
 extern crate log;
 extern crate md5;
 extern crate regex;
-extern crate reqwest;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
+extern crate serde_urlencoded;
 extern crate tokio;
 extern crate http;
 extern crate url;

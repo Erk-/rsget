@@ -182,7 +182,7 @@ impl Streamable for PandaTv {
             &cap[1],
             ts
         );
-        let json_req = make_request(&json_url, None);
+        let json_req = make_request(&json_url, None)?;
         let jres: Result<PandaTvRoom, StreamError> =
             runtime.block_on(download_and_de::<PandaTvRoom>(client, json_req))?;
         match jres {
@@ -266,7 +266,7 @@ impl Streamable for PandaTv {
             runtime.block_on(
                 download_to_file(
                     client,
-                    make_request(&self.get_stream(), None),
+                    make_request(&self.get_stream(), None)?,
                     path,
                     true)
             ).map(|_|())
