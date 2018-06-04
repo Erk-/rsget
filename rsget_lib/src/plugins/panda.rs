@@ -14,6 +14,7 @@ use chrono::prelude::*;
 use tokio::runtime::current_thread::Runtime;
 
 use HttpsClient;
+use std::fs::File;
 
 #[allow(dead_code)]
 #[allow(non_snake_case)]
@@ -267,7 +268,7 @@ impl Streamable for PandaTv {
                 download_to_file(
                     client,
                     make_request(&self.get_stream(), None)?,
-                    path,
+                    File::create(path)?,
                     true)
             ).map(|_|())
         }

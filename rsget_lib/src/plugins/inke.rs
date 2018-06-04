@@ -11,6 +11,8 @@ use utils::downloaders::make_request;
 use HttpsClient;
 use tokio::runtime::current_thread::Runtime;
 
+use std::fs::File;
+
 #[allow(dead_code)]
 #[allow(non_snake_case)]
 #[derive(Clone, Debug, Deserialize)]
@@ -155,7 +157,7 @@ impl Streamable for Inke {
                 download_to_file(
                     client,
                     make_request(&self.get_stream(), None)?,
-                    path,
+                    File::create(path)?,
                     true)
             ).map(|_|())
         }

@@ -18,7 +18,7 @@ use tokio_core::reactor::Core;
 
 //use std::{thread, time};
 use std::str;
-//use std::io::Read;
+use std::fs::File;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct AfreecaGetInfo {

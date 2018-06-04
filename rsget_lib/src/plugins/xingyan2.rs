@@ -13,6 +13,8 @@ use utils::error::RsgetError;
 
 use chrono::prelude::*;
 
+use std::fs::File;
+
 #[allow(dead_code)]
 #[allow(non_snake_case)]
 #[derive(Clone, Debug, Deserialize)]
@@ -183,7 +185,7 @@ impl Streamable for Xingyan2 {
                 download_to_file(
                     client,
                     make_request(&self.get_stream(), None)?,
-                    path,
+                    File::create(path)?,
                     true)
             ).map(|_|())
         }

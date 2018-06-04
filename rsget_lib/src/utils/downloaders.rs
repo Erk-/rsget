@@ -89,8 +89,8 @@ pub fn get_redirection(client: HttpsClient, req: Request<hyper::Body>) -> hyper:
     };
 }
 
-pub fn download_to_file(client: HttpsClient, req: Request<hyper::Body>, path: String, spin: bool) -> impl Future<Item = (), Error = StreamError> {
-    let mut file = File::create(path).unwrap();
+pub fn download_to_file(client: HttpsClient, req: Request<hyper::Body>, mut file: File, spin: bool) -> impl Future<Item = (), Error = StreamError> {
+    //let mut file = File::create(path).unwrap();
     let resp = get_redirection(client,req);
     resp
         .map_err(|e| StreamError::from(e))

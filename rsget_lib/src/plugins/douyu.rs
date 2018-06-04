@@ -16,6 +16,8 @@ use chrono::prelude::*;
 
 use tokio::runtime::current_thread::Runtime;
 
+use std::fs::File;
+
 use md5;
 
 use HttpsClient;
@@ -292,7 +294,7 @@ impl Streamable for Douyu {
                 download_to_file(
                     own_client,
                     make_request(&self.get_stream(), None)?,
-                    path,
+                    File::create(path)?,
                     true)
             ).map(|_|())
         }
