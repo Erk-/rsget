@@ -3,12 +3,11 @@ extern crate pretty_env_logger;
 #[macro_use]
 extern crate log;
 extern crate rsget_lib;
-extern crate tokio_core;
- 
+extern crate hyper;
+extern crate hyper_tls;
  
 use rsget_lib::Streamable;
 use clap::{App, Arg}; //, SubCommand};
-use tokio_core::reactor::Core;
 use std::process::Command;
 
 fn main() {
@@ -24,11 +23,12 @@ fn main() {
                 .long("play")
                 .takes_value(false),
         )
-/*        .arg(
+        .arg(
             Arg::with_name("info")
+                .short("i")
                 .help("Info")
-                .required(false)
-        )*/
+                .required(false),
+        )
         .arg(
             Arg::with_name("path")
                 .short("O")
@@ -49,8 +49,11 @@ fn main() {
         )
         .get_matches();
     let url = String::from(matches.value_of("URL").unwrap());
+    let https = hyper_tls::HttpsConnector::new(4).unwrap();
+    let client = hyper::Client::builder()
+        .build::<_, hyper::Body>(https);
 
-    let stream: Box<Streamable> = match rsget_lib::utils::sites::get_site(&url) {
+    let stream: Box<Streamable> = match rsget_lib::utils::sites::get_site(client.clone(), &url) {
         Ok(b) => b,
         Err(why) => {
             info!("{}", why);
@@ -62,12 +65,12 @@ fn main() {
         info!("Stream not online");
         std::process::exit(1)
     }
-/*
+
     if matches.is_present("info") {
         println!("{}", stream.get_stream());
         std::process::exit(0)
     }
-*/
+
     if matches.is_present("play") {
         let status = Command::new("mpv")
             .arg("--no-ytdl")
@@ -84,13 +87,8 @@ fn main() {
             .unwrap_or(&stream.get_default_name()),
     );
 
-    let mut core = match Core::new() {
-        Ok(c) => c,
-        Err(why) => panic!("why: {}", why),
-    };
-
     match stream.download(
-        &mut core,
+        client,
         format!("{}{}", path, strip_characters(&file_name, "<>:\"/\\|?*\0")),
     ) {
         Ok(_) => std::process::exit(0),

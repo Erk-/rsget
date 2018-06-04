@@ -1,20 +1,22 @@
 [package]
 name = "rsget_lib"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Valdemar Erk <valdemar@erk.io>"]
 
 [dependencies]
 log = "0.4.1"
-reqwest = "0.8.5"
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
+serde_urlencoded = "0.5.2"
 regex = "1.0"
-futures = "0.1"
-hyper = "0.11.27"
-tokio-core = "0.1"
+futures = "0.1.21"
+hyper = "0.12"
+hyper-tls = "0.2"
+http = "0.1"
+tokio = "0.1"
 indicatif = "0.9.0"
 chrono = "0.4"
 md5 = "0.3.7"
 url = "1.7.0"
-hls_m3u8 = "0.1.1"
+#hls_m3u8 = "0.1.1"

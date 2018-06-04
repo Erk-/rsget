@@ -1,15 +1,18 @@
 use Streamable;
-use reqwest;
 use regex::Regex;
 use serde_json;
 
-use utils::downloaders::flv_download;
+use utils::downloaders::download_to_file;
+use utils::downloaders::download_to_string;
+use utils::downloaders::make_request;
+use HttpsClient;
+use tokio::runtime::current_thread::Runtime;
+
 use utils::error::StreamError;
 use utils::error::RsgetError;
 
 use chrono::prelude::*;
 
-use tokio_core::reactor::Core;
 
 #[allow(dead_code)]
 #[allow(non_snake_case)]
@@ -80,12 +83,16 @@ pub struct Xingyan {
 
 
 impl Streamable for Xingyan {
-    fn new(url: String) -> Result<Box<Xingyan>, StreamError> {
+    fn new(client: HttpsClient, url: String) -> Result<Box<Xingyan>, StreamError> {
+        let mut runtime = Runtime::new()?;
+        let client = client.clone();
+        
         let room_id_re = Regex::new(r"/([0-9]+)").unwrap();
         let cap = room_id_re.captures(&url).unwrap();
         let site_url = format!("https://xingyan.panda.tv/{}", &cap[1]);
-        let resp = reqwest::get(&site_url);
-        let res: Result<String, reqwest::Error> = resp.unwrap().text();
+        let site_req = make_request(&site_url, None)?;
+        let res: Result<String, StreamError> = runtime.block_on(
+            download_to_string(client.clone(), site_req));
         match res {
             Ok(some) => {
                 let hostinfo_re = Regex::new(r"<script>window.HOSTINFO=(.*);</script>").unwrap();
@@ -101,10 +108,10 @@ impl Streamable for Xingyan {
                 };
                 debug!("Debug print:\n{:?}", &xy);
                 Ok(Box::new(xy))
-            }
+            },
             Err(why) => {
-                Err(StreamError::Reqwest(why))
-            }
+                Err(why)
+            },
         }
     }
 
@@ -144,7 +151,8 @@ impl Streamable for Xingyan {
         )
     }
 
-    fn download(&self, core: &mut Core, path: String) -> Result<(), StreamError> {
+    fn download(&self, client: HttpsClient, path: String) -> Result<(), StreamError> {
+        let mut runtime = Runtime::new()?;
         if !self.is_online() {
             Err(StreamError::Rsget(RsgetError::new("Stream offline")))
         } else {
@@ -154,7 +162,13 @@ impl Streamable for Xingyan {
                 self.get_author().unwrap(),
                 self.room_id
             );
-            flv_download(core, self.get_stream(), path)
+            runtime.block_on(
+                download_to_file(
+                    client,
+                    make_request(&self.get_stream(), None)?,
+                    path,
+                    true)
+            ).map(|_|())
         }
     }
 }

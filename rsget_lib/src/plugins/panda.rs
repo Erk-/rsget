@@ -1,5 +1,4 @@
 use Streamable;
-use reqwest;
 use std::time::{SystemTime, UNIX_EPOCH};
 use regex::Regex;
 use serde_json;
@@ -7,10 +6,14 @@ use serde_json::Value;
 
 use utils::error::StreamError;
 use utils::error::RsgetError;
-use utils::downloaders::flv_download;
+use utils::downloaders::download_and_de;
+use utils::downloaders::download_to_file;
+use utils::downloaders::make_request;
 use chrono::prelude::*;
 
-use tokio_core::reactor::Core;
+use tokio::runtime::current_thread::Runtime;
+
+use HttpsClient;
 
 #[allow(dead_code)]
 #[allow(non_snake_case)]
@@ -163,7 +166,10 @@ pub struct PandaTv {
 }
 
 impl Streamable for PandaTv {
-    fn new(url: String) -> Result<Box<PandaTv>, StreamError> {
+    fn new(client: HttpsClient, url: String) -> Result<Box<PandaTv>, StreamError> {
+        let mut runtime = Runtime::new()?;
+        let client = client.clone();
+        
         let room_id_re = Regex::new(r"/([0-9]+)").unwrap();
         let cap = room_id_re.captures(&url).unwrap();
         let start = SystemTime::now();
@@ -176,8 +182,9 @@ impl Streamable for PandaTv {
             &cap[1],
             ts
         );
-        let mut resp = reqwest::get(&json_url)?;
-        let jres: Result<PandaTvRoom, reqwest::Error> = resp.json();
+        let json_req = make_request(&json_url, None)?;
+        let jres: Result<PandaTvRoom, StreamError> =
+            runtime.block_on(download_and_de::<PandaTvRoom>(client, json_req))?;
         match jres {
             Ok(jre) => Ok(Box::new(PandaTv {
                 url: String::from(url.as_str()),
@@ -185,7 +192,7 @@ impl Streamable for PandaTv {
                 panda_tv_room: jre,
             })),
             Err(why) => {
-                Err(StreamError::Reqwest(why))
+                Err(why)
             }
         }
     }
@@ -245,7 +252,8 @@ impl Streamable for PandaTv {
         )
     }
 
-    fn download(&self, core: &mut Core, path: String) -> Result<(), StreamError> {
+    fn download(&self, client: HttpsClient, path: String) -> Result<(), StreamError> {
+        let mut runtime = Runtime::new()?;
         if !self.is_online() {
             Err(StreamError::Rsget(RsgetError::new("Stream offline")))
         } else {
@@ -255,7 +263,13 @@ impl Streamable for PandaTv {
                 self.get_author().unwrap(),
                 self.room_id
             );
-            flv_download(core, self.get_stream(), path)
+            runtime.block_on(
+                download_to_file(
+                    client,
+                    make_request(&self.get_stream(), None)?,
+                    path,
+                    true)
+            ).map(|_|())
         }
     }
 }

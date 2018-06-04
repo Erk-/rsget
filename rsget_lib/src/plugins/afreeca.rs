@@ -6,11 +6,13 @@ use serde_json;
 
 use utils::error::StreamError;
 use utils::error::RsgetError;
-//use utils::downloaders::ffmpeg_download;
-use utils::downloaders::afreeca_m3u8_download;
-use chrono::prelude::*;
 
-use url::Url;
+use HttpsClient;
+use utils::downloaders::download_to_file;
+use utils::downloaders::download_and_de;
+use utils::downloaders::download_to_string;
+use utils::downloaders::make_request;
+use chrono::prelude::*;
 
 use tokio_core::reactor::Core;
 
@@ -104,8 +106,8 @@ pub struct Afreeca {
 }
 
 // Helper functions
-fn get_hls_key(c: reqwest::Client, room_id: String, bno: String) -> String {
-    let json_url = Url::parse("http://live.afreecatv.com:8057/afreeca/player_live_api.php").unwrap();
+fn get_hls_key(client: HttpsClient, room_id: String, bno: String) -> Result<String, StreamError> {
+    let mut runtime = Runtime::new()?;
     let reqest_data = AfreecaGetHlsKey {
         bid: room_id,
         bno: bno,
@@ -113,34 +115,35 @@ fn get_hls_key(c: reqwest::Client, room_id: String, bno: String) -> String {
         quality: String::from("original"),
         _type: String::from("pwd"),
     };
-    let mut resp = c.post(json_url)
-        .form(&reqest_data)
-        .send().unwrap();
-    let jres: Result<AfreecaChannelInfo<AfreecaHlsKey>, reqwest::Error> = resp.json();
-    jres.unwrap().CHANNEL.AID
+    let json_url = format!("http://live.afreecatv.com:8057/afreeca/player_live_api.php?{}",
+                           serde_urlencoded::to_string(reqest_data));
+    let json_req = make_request(json_url, None)?;
+    let jres: Result<AfreecaChannelInfo<AfreecaHlsKey>, reqwest::Error> =
+        runtime.block_on(download_and_de::<AfreecaChannelInfo<AfreecaHlsKey>>(client, json_req))?;
+    jres?.CHANNEL.AID
 }
 
 impl Streamable for Afreeca {
-    fn new(url: String) -> Result<Box<Afreeca>, StreamError> {
+    fn new(client: HttpsClient, url: String) -> Result<Box<Afreeca>, StreamError> {
+        let mut runtime = Runtime::new()?;
+
+        let client = client.clone();
+
         type ChannelInfo = AfreecaChannelInfo<AfreecaChannelInfoData>;
         
         let room_id_re = Regex::new(r"(?:http://[^/]+)?/([a-zA-Z0-9]+)(?:/[0-9]+)?").unwrap();
         let cap = room_id_re.captures(&url).unwrap();
-        let json_url = Url::parse("http://live.afreecatv.com:8057/afreeca/player_live_api.php").unwrap();
         info!("id: {}", &cap[1]);
         let reqest_data = AfreecaGetInfo {
             bid: String::from(&cap[1]),
             mode: String::from("landing"),
             player_type: String::from("html5"),
         };
-        
-        let client = reqwest::Client::new();
-        let mut resp = client.post(json_url)
-            .form(&reqest_data)
-            .send().unwrap();
-        let resp_text = resp.text()?;
-        debug!("{:#?}", resp_text);
-        let jres = serde_json::from_str::<ChannelInfo>(&resp_text);
+        let json_url = format!("http://live.afreecatv.com:8057/afreeca/player_live_api.php?{}",
+                               serde_urlencoded::to_string(reqest_data));
+        let json_req = make_request(json_url, None)?;
+        let jres: Result<ChannelInfo>, StreamError> =
+            runtime.block_on(download_and_de::<ChannelInfo>(client, json_req))?;
         match jres {
             Ok(jre) => {
                 info!("Sucess when deserialising");
@@ -225,7 +228,7 @@ impl Streamable for Afreeca {
                 self.get_author().unwrap(),
                 self.room_id
             );
-            afreeca_m3u8_download(self.get_stream(), path.clone(), true)
+            Err(StreamError::Rsget(RsgetError::new("HLS not implemented")))
         }   
     }
 }
