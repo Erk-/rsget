@@ -177,11 +177,9 @@ pub struct Douyu {
 }
 
 impl Streamable for Douyu {
-    fn new(client: HttpsClient, url: String) -> Result<Box<Douyu>, StreamError> {
+    fn new(client: &HttpsClient, url: String) -> Result<Box<Douyu>, StreamError> {
         let mut runtime = Runtime::new()?;
 
-        let client = client.clone();
-        
         let room_id_re = Regex::new(r"com/([a-zA-Z0-9]+)").unwrap();
         let cap = room_id_re.captures(&url).unwrap();
 
@@ -195,7 +193,7 @@ impl Streamable for Douyu {
             Err(_) => {
                 let re_room_id = Regex::new(r#""room_id" *:([0-9]+),"#).unwrap();
                 let req = make_request(&url, None)?;
-                let body: String = runtime.block_on(download_to_string(client.clone(), req))?;
+                let body: String = runtime.block_on(download_to_string(&client, req))?;
                 let cap = re_room_id.captures(&body).unwrap();
                 cap[1].parse::<u32>().unwrap()
             }
@@ -224,7 +222,7 @@ impl Streamable for Douyu {
 
         let json_url = format!("https://capi.douyucdn.cn/api/v1/{}&auth={}", &suffix, &sign);
         let json_req = make_request(&json_url, Some(("User-Agent", head)))?;
-        let jres: Result<DouyuRoom, StreamError> = runtime.block_on(download_and_de::<DouyuRoom>(client, json_req))?;
+        let jres: Result<DouyuRoom, StreamError> = runtime.block_on(download_and_de::<DouyuRoom>(&client, json_req))?;
         match jres {
             Ok(jre) => Ok(Box::new(Douyu {
                 data: jre,
@@ -272,9 +270,9 @@ impl Streamable for Douyu {
         )
     }
 
-    fn download(&self, client: HttpsClient, path: String) -> Result<(), StreamError> {
+    fn download(&self, client: &HttpsClient, path: String) -> Result<(), StreamError> {
         let mut runtime = Runtime::new().unwrap();
-        let own_client = client.clone();
+        //let own_client = client.clone();
         if !self.is_online() {
             Err(StreamError::Rsget(RsgetError::new("Stream offline")))
         } else {
@@ -292,7 +290,7 @@ impl Streamable for Douyu {
             );
             runtime.block_on(
                 download_to_file(
-                    own_client,
+                    client,
                     make_request(&self.get_stream(), None)?,
                     File::create(path)?,
                     true)

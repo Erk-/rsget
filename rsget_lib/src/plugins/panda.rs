@@ -167,10 +167,9 @@ pub struct PandaTv {
 }
 
 impl Streamable for PandaTv {
-    fn new(client: HttpsClient, url: String) -> Result<Box<PandaTv>, StreamError> {
+    fn new(client: &HttpsClient, url: String) -> Result<Box<PandaTv>, StreamError> {
         let mut runtime = Runtime::new()?;
-        let client = client.clone();
-        
+
         let room_id_re = Regex::new(r"/([0-9]+)").unwrap();
         let cap = room_id_re.captures(&url).unwrap();
         let start = SystemTime::now();
@@ -185,7 +184,7 @@ impl Streamable for PandaTv {
         );
         let json_req = make_request(&json_url, None)?;
         let jres: Result<PandaTvRoom, StreamError> =
-            runtime.block_on(download_and_de::<PandaTvRoom>(client, json_req))?;
+            runtime.block_on(download_and_de::<PandaTvRoom>(&client, json_req))?;
         match jres {
             Ok(jre) => Ok(Box::new(PandaTv {
                 url: String::from(url.as_str()),
@@ -253,7 +252,7 @@ impl Streamable for PandaTv {
         )
     }
 
-    fn download(&self, client: HttpsClient, path: String) -> Result<(), StreamError> {
+    fn download(&self, client: &HttpsClient, path: String) -> Result<(), StreamError> {
         let mut runtime = Runtime::new()?;
         if !self.is_online() {
             Err(StreamError::Rsget(RsgetError::new("Stream offline")))

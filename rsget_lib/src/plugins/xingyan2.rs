@@ -102,16 +102,15 @@ pub struct Xingyan2 {
 
 
 impl Streamable for Xingyan2 {
-    fn new(client: HttpsClient, url: String) -> Result<Box<Xingyan2>, StreamError> {
+    fn new(client: &HttpsClient, url: String) -> Result<Box<Xingyan2>, StreamError> {
         let mut runtime = Runtime::new()?;
-        let client = client.clone();
 
         let room_id_re = Regex::new(r"/([0-9]+)").unwrap();
         let cap = room_id_re.captures(&url).unwrap();
         let site_url = format!("https://xingyan.panda.tv/{}", &cap[1]);
         let site_req = make_request(&site_url, None)?;
         let res: Result<String, StreamError> = runtime.block_on(
-            download_to_string(client.clone(), site_req));
+            download_to_string(&client, site_req));
 
         match res {
             Ok(some) => {
@@ -170,7 +169,7 @@ impl Streamable for Xingyan2 {
         )
     }
 
-    fn download(&self, client: HttpsClient, path: String) -> Result<(), StreamError> {
+    fn download(&self, client: &HttpsClient, path: String) -> Result<(), StreamError> {
         let mut runtime = Runtime::new()?;
         if !self.is_online() {
             Err(StreamError::Rsget(RsgetError::new("Stream offline")))

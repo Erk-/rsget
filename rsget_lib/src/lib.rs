@@ -30,7 +30,7 @@ pub trait Downloadable {
 }
 
 pub trait Streamable {
-    fn new(client: HttpsClient, url: String) -> Result<Box<Self>, StreamError>
+    fn new(client: &HttpsClient, url: String) -> Result<Box<Self>, StreamError>
     where
         Self: Sized;
     fn get_title(&self) -> Option<String>;
@@ -40,7 +40,7 @@ pub trait Streamable {
     fn get_stream(&self) -> String;
     fn get_ext(&self) -> String;
     fn get_default_name(&self) -> String;
-    fn download(&self, client: HttpsClient, path: String) -> Result<(), StreamError>;
+    fn download(&self, client: &HttpsClient, path: String) -> Result<(), StreamError>;
 }
 pub mod utils;
 pub mod plugins;

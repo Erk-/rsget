@@ -84,7 +84,7 @@ pub struct Inke {
 }
 
 impl Streamable for Inke {
-    fn new(client: HttpsClient, url: String) -> Result<Box<Inke>, StreamError> {
+    fn new(client: &HttpsClient, url: String) -> Result<Box<Inke>, StreamError> {
         let mut runtime = Runtime::new()?;
         let re_inke: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?inke\.cn/live\.html\?uid=([0-9]+)").unwrap();
         let cap = re_inke.captures(&url).unwrap();
@@ -93,7 +93,7 @@ impl Streamable for Inke {
             &cap[1]
         );
         let json_req = make_request(&json_url, None)?;
-        let jres = runtime.block_on(download_and_de::<InkeStruct>(client, json_req))?;
+        let jres = runtime.block_on(download_and_de::<InkeStruct>(&client, json_req))?;
         match jres {
             Ok(jre) => Ok(Box::new(Inke {
                 url: String::from(url.as_str()),
@@ -142,7 +142,7 @@ impl Streamable for Inke {
         )
     }
 
-    fn download(&self, client: HttpsClient, path: String) -> Result<(), StreamError> {
+    fn download(&self, client: &HttpsClient, path: String) -> Result<(), StreamError> {
         let mut runtime = Runtime::new()?;
         if !self.is_online() {
             Err(StreamError::Rsget(RsgetError::new("Stream offline")))

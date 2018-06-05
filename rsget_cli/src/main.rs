@@ -53,7 +53,7 @@ fn main() {
     let client = hyper::Client::builder()
         .build::<_, hyper::Body>(https);
 
-    let stream: Box<Streamable> = match rsget_lib::utils::sites::get_site(client.clone(), &url) {
+    let stream: Box<Streamable> = match rsget_lib::utils::sites::get_site(&client, &url) {
         Ok(b) => b,
         Err(why) => {
             info!("{}", why);
@@ -88,7 +88,7 @@ fn main() {
     );
 
     match stream.download(
-        client,
+        &client,
         format!("{}{}", path, strip_characters(&file_name, "<>:\"/\\|?*\0")),
     ) {
         Ok(_) => std::process::exit(0),

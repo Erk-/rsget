@@ -45,21 +45,23 @@ pub fn ffmpeg_download(url: String, path: String) -> Result<(), StreamError> {
     }
 }
 
-pub fn download_to_string(client: HttpsClient, req: Request<hyper::Body>) -> impl Future<Item = String, Error = StreamError> {
-    let f = client.request(req)
-        .map_err(|e| StreamError::from(e))
+pub fn download_to_string(client: &HttpsClient, req: Request<hyper::Body>) -> impl Future<Item = String, Error = StreamError> {
+    client.request(req)
+        .map_err(StreamError::from)
         .and_then(|resp| {
             debug!("Status: {}", resp.status());
             debug!("Headers:\n{:#?}", resp.headers());
-            resp.into_body().concat2().map_err(|e| StreamError::from(e)).map(|chunk| {
-                let v = chunk.to_vec();
-                String::from_utf8_lossy(&v).to_string()
+            resp.into_body()
+                .concat2()
+                .map_err(StreamError::from)
+                .map(|chunk| {
+                    let v = chunk.to_vec();
+                    String::from_utf8_lossy(&v).to_string()
             })
-        });
-    f
+        })
 }
 
-pub fn get_redirection(client: HttpsClient, req: Request<hyper::Body>) -> hyper::client::ResponseFuture {
+pub fn get_redirection(client: &HttpsClient, req: Request<hyper::Body>) -> hyper::client::ResponseFuture {
     let mut runtime = Runtime::new().unwrap();
     let ouri = req.uri().clone();
     let work = client.request(req)
@@ -80,16 +82,16 @@ pub fn get_redirection(client: HttpsClient, req: Request<hyper::Body>) -> hyper:
     match resp {
         Some(uri) => {
             let new_req = make_request(&uri.to_string(), None);
-            return client.request(new_req.unwrap());
+            client.request(new_req.unwrap())
         },
         None => {
             let new_req = make_request(&ouri.to_string(), None);
-            return client.request(new_req.unwrap());
+            client.request(new_req.unwrap())
         },
-    };
+    }
 }
 
-pub fn download_to_file(client: HttpsClient, req: Request<hyper::Body>, mut file: File, spin: bool) -> impl Future<Item = (), Error = StreamError> {
+pub fn download_to_file(client: &HttpsClient, req: Request<hyper::Body>, mut file: File, spin: bool) -> impl Future<Item = (), Error = StreamError> {
     //let mut file = File::create(path).unwrap();
     let resp = get_redirection(client,req);
     resp
@@ -102,28 +104,27 @@ pub fn download_to_file(client: HttpsClient, req: Request<hyper::Body>, mut file
             res.into_body().map_err(|e| StreamError::from(e)).for_each(move |chunk| {
                 if spin {
                     spinner.tick();
-                    size = size + (chunk.len() as f64);
+                    size += chunk.len() as f64;
                     spinner.set_message(&format!("Size: {:.2} MB", size / 1000.0 / 1000.0));
                 }
                 file.write_all(&chunk)
-                    .map_err(|e| StreamError::from(e))
+                    .map_err(StreamError::from)
             })
         }).map(|_| ())
 }
 
-pub fn download_and_de<T: DeserializeOwned>(client: HttpsClient, req: Request<hyper::Body>) -> impl Future<Item = Result<T,StreamError>, Error = StreamError> {
-    let f = client.request(req)
-        .map_err(|e| StreamError::from(e))
+pub fn download_and_de<T: DeserializeOwned>(client: &HttpsClient, req: Request<hyper::Body>) -> impl Future<Item = Result<T,StreamError>, Error = StreamError> {
+    client.request(req)
+        .map_err(StreamError::from)
         .and_then(|resp| {
             debug!("Status: {}", resp.status());
             debug!("Headers:\n{:#?}", resp.headers());
-            resp.into_body().concat2().map_err(|e| StreamError::from(e)).map(|chunk| {
+            resp.into_body().concat2().map_err(StreamError::from).map(|chunk| {
                 let v = chunk.to_vec();
-                let ds: Result<T,StreamError> = serde_json::from_slice(&v).map_err(|e| StreamError::from(e));
+                let ds: Result<T,StreamError> = serde_json::from_slice(&v).map_err(StreamError::from);
                 ds
             })
-        });
-    f
+        })
 }
 
 pub fn make_request(uri: &str, headers: Option<(&str, &str)>) -> Result<Request<hyper::Body>, StreamError> {
@@ -140,7 +141,7 @@ pub fn make_request(uri: &str, headers: Option<(&str, &str)>) -> Result<Request<
                 .body(Default::default())
         }
     };
-    req.map_err(|e| StreamError::from(e))
+    req.map_err(StreamError::from)
 }
 
 pub fn make_request_2<T>(uri: &str, headers: Option<(&str, &str)>, body: T) -> Result<Request<T>, StreamError> {
@@ -157,7 +158,7 @@ pub fn make_request_2<T>(uri: &str, headers: Option<(&str, &str)>, body: T) -> R
                 .body(body)
         }
     };
-    req.map_err(|e| StreamError::from(e))
+    req.map_err(StreamError::from)
 }
 
 pub fn serialize_request<T>(req: Request<T>) -> serde_json::Result<Request<Vec<u8>>>
