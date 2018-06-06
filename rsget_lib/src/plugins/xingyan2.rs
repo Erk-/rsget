@@ -123,7 +123,7 @@ impl Streamable for Xingyan2 {
                     room_id: String::from(&cap[1]),
                     host_info: hi,
                 };
-                debug!("Xingyan2: \n{:?}", &tmp);
+                debug!("Xingyan2: \n{:#?}", &tmp);
                 Ok(Box::new(tmp))
             },
             Err(why) => {
