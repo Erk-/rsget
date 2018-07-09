@@ -1,5 +1,6 @@
 extern crate clap;
-extern crate pretty_env_logger;
+//extern crate pretty_env_logger;
+extern crate flexi_logger;
 #[macro_use]
 extern crate log;
 extern crate rsget_lib;
@@ -9,9 +10,14 @@ extern crate hyper_tls;
 use rsget_lib::Streamable;
 use clap::{App, Arg}; //, SubCommand};
 use std::process::Command;
+use flexi_logger::{Logger,opt_format};
 
 fn main() {
-    pretty_env_logger::init();
+    //pretty_env_logger::init();
+    Logger::with_env()
+        .format(opt_format)
+        .start()
+        .unwrap_or_else(|e| panic!("Logger initialization failed with {}", e));
 
     let matches = App::new("ruststreamer")
        .version("0.1")

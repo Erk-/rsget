@@ -212,7 +212,7 @@ impl Streamable for Douyu {
             ts
         );
 
-        let api_secret = "zNzMV1y4EMxOHS6I5WKm".as_bytes();
+        let api_secret = b"zNzMV1y4EMxOHS6I5WKm";
         let mut hasher: md5::Context = md5::Context::new();
 
         hasher.consume(&suffix.as_bytes());
@@ -226,7 +226,7 @@ impl Streamable for Douyu {
         match jres {
             Ok(jre) => Ok(Box::new(Douyu {
                 data: jre,
-                room_id: room_id,
+                room_id,
             })),
             Err(why) => {
                 Err(why)

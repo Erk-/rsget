@@ -8,7 +8,11 @@ use HttpsClient;
 //use utils::downloaders::download_to_file;
 use utils::downloaders::download_and_de;
 //use utils::downloaders::download_to_string;
+use utils::downloaders::hls_download;
 use utils::downloaders::make_request;
+use utils::downloaders::make_post_request;
+use utils::downloaders::make_request_body;
+use utils::downloaders::serialize_request;
 use chrono::prelude::*;
 
 use tokio::runtime::current_thread::Runtime;
@@ -29,7 +33,8 @@ struct AfreecaGetInfo {
 struct AfreecaGetHlsKey {
     bid: String,
     bno: String,
-    pwd: String,
+    //pwd: String,
+    mode: String,
     quality: String,
     #[serde(rename = "type")]
     _type: String,
@@ -110,13 +115,13 @@ fn get_hls_key(client: &HttpsClient, room_id: String, bno: String) -> Result<Str
     let reqest_data = AfreecaGetHlsKey {
         bid: room_id,
         bno: bno,
-        pwd: String::from(""),
+        //pwd: String::from(""),
+        mode: String::from("landing"),
         quality: String::from("original"),
-        _type: String::from("pwd"),
+        _type: String::from("common"),
     };
-    let json_url = format!("http://live.afreecatv.com:8057/afreeca/player_live_api.php?{}",
-                           serde_urlencoded::to_string(reqest_data)?);
-    let json_req = make_request(&json_url, None)?;
+    let json_url = format!("http://live.afreecatv.com:8057/afreeca/player_live_api.php");
+    let json_req = make_request_body(&json_url, None, reqest_data)?;
     let jres: Result<AfreecaChannelInfo<AfreecaHlsKey>, StreamError> =
         runtime.block_on(download_and_de::<AfreecaChannelInfo<AfreecaHlsKey>>(&client, json_req))?;
     Ok(jres?.CHANNEL.AID)
@@ -131,14 +136,19 @@ impl Streamable for Afreeca {
         let room_id_re = Regex::new(r"(?:http://[^/]+)?/([a-zA-Z0-9]+)(?:/[0-9]+)?").unwrap();
         let cap = room_id_re.captures(&url).unwrap();
         info!("id: {}", &cap[1]);
+        //mode=landing&stream%5Ftype=common&bno=204330439&bid=castle0124
         let reqest_data = AfreecaGetInfo {
             bid: String::from(&cap[1]),
             mode: String::from("landing"),
             player_type: String::from("html5"),
         };
-        let json_url = format!("http://live.afreecatv.com:8057/afreeca/player_live_api.php?{}",
-                               serde_urlencoded::to_string(reqest_data)?);
-        let json_req = make_request(&json_url, None)?;
+        let json_url = String::from("http://live.afreecatv.com:8057/afreeca/player_live_api.php");
+
+        debug!("_Getting url: {}", &json_url);
+        let json_req = make_request_body(&json_url,
+                                         None,
+                                         reqest_data
+        )?;
         let jres: Result<ChannelInfo, StreamError> =
             runtime.block_on(download_and_de::<ChannelInfo>(client, json_req))?;
         match jres {
@@ -223,7 +233,20 @@ impl Streamable for Afreeca {
                 self.get_author().unwrap(),
                 self.room_id
             );
-            Err(StreamError::Rsget(RsgetError::new("HLS not implemented")))
+            //http://live-hls-local-cf.afreecatv.com/livestream-east-02/1024x576/204330439-common-original-hls_1.TS
+            /*
+            #EXTM3U
+            #EXT-X-MEDIA-SEQUENCE:1
+            #EXT-X-VERSION:3
+            #EXT-X-ALLOW-CACHE:NO
+            #EXT-X-TARGETDURATION:6
+            #EXTINF:6,
+            1024x576/204330439-common-original-hls_0.TS
+            #EXTINF:6,
+            1024x576/204330439-common-original-hls_1.TS
+             */
+            debug!("STREAM: {}", self.get_stream());
+            Err(StreamError::Rsget(RsgetError::new("HLS")))
         }   
     }
 }
