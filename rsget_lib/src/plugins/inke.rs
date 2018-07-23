@@ -5,9 +5,7 @@ use utils::error::StreamError;
 use utils::error::RsgetError;
 use chrono::prelude::*;
 
-use utils::downloaders::download_to_file;
-use utils::downloaders::download_and_de;
-use utils::downloaders::make_request;
+use utils::downloaders::DownloadClient;
 use HttpsClient;
 use tokio::runtime::current_thread::Runtime;
 
@@ -81,10 +79,12 @@ pub struct Inke {
     pub url: String,
     pub room_id: String,
     pub inke_info: InkeStruct,
+    client: DownloadClient,
 }
 
 impl Streamable for Inke {
     fn new(client: &HttpsClient, url: String) -> Result<Box<Inke>, StreamError> {
+        let dc = DownloadClient::new(client.clone());
         let mut runtime = Runtime::new()?;
         let re_inke: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?inke\.cn/live\.html\?uid=([0-9]+)").unwrap();
         let cap = re_inke.captures(&url).unwrap();
@@ -92,13 +92,14 @@ impl Streamable for Inke {
             "http://baseapi.busi.inke.cn/live/LiveInfo?uid={}",
             &cap[1]
         );
-        let json_req = make_request(&json_url, None)?;
-        let jres = runtime.block_on(download_and_de::<InkeStruct>(&client, json_req))?;
+        let json_req = dc.make_request(&json_url, None)?;
+        let jres = runtime.block_on(dc.download_and_de::<InkeStruct>(json_req))?;
         match jres {
             Ok(jre) => Ok(Box::new(Inke {
                 url: String::from(url.as_str()),
                 room_id: String::from(&cap[1]),
                 inke_info: jre,
+                client: dc,
             })),
             Err(why) => {
                 Err(why)
@@ -142,7 +143,7 @@ impl Streamable for Inke {
         )
     }
 
-    fn download(&self, client: &HttpsClient, path: String) -> Result<(), StreamError> {
+    fn download(&self, path: String) -> Result<(), StreamError> {
         let mut runtime = Runtime::new()?;
         if !self.is_online() {
             Err(StreamError::Rsget(RsgetError::new("Stream offline")))
@@ -154,9 +155,8 @@ impl Streamable for Inke {
                 self.room_id
             );
             runtime.block_on(
-                download_to_file(
-                    client,
-                    make_request(&self.get_stream(), None)?,
+                self.client.download_to_file(
+                    self.client.make_request(&self.get_stream(), None)?,
                     File::create(path)?,
                     true)
             ).map(|_|())

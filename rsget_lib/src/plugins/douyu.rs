@@ -6,13 +6,8 @@ use regex::Regex;
 use utils::error::StreamError;
 use utils::error::RsgetError;
 
-use utils::downloaders::download_to_file;
-use utils::downloaders::download_and_de;
-use utils::downloaders::download_to_string;
-use utils::downloaders::make_request;
+use utils::downloaders::DownloadClient;
 use chrono::prelude::*;
-
-//use tokio_core::reactor::Core;
 
 use tokio::runtime::current_thread::Runtime;
 
@@ -174,12 +169,13 @@ struct DouyuRoom {
 pub struct Douyu {
     data: DouyuRoom,
     room_id: u32,
+    client: DownloadClient,
 }
 
 impl Streamable for Douyu {
     fn new(client: &HttpsClient, url: String) -> Result<Box<Douyu>, StreamError> {
         let mut runtime = Runtime::new()?;
-
+        let dc = DownloadClient::new(client.clone());
         let room_id_re = Regex::new(r"com/([a-zA-Z0-9]+)").unwrap();
         let cap = room_id_re.captures(&url).unwrap();
 
@@ -192,8 +188,8 @@ impl Streamable for Douyu {
             Ok(rid) => rid,
             Err(_) => {
                 let re_room_id = Regex::new(r#""room_id" *:([0-9]+),"#).unwrap();
-                let req = make_request(&url, None)?;
-                let body: String = runtime.block_on(download_to_string(&client, req))?;
+                let req = dc.make_request(&url, None)?;
+                let body: String = runtime.block_on(dc.download_to_string(req))?;
                 let cap = re_room_id.captures(&body).unwrap();
                 cap[1].parse::<u32>().unwrap()
             }
@@ -221,12 +217,13 @@ impl Streamable for Douyu {
         let sign = format!("{:x}", hasher.compute());
 
         let json_url = format!("https://capi.douyucdn.cn/api/v1/{}&auth={}", &suffix, &sign);
-        let json_req = make_request(&json_url, Some(("User-Agent", head)))?;
-        let jres: Result<DouyuRoom, StreamError> = runtime.block_on(download_and_de::<DouyuRoom>(&client, json_req))?;
+        let json_req = dc.make_request(&json_url, Some(("User-Agent", head)))?;
+        let jres: Result<DouyuRoom, StreamError> = runtime.block_on(dc.download_and_de::<DouyuRoom>(json_req))?;
         match jres {
             Ok(jre) => Ok(Box::new(Douyu {
                 data: jre,
                 room_id,
+                client: dc,
             })),
             Err(why) => {
                 Err(why)
@@ -270,7 +267,7 @@ impl Streamable for Douyu {
         )
     }
 
-    fn download(&self, client: &HttpsClient, path: String) -> Result<(), StreamError> {
+    fn download(&self, path: String) -> Result<(), StreamError> {
         let mut runtime = Runtime::new().unwrap();
         //let own_client = client.clone();
         if !self.is_online() {
@@ -289,9 +286,8 @@ impl Streamable for Douyu {
                 local.minute(),
             );
             runtime.block_on(
-                download_to_file(
-                    client,
-                    make_request(&self.get_stream(), None)?,
+                self.client.download_to_file(
+                    self.client.make_request(&self.get_stream(), None)?,
                     File::create(path)?,
                     true)
             ).map(|_|())

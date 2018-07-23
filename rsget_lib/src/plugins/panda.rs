@@ -6,9 +6,7 @@ use serde_json::Value;
 
 use utils::error::StreamError;
 use utils::error::RsgetError;
-use utils::downloaders::download_and_de;
-use utils::downloaders::download_to_file;
-use utils::downloaders::make_request;
+use utils::downloaders::DownloadClient;
 use chrono::prelude::*;
 
 use tokio::runtime::current_thread::Runtime;
@@ -94,9 +92,9 @@ struct PandaTvRoomInfo {
     cover_status: String,
     cover_timestamp: usize,
     cover_reason: String,
-    mild_remind_status: usize,
-    mild_remind_timestamp: usize,
-    mild_remind_reason: String,
+    //mild_remind_status: usize,
+    //mild_remind_timestamp: usize,
+    //mild_remind_reason: String,
     account_status: String,
     pictures: PandaTvPictures,
     start_time: String,
@@ -164,11 +162,14 @@ pub struct PandaTv {
     pub url: String,
     pub room_id: String,
     panda_tv_room: PandaTvRoom,
+    client: DownloadClient,
 }
 
 impl Streamable for PandaTv {
     fn new(client: &HttpsClient, url: String) -> Result<Box<PandaTv>, StreamError> {
         let mut runtime = Runtime::new()?;
+
+        let dc = DownloadClient::new(client.clone());
 
         let room_id_re = Regex::new(r"/([0-9]+)").unwrap();
         let cap = room_id_re.captures(&url).unwrap();
@@ -182,21 +183,22 @@ impl Streamable for PandaTv {
             &cap[1],
             ts
         );
-        let json_req = make_request(&json_url, None)?;
+        let json_req = dc.make_request(&json_url, None)?;
         let jres: Result<PandaTvRoom, StreamError> =
-            runtime.block_on(download_and_de::<PandaTvRoom>(&client, json_req))?;
+            runtime.block_on(dc.download_and_de::<PandaTvRoom>(json_req))?;
         match jres {
             Ok(jre) => Ok(Box::new(PandaTv {
                 url: String::from(url.as_str()),
                 room_id: String::from(&cap[0]),
                 panda_tv_room: jre,
+                client: dc,
             })),
             Err(why) => {
                 Err(why)
             }
         }
     }
-
+    
     fn get_title(&self) -> Option<String> {
         Some(self.panda_tv_room.data.roominfo.name.clone())
     }
@@ -252,7 +254,7 @@ impl Streamable for PandaTv {
         )
     }
 
-    fn download(&self, client: &HttpsClient, path: String) -> Result<(), StreamError> {
+    fn download(&self, path: String) -> Result<(), StreamError> {
         let mut runtime = Runtime::new()?;
         if !self.is_online() {
             Err(StreamError::Rsget(RsgetError::new("Stream offline")))
@@ -264,9 +266,8 @@ impl Streamable for PandaTv {
                 self.room_id
             );
             runtime.block_on(
-                download_to_file(
-                    client,
-                    make_request(&self.get_stream(), None)?,
+                self.client.download_to_file(
+                    self.client.make_request(&self.get_stream(), None)?,
                     File::create(path)?,
                     true)
             ).map(|_|())

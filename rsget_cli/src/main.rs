@@ -1,7 +1,7 @@
 extern crate clap;
 //extern crate pretty_env_logger;
 extern crate flexi_logger;
-#[macro_use]
+//#[macro_use]
 extern crate log;
 extern crate rsget_lib;
 extern crate hyper;
@@ -12,7 +12,10 @@ use clap::{App, Arg}; //, SubCommand};
 use std::process::Command;
 use flexi_logger::{Logger,opt_format};
 
-fn main() {
+use rsget_lib::utils::error::StreamError;
+use rsget_lib::utils::error::RsgetError;
+
+fn main() -> Result<(), StreamError> {
     //pretty_env_logger::init();
     Logger::with_env()
         .format(opt_format)
@@ -32,7 +35,8 @@ fn main() {
         .arg(
             Arg::with_name("info")
                 .short("i")
-                .help("Info")
+                .long("info")
+                .help("info")
                 .required(false),
         )
         .arg(
@@ -59,22 +63,15 @@ fn main() {
     let client = hyper::Client::builder()
         .build::<_, hyper::Body>(https);
 
-    let stream: Box<Streamable> = match rsget_lib::utils::sites::get_site(&client, &url) {
-        Ok(b) => b,
-        Err(why) => {
-            info!("{}", why);
-            std::process::exit(1)
-        }
-    };
-
+    let stream: Box<Streamable> = rsget_lib::utils::sites::get_site(&client, &url)?;
+    
     if !stream.is_online() {
-        info!("Stream not online");
-        std::process::exit(1)
+        return Err(StreamError::Rsget(RsgetError::new("Stream is offline")))
     }
 
     if matches.is_present("info") {
         println!("{}", stream.get_stream());
-        std::process::exit(0)
+        return Ok(())
     }
 
     if matches.is_present("play") {
@@ -93,16 +90,9 @@ fn main() {
             .unwrap_or(&stream.get_default_name()),
     );
 
-    match stream.download(
-        &client,
+    stream.download(
         format!("{}{}", path, strip_characters(&file_name, "<>:\"/\\|?*\0")),
-    ) {
-        Ok(_) => std::process::exit(0),
-        Err(why) => {
-            info!("Download Failed: {}", why);
-            std::process::exit(1)
-        }
-    }
+    )
 }
 
 fn strip_characters(original: &str, to_strip: &str) -> String {

@@ -2,9 +2,7 @@ use Streamable;
 use regex::Regex;
 use serde_json;
 
-use utils::downloaders::download_to_file;
-use utils::downloaders::download_to_string;
-use utils::downloaders::make_request;
+use utils::downloaders::DownloadClient;
 use HttpsClient;
 use tokio::runtime::current_thread::Runtime;
 
@@ -98,19 +96,20 @@ pub struct Xingyan2 {
     pub url: String,
     pub room_id: String,
     host_info: Xingyan2Info,
+    client: DownloadClient,
 }
 
 
 impl Streamable for Xingyan2 {
     fn new(client: &HttpsClient, url: String) -> Result<Box<Xingyan2>, StreamError> {
         let mut runtime = Runtime::new()?;
-
+        let dc = DownloadClient::new(client.clone());
         let room_id_re = Regex::new(r"/([0-9]+)").unwrap();
         let cap = room_id_re.captures(&url).unwrap();
         let site_url = format!("https://xingyan.panda.tv/{}", &cap[1]);
-        let site_req = make_request(&site_url, None)?;
+        let site_req = dc.make_request(&site_url, None)?;
         let res: Result<String, StreamError> = runtime.block_on(
-            download_to_string(&client, site_req));
+            dc.download_to_string(site_req));
 
         match res {
             Ok(some) => {
@@ -122,6 +121,7 @@ impl Streamable for Xingyan2 {
                     url: url.clone(),
                     room_id: String::from(&cap[1]),
                     host_info: hi,
+                    client: dc,
                 };
                 debug!("Xingyan2: \n{:#?}", &tmp);
                 Ok(Box::new(tmp))
@@ -169,7 +169,7 @@ impl Streamable for Xingyan2 {
         )
     }
 
-    fn download(&self, client: &HttpsClient, path: String) -> Result<(), StreamError> {
+    fn download(&self, path: String) -> Result<(), StreamError> {
         let mut runtime = Runtime::new()?;
         if !self.is_online() {
             Err(StreamError::Rsget(RsgetError::new("Stream offline")))
@@ -181,9 +181,8 @@ impl Streamable for Xingyan2 {
                 self.room_id
             );
             runtime.block_on(
-                download_to_file(
-                    client,
-                    make_request(&self.get_stream(), None)?,
+                self.client.download_to_file(
+                    self.client.make_request(&self.get_stream(), None)?,
                     File::create(path)?,
                     true)
             ).map(|_|())
