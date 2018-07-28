@@ -262,7 +262,7 @@ impl Streamable for Douyu {
             local.hour(),
             local.minute(),
             self.get_author().unwrap(),
-            self.get_title().unwrap_or(String::from("TEST")),
+            self.get_title().unwrap_or_else(|| String::from("TEST")),
             self.get_ext()
         )
     }

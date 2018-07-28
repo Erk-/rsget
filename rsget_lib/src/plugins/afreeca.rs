@@ -12,6 +12,7 @@ use chrono::prelude::*;
 use tokio::runtime::current_thread::Runtime;
 
 use std::str;
+//use std::fs::File;
 
 //use serde_urlencoded;
 
@@ -103,17 +104,17 @@ pub struct Afreeca {
 }
 
 // Helper functions
-fn get_hls_key(client: DownloadClient, room_id: String, bno: String) -> Result<String, StreamError> {
+fn get_hls_key(client: &DownloadClient, room_id: String, bno: String) -> Result<String, StreamError> {
     let mut runtime = Runtime::new()?;
     let reqest_data = AfreecaGetHlsKey {
         bid: room_id,
-        bno: bno,
+        bno,
         //pwd: String::from(""),
         mode: String::from("landing"),
         quality: String::from("original"),
         _type: String::from("common"),
     };
-    let json_url = format!("http://live.afreecatv.com:8057/afreeca/player_live_api.php");
+    let json_url = "http://live.afreecatv.com:8057/afreeca/player_live_api.php";
     let json_req = client.make_request_body(&json_url, None, reqest_data)?;
     let jres: Result<AfreecaChannelInfo<AfreecaHlsKey>, StreamError> =
         runtime.block_on(client.download_and_de::<AfreecaChannelInfo<AfreecaHlsKey>>(json_req))?;
@@ -151,14 +152,14 @@ impl Streamable for Afreeca {
                     url: String::from(url.as_str()),
                     room_id: String::from(&cap[1]),
                     afreeca_info: jre.clone(),
-                    hls_key: get_hls_key(dc.clone(), String::from(&cap[1]), jre.CHANNEL.BNO)?,
+                    hls_key: get_hls_key(&dc, String::from(&cap[1]), jre.CHANNEL.BNO)?,
                     client: dc,
                 };
                 debug!("Afreeca: {:#?}", retval);
                 Ok(Box::new(retval))},
             Err(why) => {
                 info!("Error when deserialising, {}", why);
-                Err(StreamError::from(why))
+                Err(why)
             }
         }
     }

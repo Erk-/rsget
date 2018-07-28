@@ -126,7 +126,7 @@ impl DownloadClient {
                 debug!("dtf Headers:\n{:#?}", res.headers());
                 let mut size: f64 = 0.0;
                 let spinner = ProgressBar::new_spinner();
-                res.into_body().map_err(|e| StreamError::from(e)).for_each(move |chunk| {
+                res.into_body().map_err(StreamError::from).for_each(move |chunk| {
                     if spin {
                         spinner.tick();
                         size += chunk.len() as f64;
@@ -243,7 +243,7 @@ impl DownloadClient {
             }).map(|_| ())
     }
 
-    pub fn hls_download(&self, master: String, url: String, folder: String) -> Result<(), StreamError> {
+    pub fn hls_download(&self, master: &str, url: &str, folder: &str) -> Result<(), StreamError> {
         info!("Uses HLS download");
         let mut srt = Runtime::new().unwrap();
         let mut links: HashSet<String> = HashSet::new();
