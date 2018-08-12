@@ -16,6 +16,7 @@ extern crate tokio;
 extern crate http;
 extern crate url;
 extern crate hls_m3u8;
+extern crate reqwest;
 
 use utils::error::StreamError;
 

@@ -18,6 +18,8 @@ use hls_m3u8::Error as HlsError;
 
 use serde_urlencoded::ser::Error as UrlEncError;
 
+use reqwest::Error as ReqwestError;
+
 #[derive(Debug)]
 pub struct RsgetError {
     details: String,
@@ -67,6 +69,8 @@ pub enum StreamError {
     Utf8(FromUtf8Error),
     /// Serde URL Encode error
     UrlEnc(UrlEncError),
+    /// Reqwest Error
+    Reqwest(ReqwestError),
 }
 
 impl Display for StreamError {
@@ -89,6 +93,7 @@ impl StdError for StreamError {
             StreamError::Hls(ref inner) => inner.description(),
             StreamError::Utf8(ref inner) => inner.description(),
             StreamError::UrlEnc(ref inner) => inner.description(),
+            StreamError::Reqwest(ref inner) => inner.description(),
         }
     }
 }
@@ -151,5 +156,11 @@ impl From<FromUtf8Error> for StreamError {
 impl From<UrlEncError> for StreamError {
     fn from(err: UrlEncError) -> Self {
         StreamError::UrlEnc(err)
+    }
+}
+
+impl From<ReqwestError> for StreamError {
+    fn from(err: ReqwestError) -> Self {
+        StreamError::Reqwest(err)
     }
 }

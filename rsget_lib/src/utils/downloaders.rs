@@ -22,12 +22,15 @@ use hls_m3u8::MediaPlaylist;
 use indicatif::ProgressBar;
 
 use serde::de::DeserializeOwned;
-use serde::ser;
-use serde_json;
+// use serde::ser;
+// use serde_json;
 
-use serde_urlencoded;
+// use serde_urlencoded;
 
-//use tokio;
+// use tokio;
+
+use reqwest;
+use reqwest::Client as RClient;
 
 use std::fs::create_dir;
 use std::collections::HashSet;
@@ -37,7 +40,8 @@ use HttpsClient;
 
 #[derive(Debug, Clone)]
 pub struct DownloadClient {
-    client: HttpsClient,
+    hclient: HttpsClient,
+    rclient: RClient,
 }
 
 pub fn ffmpeg_download(url: String, path: String) -> Result<(), StreamError> {
@@ -62,33 +66,18 @@ pub fn ffmpeg_download(url: String, path: String) -> Result<(), StreamError> {
 }
 
 impl DownloadClient {
-    pub fn new(client: HttpsClient) -> Self {
-        DownloadClient {
-            client
-        }
-    }
-    
-    pub fn download_to_string(&self, req: Request<hyper::Body>) -> impl Future<Item = String, Error = StreamError> {
-        self.client.request(req)
-            .map_err(StreamError::from)
-            .and_then(|resp| {
-                debug!("Status: {}", resp.status());
-                debug!("Headers:\n{:#?}", resp.headers());
-                resp.into_body()
-                    .concat2()
-                    .map_err(StreamError::from)
-                    .map(|chunk| {
-                        let v = chunk.to_vec();
-                        String::from_utf8_lossy(&v).to_string()
-                    })
-            })
+    pub fn new(client: HttpsClient) -> Result<Self, StreamError> {
+        Ok(DownloadClient {
+            hclient: client,
+            rclient: RClient::new(),
+        })
     }
 
-    pub fn get_redirection(&self, req: Request<hyper::Body>) -> hyper::client::ResponseFuture {
+    fn get_redirection(&self, req: Request<hyper::Body>) -> hyper::client::ResponseFuture {
         trace!("Enters `get_redirection`");
         let mut runtime = Runtime::new().unwrap();
         let ouri = req.uri().clone();
-        let work = self.client.request(req)
+        let work = self.hclient.request(req)
             .map(|r|
                  if r.status().is_redirection() {
                      Some(r.headers()[LOCATION]
@@ -105,25 +94,30 @@ impl DownloadClient {
         
         match resp {
             Some(uri) => {
-                let new_req = self.make_request(&uri.to_string(), None);
-                self.client.request(new_req.unwrap())
+                let new_req = self.make_hyper_request(&uri.to_string(), None);
+                self.hclient.request(new_req.unwrap())
             },
             None => {
-                let new_req = self.make_request(&ouri.to_string(), None);
-                self.client.request(new_req.unwrap())
+                let new_req = self.make_hyper_request(&ouri.to_string(), None);
+                self.hclient.request(new_req.unwrap())
             },
         }
     }
 
+    pub fn download_to_string(&self, req: reqwest::Request) -> Result<String, StreamError> {
+        let c = &self.rclient;
+        let mut res = c.execute(req)?;
+        res.text().map_err(StreamError::from)
+    }
+
     pub fn download_to_file(&self, req: Request<hyper::Body>, file: File, spin: bool) -> impl Future<Item = (), Error = StreamError> {
-        //let mut file = File::create(path).unwrap();
         let mut filew = BufWriter::new(file);
         let resp = self.get_redirection(req);
         resp
             .map_err(StreamError::from)
             .and_then(move |res| {
-                debug!("dtf Status: {}", res.status());
-                debug!("dtf Headers:\n{:#?}", res.headers());
+                trace!("dtf Status: {}", res.status());
+                trace!("dtf Headers:\n{:#?}", res.headers());
                 let mut size: f64 = 0.0;
                 let spinner = ProgressBar::new_spinner();
                 res.into_body().map_err(StreamError::from).for_each(move |chunk| {
@@ -138,22 +132,27 @@ impl DownloadClient {
             }).map(|_| ())
     }
 
-    pub fn download_and_de<T: DeserializeOwned>(&self, req: Request<hyper::Body>) -> impl Future<Item = Result<T,StreamError>, Error = StreamError> {
-        self.client.request(req)
-            .map_err(StreamError::from)
-            .and_then(|resp| {
-                debug!("Status: {}", resp.status());
-                debug!("Headers:\n{:#?}", resp.headers());
-                resp.into_body().concat2().map_err(StreamError::from).map(|chunk| {
-                    let v = chunk.to_vec();
-                    debug!("To be deseriazed:\n{:?}", String::from_utf8(v.clone()).unwrap());
-                    let ds: Result<T,StreamError> = serde_json::from_slice(&v).map_err(StreamError::from);
-                    ds
-                })
-            })
+    pub fn download_and_de<T: DeserializeOwned>(&self, req: reqwest::Request) -> Result<T,StreamError> {
+        let c = &self.rclient;
+        let mut res = c.execute(req)?;
+        let json: T = res.json()?;
+        Ok(json)
     }
 
-    pub fn make_request(&self, uri: &str, headers: Option<(&str, &str)>) -> Result<Request<hyper::Body>, StreamError> {
+    pub fn make_request(&self, uri: &str, headers: Option<(&str, &str)>) -> Result<reqwest::Request, StreamError> {
+        let c = &self.rclient;
+        match headers {
+            Some(a) => {
+                c.get(uri)
+                 .header(a.0, a.1).build().map_err(StreamError::from)
+            },
+            None => {
+                c.get(uri).build().map_err(StreamError::from)
+            }
+        }
+    }
+
+    pub fn make_hyper_request(&self, uri: &str, headers: Option<(&str, &str)>) -> Result<Request<hyper::Body>, StreamError> {
         let req = match headers {
             Some(a) => {
                 Request::builder()
@@ -170,60 +169,10 @@ impl DownloadClient {
         req.map_err(StreamError::from)
     }
 
-    pub fn make_post_request(&self, uri: &str, headers: Option<(&str, &str)>) -> Result<Request<hyper::Body>, StreamError> {
-        let req = match headers {
-            Some(a) => {
-                Request::post(uri)
-                    .header(a.0,a.1)
-                    .body(Default::default())?
-            },
-            None => {
-                Request::post(uri)
-                    .body(Default::default())?
-            }
-        };
-        trace!("Request: {:?}", &req);
-        trace!("Body: {:?}", req.body());
-        Ok(req)
-    }
-
-    pub fn make_request_body<T>(&self, uri: &str, headers: Option<(&str, &str)>, body: T) -> Result<Request<hyper::Body>, StreamError>
-    where T: ser::Serialize,
-    {
-        let body_string = serde_urlencoded::to_string(body)?;
-        trace!("To be body: {}", &body_string);
-        let new_body = hyper::Body::from(body_string);
-        let req = match headers {
-            Some(a) => {
-                Request::post(uri)
-                    .header(a.0,a.1)
-                    .header("content-type", "application/x-www-form-encoded")
-                    .header("User-Agent","Hyper/0.12.0")
-                    .body(new_body)?
-            },
-            None => {
-                Request::post(uri)
-                    .header("content-type", "application/x-www-form-encoded")
-                    .header("User-Agent","Hyper/0.12.0")
-                    .body(new_body)?
-            }
-        };
-        trace!("Request: {:?}", &req);
-        Ok(req)
-    }
-
-    pub fn serialize_request<T>(&self, req: Request<T>) -> serde_json::Result<Request<Vec<u8>>>
-    where T: ser::Serialize,
-    {
-        let (parts, body) = req.into_parts();
-        let body = serde_json::to_vec(&body)?;
-        Ok(Request::from_parts(parts, body))
-    }
-
     pub fn download_to_file_no_redir(&self, req: Request<hyper::Body>, mut file: File, spin: bool) -> impl Future<Item = (), Error = StreamError> {
         trace!("Enters: `download_to_file_no_redir`");
         //let mut file = File::create(path).unwrap();
-        let resp = self.client.request(req);
+        let resp = self.hclient.request(req);
         resp
             .map_err(StreamError::from)
             .and_then(move |res| {
@@ -250,7 +199,7 @@ impl DownloadClient {
         let mut counter = 0;
         let _ = create_dir(&folder);
         loop {
-            let m3u8_str = srt.block_on(self.download_to_string(self.make_request(&url, None)?))?;
+            let m3u8_str = self.download_to_string(self.make_request(&url, None)?)?;
             trace!("M3U8: {}", &m3u8_str);
             let m3u8 = m3u8_str.parse::<MediaPlaylist>()?;
             let m3u8_iterator = m3u8.segments().iter().map(|e| String::from(e.uri().trim()));
@@ -260,7 +209,7 @@ impl DownloadClient {
                     let path_formatted = format!("{}/{}.ts", &folder, counter);
                     let url_formatted = format!("{}{}", &master, &e.clone());
                     trace!("Downloads {} to {}", &url_formatted, &path_formatted);
-                    let ts_req = self.make_request(&url_formatted, None)?;
+                    let ts_req = self.make_hyper_request(&url_formatted, None)?;
                     let mut file = File::create(path_formatted)?;
                     trace!("Before work");
                     let work = self.download_to_file_no_redir(ts_req,

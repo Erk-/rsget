@@ -9,7 +9,7 @@ use HttpsClient;
 use utils::downloaders::DownloadClient;
 use chrono::prelude::*;
 
-use tokio::runtime::current_thread::Runtime;
+use tokio::runtime::Runtime;
 
 use std::str;
 //use std::fs::File;
@@ -115,16 +115,15 @@ fn get_hls_key(client: &DownloadClient, room_id: String, bno: String) -> Result<
         _type: String::from("common"),
     };
     let json_url = "http://live.afreecatv.com:8057/afreeca/player_live_api.php";
-    let json_req = client.make_request_body(&json_url, None, reqest_data)?;
+    let json_req = client.make_request("dr.dk", None)?;//_body(&json_url, None, reqest_data)?;
     let jres: Result<AfreecaChannelInfo<AfreecaHlsKey>, StreamError> =
-        runtime.block_on(client.download_and_de::<AfreecaChannelInfo<AfreecaHlsKey>>(json_req))?;
+        client.download_and_de::<AfreecaChannelInfo<AfreecaHlsKey>>(json_req);
     Ok(jres?.CHANNEL.AID)
 }
 
 impl Streamable for Afreeca {
     fn new(client: &HttpsClient, url: String) -> Result<Box<Afreeca>, StreamError> {
-        let mut runtime = Runtime::new()?;
-        let dc = DownloadClient::new(client.clone());
+        let dc = DownloadClient::new(client.clone())?;
         type ChannelInfo = AfreecaChannelInfo<AfreecaChannelInfoData>;
         
         let room_id_re = Regex::new(r"(?:http://[^/]+)?/([a-zA-Z0-9]+)(?:/[0-9]+)?").unwrap();
@@ -139,12 +138,14 @@ impl Streamable for Afreeca {
         let json_url = String::from("http://live.afreecatv.com:8057/afreeca/player_live_api.php");
 
         debug!("_Getting url: {}", &json_url);
-        let json_req = dc.make_request_body(&json_url,
-                                         None,
-                                         reqest_data
-        )?;
+        // let json_req = dc.make_request_body(&json_url,
+        //                                  None,
+        //                                  reqest_data
+        // )?;
+        panic!("Ehh");
+        let json_req = dc.make_request("dr.dk", None)?;
         let jres: Result<ChannelInfo, StreamError> =
-            runtime.block_on(dc.download_and_de::<ChannelInfo>(json_req))?;
+            dc.download_and_de::<ChannelInfo>(json_req);
         match jres {
             Ok(jre) => {
                 info!("Sucess when deserialising");
@@ -192,7 +193,7 @@ impl Streamable for Afreeca {
         let json_req = self.client.make_request(&json_url, None).unwrap();
         info!("Stream query url: {}", &json_url);
         info!("CDN: {}", &self.afreeca_info.CHANNEL.CDN.clone());
-        let jres = runtime.block_on(self.client.download_and_de::<AfreecaStream>(json_req)).unwrap().unwrap();
+        let jres = self.client.download_and_de::<AfreecaStream>(json_req).unwrap();
         format!("{}?aid={}", jres.view_url, self.hls_key)
     }
 

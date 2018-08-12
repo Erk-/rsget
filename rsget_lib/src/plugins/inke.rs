@@ -7,7 +7,7 @@ use chrono::prelude::*;
 
 use utils::downloaders::DownloadClient;
 use HttpsClient;
-use tokio::runtime::current_thread::Runtime;
+use tokio::runtime::Runtime;
 
 use std::fs::File;
 
@@ -84,8 +84,7 @@ pub struct Inke {
 
 impl Streamable for Inke {
     fn new(client: &HttpsClient, url: String) -> Result<Box<Inke>, StreamError> {
-        let dc = DownloadClient::new(client.clone());
-        let mut runtime = Runtime::new()?;
+        let dc = DownloadClient::new(client.clone())?;
         let re_inke: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?inke\.cn/live\.html\?uid=([0-9]+)").unwrap();
         let cap = re_inke.captures(&url).unwrap();
         let json_url = format!(
@@ -93,7 +92,7 @@ impl Streamable for Inke {
             &cap[1]
         );
         let json_req = dc.make_request(&json_url, None)?;
-        let jres = runtime.block_on(dc.download_and_de::<InkeStruct>(json_req))?;
+        let jres = dc.download_and_de::<InkeStruct>(json_req);
         match jres {
             Ok(jre) => Ok(Box::new(Inke {
                 url: String::from(url.as_str()),
@@ -156,7 +155,7 @@ impl Streamable for Inke {
             );
             runtime.block_on(
                 self.client.download_to_file(
-                    self.client.make_request(&self.get_stream(), None)?,
+                    self.client.make_hyper_request(&self.get_stream(), None)?,
                     File::create(path)?,
                     true)
             ).map(|_|())

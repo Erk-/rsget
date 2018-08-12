@@ -4,7 +4,7 @@ use serde_json;
 
 use utils::downloaders::DownloadClient;
 use HttpsClient;
-use tokio::runtime::current_thread::Runtime;
+use tokio::runtime::Runtime;
 
 use utils::error::StreamError;
 use utils::error::RsgetError;
@@ -84,16 +84,13 @@ pub struct Xingyan {
 
 impl Streamable for Xingyan {
     fn new(client: &HttpsClient, url: String) -> Result<Box<Xingyan>, StreamError> {
-        let mut runtime = Runtime::new()?;
-
-        let dc = DownloadClient::new(client.clone());
+        let dc = DownloadClient::new(client.clone())?;
         
         let room_id_re = Regex::new(r"/([0-9]+)").unwrap();
         let cap = room_id_re.captures(&url).unwrap();
         let site_url = format!("https://xingyan.panda.tv/{}", &cap[1]);
         let site_req = dc.make_request(&site_url, None)?;
-        let res: Result<String, StreamError> = runtime.block_on(
-            dc.download_to_string(site_req));
+        let res: Result<String, StreamError> = dc.download_to_string(site_req);
         match res {
             Ok(some) => {
                 let hostinfo_re = Regex::new(r"<script>window.HOSTINFO=(.*);</script>").unwrap();
@@ -166,7 +163,7 @@ impl Streamable for Xingyan {
             );
             runtime.block_on(
                 self.client.download_to_file(
-                    self.client.make_request(&self.get_stream(), None)?,
+                    self.client.make_hyper_request(&self.get_stream(), None)?,
                     File::create(path)?,
                     true)
             ).map(|_|())

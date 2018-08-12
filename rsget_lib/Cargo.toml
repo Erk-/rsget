@@ -20,3 +20,4 @@ chrono = "0.4"
 md5 = "0.3.7"
 url = "1.7"
 hls_m3u8 = "0.1.1"
+reqwest = { git = "https://github.com/seanmonstar/reqwest.git" }

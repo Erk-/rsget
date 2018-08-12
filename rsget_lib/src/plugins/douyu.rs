@@ -9,7 +9,7 @@ use utils::error::RsgetError;
 use utils::downloaders::DownloadClient;
 use chrono::prelude::*;
 
-use tokio::runtime::current_thread::Runtime;
+use tokio::runtime::Runtime;
 
 use std::fs::File;
 
@@ -174,8 +174,7 @@ pub struct Douyu {
 
 impl Streamable for Douyu {
     fn new(client: &HttpsClient, url: String) -> Result<Box<Douyu>, StreamError> {
-        let mut runtime = Runtime::new()?;
-        let dc = DownloadClient::new(client.clone());
+        let dc = DownloadClient::new(client.clone())?;
         let room_id_re = Regex::new(r"com/([a-zA-Z0-9]+)").unwrap();
         let cap = room_id_re.captures(&url).unwrap();
 
@@ -189,7 +188,7 @@ impl Streamable for Douyu {
             Err(_) => {
                 let re_room_id = Regex::new(r#""room_id" *:([0-9]+),"#).unwrap();
                 let req = dc.make_request(&url, None)?;
-                let body: String = runtime.block_on(dc.download_to_string(req))?;
+                let body: String = dc.download_to_string(req)?;
                 let cap = re_room_id.captures(&body).unwrap();
                 cap[1].parse::<u32>().unwrap()
             }
@@ -218,7 +217,7 @@ impl Streamable for Douyu {
 
         let json_url = format!("https://capi.douyucdn.cn/api/v1/{}&auth={}", &suffix, &sign);
         let json_req = dc.make_request(&json_url, Some(("User-Agent", head)))?;
-        let jres: Result<DouyuRoom, StreamError> = runtime.block_on(dc.download_and_de::<DouyuRoom>(json_req))?;
+        let jres: Result<DouyuRoom, StreamError> = dc.download_and_de::<DouyuRoom>(json_req);
         match jres {
             Ok(jre) => Ok(Box::new(Douyu {
                 data: jre,
@@ -287,7 +286,7 @@ impl Streamable for Douyu {
             );
             runtime.block_on(
                 self.client.download_to_file(
-                    self.client.make_request(&self.get_stream(), None)?,
+                    self.client.make_hyper_request(&self.get_stream(), None)?,
                     File::create(path)?,
                     true)
             ).map(|_|())

@@ -9,7 +9,7 @@ use utils::error::RsgetError;
 use utils::downloaders::DownloadClient;
 use chrono::prelude::*;
 
-use tokio::runtime::current_thread::Runtime;
+use tokio::runtime::Runtime;
 
 use HttpsClient;
 use std::fs::File;
@@ -167,9 +167,7 @@ pub struct PandaTv {
 
 impl Streamable for PandaTv {
     fn new(client: &HttpsClient, url: String) -> Result<Box<PandaTv>, StreamError> {
-        let mut runtime = Runtime::new()?;
-
-        let dc = DownloadClient::new(client.clone());
+        let dc = DownloadClient::new(client.clone())?;
 
         let room_id_re = Regex::new(r"/([0-9]+)").unwrap();
         let cap = room_id_re.captures(&url).unwrap();
@@ -185,7 +183,7 @@ impl Streamable for PandaTv {
         );
         let json_req = dc.make_request(&json_url, None)?;
         let jres: Result<PandaTvRoom, StreamError> =
-            runtime.block_on(dc.download_and_de::<PandaTvRoom>(json_req))?;
+            dc.download_and_de::<PandaTvRoom>(json_req);
         match jres {
             Ok(jre) => Ok(Box::new(PandaTv {
                 url: String::from(url.as_str()),
@@ -267,7 +265,7 @@ impl Streamable for PandaTv {
             );
             runtime.block_on(
                 self.client.download_to_file(
-                    self.client.make_request(&self.get_stream(), None)?,
+                    self.client.make_hyper_request(&self.get_stream(), None)?,
                     File::create(path)?,
                     true)
             ).map(|_|())
