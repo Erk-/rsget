@@ -156,7 +156,7 @@ impl Streamable for Afreeca {
                     hls_key: get_hls_key(&dc, String::from(&cap[1]), jre.CHANNEL.BNO)?,
                     client: dc,
                 };
-                debug!("Afreeca: {:#?}", retval);
+                debug!("{:#?}", retval);
                 Ok(Box::new(retval))},
             Err(why) => {
                 info!("Error when deserialising, {}", why);

@@ -185,12 +185,16 @@ impl Streamable for PandaTv {
         let jres: Result<PandaTvRoom, StreamError> =
             dc.download_and_de::<PandaTvRoom>(json_req);
         match jres {
-            Ok(jre) => Ok(Box::new(PandaTv {
-                url: String::from(url.as_str()),
-                room_id: String::from(&cap[0]),
-                panda_tv_room: jre,
-                client: dc,
-            })),
+            Ok(jre) => {
+                let pt = PandaTv {
+                    url: String::from(url.as_str()),
+                    room_id: String::from(&cap[0]),
+                    panda_tv_room: jre,
+                    client: dc,
+                };
+                debug!("{:#?}", pt);
+                Ok(Box::new(pt))
+            },
             Err(why) => {
                 Err(why)
             }

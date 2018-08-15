@@ -94,12 +94,16 @@ impl Streamable for Inke {
         let json_req = dc.make_request(&json_url, None)?;
         let jres = dc.download_and_de::<InkeStruct>(json_req);
         match jres {
-            Ok(jre) => Ok(Box::new(Inke {
+            Ok(jre) => {
+                let ik = Inke {
                 url: String::from(url.as_str()),
                 room_id: String::from(&cap[1]),
                 inke_info: jre,
                 client: dc,
-            })),
+                };
+                debug!("{:#?}", ik);
+                Ok(Box::new(ik))
+            },
             Err(why) => {
                 Err(why)
             }

@@ -105,7 +105,7 @@ impl Streamable for Xingyan {
                     room_id: String::from(&cap[1]),
                     host_info: hi,
                 };
-                debug!("Debug print:\n{:?}", &xy);
+                debug!("{:#?}", &xy);
                 Ok(Box::new(xy))
             },
             Err(why) => {

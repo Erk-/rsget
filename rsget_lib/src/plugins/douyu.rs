@@ -219,11 +219,15 @@ impl Streamable for Douyu {
         let json_req = dc.make_request(&json_url, Some(("User-Agent", head)))?;
         let jres: Result<DouyuRoom, StreamError> = dc.download_and_de::<DouyuRoom>(json_req);
         match jres {
-            Ok(jre) => Ok(Box::new(Douyu {
-                data: jre,
-                room_id,
-                client: dc,
-            })),
+            Ok(jre) => {
+                let dy = Douyu {
+                    data: jre,
+                    room_id,
+                    client: dc,
+                };
+                debug!("{:#?}", dy);
+                Ok(Box::new(dy))
+            },
             Err(why) => {
                 Err(why)
             }
