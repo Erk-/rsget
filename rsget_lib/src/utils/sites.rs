@@ -21,10 +21,10 @@ pub fn get_site(client: &HttpsClient, input: &str) -> Result<Box<Streamable>, St
             }
         },
         url if re_xingyan_panda.is_match(url) => {
-            match xingyan::Xingyan::new(client, String::from(url)) {
+            match xingyan2::Xingyan2::new(client, String::from(url)) {
                 Ok(s) => Ok(s),
                 Err(_why) => {
-                    match xingyan2::Xingyan2::new(client, String::from(url)) {
+                    match xingyan::Xingyan::new(client, String::from(url)) {
                         Ok(s) => Ok(s),
                         Err(why) => Err(why),
                     }

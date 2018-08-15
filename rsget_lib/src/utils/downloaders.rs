@@ -8,8 +8,7 @@ use std::process::Command;
 
 use futures::{Stream, Future};
 
-use tokio::runtime::current_thread::Runtime;
-//use tokio::runtime::Runtime as MRuntime;
+use tokio::runtime::Runtime;
 
 use hyper;
 use hyper::header::LOCATION;
@@ -225,3 +224,4 @@ impl DownloadClient {
         }
     }
 }
+
