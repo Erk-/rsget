@@ -9,8 +9,6 @@ use utils::error::RsgetError;
 use utils::downloaders::DownloadClient;
 use chrono::prelude::*;
 
-use tokio::runtime::Runtime;
-
 use std::fs::File;
 
 use md5;
@@ -271,7 +269,6 @@ impl Streamable for Douyu {
     }
 
     fn download(&self, path: String) -> Result<(), StreamError> {
-        let mut runtime = Runtime::new().unwrap();
         //let own_client = client.clone();
         if !self.is_online() {
             Err(StreamError::Rsget(RsgetError::new("Stream offline")))
@@ -288,12 +285,11 @@ impl Streamable for Douyu {
                 local.hour(),
                 local.minute(),
             );
-            runtime.block_on(
-                self.client.download_to_file(
-                    self.client.make_hyper_request(&self.get_stream(), None)?,
-                    File::create(path)?,
-                    true)
-            ).map(|_|())
+            self.client.download_to_file(
+                &self.get_stream(),
+                File::create(path)?,
+                true,
+            )
         }
     }
 }

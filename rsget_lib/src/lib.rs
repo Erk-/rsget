@@ -17,19 +17,12 @@ extern crate http;
 extern crate url;
 extern crate hls_m3u8;
 extern crate reqwest;
+extern crate yukikaze;
 
 use utils::error::StreamError;
 
 /// Type of the [hyper_tls] client
 pub type HttpsClient = hyper::Client<hyper_tls::HttpsConnector<hyper::client::HttpConnector>>;
-
-pub trait Downloadable {
-    fn new(url: String) -> Self;
-    fn get_title(&self) -> Option<String>;
-    fn get_author(&self) -> Option<String>;
-    fn get_size(&self) -> Option<String>;
-    fn get_stream(&self) -> String;
-}
 
 pub trait Streamable {
     /// Creates a new streamable

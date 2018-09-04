@@ -9,8 +9,6 @@ use utils::error::RsgetError;
 use utils::downloaders::DownloadClient;
 use chrono::prelude::*;
 
-use tokio::runtime::Runtime;
-
 use HttpsClient;
 use std::fs::File;
 
@@ -70,7 +68,7 @@ struct PandaTvVideoInfo {
 #[derive(Clone, Debug, Deserialize)]
 struct PandaTvPictures {
     img: String,
-    qrcode: String,
+    //qrcode: String,
 }
 
 #[allow(dead_code)]
@@ -257,7 +255,6 @@ impl Streamable for PandaTv {
     }
 
     fn download(&self, path: String) -> Result<(), StreamError> {
-        let mut runtime = Runtime::new()?;
         if !self.is_online() {
             Err(StreamError::Rsget(RsgetError::new("Stream offline")))
         } else {
@@ -267,12 +264,11 @@ impl Streamable for PandaTv {
                 self.get_author().unwrap(),
                 self.room_id
             );
-            runtime.block_on(
-                self.client.download_to_file(
-                    self.client.make_hyper_request(&self.get_stream(), None)?,
-                    File::create(path)?,
-                    true)
-            ).map(|_|())
+            self.client.download_to_file(
+                &self.get_stream(),
+                File::create(path)?,
+                true,
+            )
         }
     }
 }

@@ -3,7 +3,7 @@ use utils::error::RsgetError;
 
 use std::fs::File;
 use std::io::Write;
-use std::io::BufWriter;
+//use std::io::BufWriter;
 use std::process::Command;
 
 use futures::{Stream, Future};
@@ -11,7 +11,6 @@ use futures::{Stream, Future};
 use tokio::runtime::Runtime;
 
 use hyper;
-use hyper::header::LOCATION;
 
 use http::Request;
 
@@ -31,9 +30,12 @@ use serde::de::DeserializeOwned;
 use reqwest;
 use reqwest::Client as RClient;
 
+use yukikaze::client::{Client as YukiClient, HttpClient as YukiHttpClient, Request as YukiRequest};
+
 use std::fs::create_dir;
 use std::collections::HashSet;
 use std::{thread, time};
+//use std::fmt;
 
 use HttpsClient;
 
@@ -72,44 +74,15 @@ impl DownloadClient {
         })
     }
 
-    fn get_redirection(&self, req: Request<hyper::Body>) -> hyper::client::ResponseFuture {
-        trace!("Enters `get_redirection`");
-        let mut runtime = Runtime::new().unwrap();
-        let ouri = req.uri().clone();
-        let work = self.hclient.request(req)
-            .map(|r|
-                 if r.status().is_redirection() {
-                     Some(r.headers()[LOCATION]
-                          .to_str()
-                          .unwrap()
-                          .parse()
-                          .unwrap())
-                 } else {
-                     None
-                 }
-            );
-
-        let resp: Option<hyper::Uri> = runtime.block_on(work).unwrap();
-        
-        match resp {
-            Some(uri) => {
-                let new_req = self.make_hyper_request(&uri.to_string(), None);
-                self.hclient.request(new_req.unwrap())
-            },
-            None => {
-                let new_req = self.make_hyper_request(&ouri.to_string(), None);
-                self.hclient.request(new_req.unwrap())
-            },
-        }
-    }
-
     pub fn download_to_string(&self, req: reqwest::Request) -> Result<String, StreamError> {
         let c = &self.rclient;
         let mut res = c.execute(req)?;
         res.text().map_err(StreamError::from)
     }
 
-    pub fn download_to_file(&self, req: Request<hyper::Body>, file: File, spin: bool) -> impl Future<Item = (), Error = StreamError> {
+    pub fn download_to_file(&self, url: &str, file: File, _spin: bool) -> Result<(), StreamError>{//impl Future<Item = (), Error = StreamError> {
+        /*
+
         let mut filew = BufWriter::new(file);
         let resp = self.get_redirection(req);
         resp
@@ -129,6 +102,19 @@ impl DownloadClient {
                         .map_err(StreamError::from)
                 })
             }).map(|_| ())
+        */
+        let mut rt = Runtime::new()?;
+        let client = YukiClient::default();
+        let req = YukiRequest::get(url).expect("Create request").empty();
+        let res1 = rt.block_on(client.execute(req));
+        let res2 = res1.expect("To get");
+        let body = res2.file(file);
+        println!("Downloading");
+        let res3 = rt.block_on(body);
+        let file = res3.expect("Get File");
+        let md = file.metadata()?;
+        println!("Downloaded: {} MB", md.len()/1000/1000);
+        Ok(())
     }
 
     pub fn download_and_de<T: DeserializeOwned>(&self, req: reqwest::Request) -> Result<T,StreamError> {
@@ -150,7 +136,7 @@ impl DownloadClient {
             }
         }
     }
-
+    
     pub fn make_hyper_request(&self, uri: &str, headers: Option<(&str, &str)>) -> Result<Request<hyper::Body>, StreamError> {
         let req = match headers {
             Some(a) => {
@@ -168,6 +154,7 @@ impl DownloadClient {
         req.map_err(StreamError::from)
     }
 
+    //#[deprecated(note = "Use download_to_file instead")]
     pub fn download_to_file_no_redir(&self, req: Request<hyper::Body>, mut file: File, spin: bool) -> impl Future<Item = (), Error = StreamError> {
         trace!("Enters: `download_to_file_no_redir`");
         //let mut file = File::create(path).unwrap();

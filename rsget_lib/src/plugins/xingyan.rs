@@ -4,7 +4,6 @@ use serde_json;
 
 use utils::downloaders::DownloadClient;
 use HttpsClient;
-use tokio::runtime::Runtime;
 
 use utils::error::StreamError;
 use utils::error::RsgetError;
@@ -151,7 +150,6 @@ impl Streamable for Xingyan {
     }
 
     fn download(&self, path: String) -> Result<(), StreamError> {
-        let mut runtime = Runtime::new()?;
         if !self.is_online() {
             Err(StreamError::Rsget(RsgetError::new("Stream offline")))
         } else {
@@ -161,12 +159,11 @@ impl Streamable for Xingyan {
                 self.get_author().unwrap(),
                 self.room_id
             );
-            runtime.block_on(
-                self.client.download_to_file(
-                    self.client.make_hyper_request(&self.get_stream(), None)?,
-                    File::create(path)?,
-                    true)
-            ).map(|_|())
+            self.client.download_to_file(
+                &self.get_stream(),
+                File::create(path)?,
+                true,
+            )
         }
     }
 }
