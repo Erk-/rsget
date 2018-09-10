@@ -17,7 +17,6 @@ extern crate http;
 extern crate url;
 extern crate hls_m3u8;
 extern crate reqwest;
-extern crate yukikaze;
 
 use utils::error::StreamError;
 

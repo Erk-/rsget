@@ -30,8 +30,6 @@ use serde::de::DeserializeOwned;
 use reqwest;
 use reqwest::Client as RClient;
 
-use yukikaze::client::{Client as YukiClient, HttpClient as YukiHttpClient, Request as YukiRequest};
-
 use std::fs::create_dir;
 use std::collections::HashSet;
 use std::{thread, time};
@@ -79,42 +77,29 @@ impl DownloadClient {
         let mut res = c.execute(req)?;
         res.text().map_err(StreamError::from)
     }
-
-    pub fn download_to_file(&self, url: &str, file: File, _spin: bool) -> Result<(), StreamError>{//impl Future<Item = (), Error = StreamError> {
-        /*
-
-        let mut filew = BufWriter::new(file);
-        let resp = self.get_redirection(req);
-        resp
-            .map_err(StreamError::from)
-            .and_then(move |res| {
-                trace!("dtf Status: {}", res.status());
-                trace!("dtf Headers:\n{:#?}", res.headers());
-                let mut size: f64 = 0.0;
-                let spinner = ProgressBar::new_spinner();
-                res.into_body().map_err(StreamError::from).for_each(move |chunk| {
-                    if spin {
-                        spinner.tick();
-                        size += chunk.len() as f64;
-                        spinner.set_message(&format!("Size: {:.2} MB", size / 1000.0 / 1000.0));
-                    }
-                    filew.write_all(&chunk)
-                        .map_err(StreamError::from)
-                })
-            }).map(|_| ())
-        */
+    
+    pub fn download_to_file(&self, url: &str, file: File, spin: bool) -> Result<(), StreamError>{
+        use std::io::BufWriter;
+        let mut fileb = BufWriter::new(file);
         let mut rt = Runtime::new()?;
-        let client = YukiClient::default();
-        let req = YukiRequest::get(url).expect("Create request").empty();
-        let res1 = rt.block_on(client.execute(req));
-        let res2 = res1.expect("To get");
-        let body = res2.file(file);
-        println!("Downloading");
-        let res3 = rt.block_on(body);
-        let file = res3.expect("Get File");
-        let md = file.metadata()?;
-        println!("Downloaded: {} MB", md.len()/1000/1000);
-        Ok(())
+        use reqwest::async::Client as AsyncClient;
+        let aclient = AsyncClient::new();
+        let req1 = aclient.get(url);
+        let resp_future = req1.send();
+        let resp = rt.block_on(resp_future)?;
+        info!("resp: {:#?}", &resp);
+        let mut size: f64 = 0.0;
+        let spinner = ProgressBar::new_spinner();
+        let future = resp.into_body().map_err(StreamError::from).for_each(move |chunk| {
+            if spin {
+                spinner.tick();
+                size += chunk.len() as f64;
+                spinner.set_message(&format!("Size: {:.2} MB", size / 1000.0 / 1000.0));
+            }
+            fileb.write_all(&chunk)
+                .map_err(StreamError::from)
+        });
+        rt.block_on(future.map_err(StreamError::from))
     }
 
     pub fn download_and_de<T: DeserializeOwned>(&self, req: reqwest::Request) -> Result<T,StreamError> {
