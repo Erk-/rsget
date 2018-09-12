@@ -18,3 +18,6 @@ steps:
     source $HOME/.cargo/env
     cargo build --release
 
+- task: PublishBuildArtifacts@1
+  inputs:
+    pathtoPublish: rsget_cli/target/release/rsget
