@@ -12,6 +12,10 @@ steps:
     sh rustup-init.sh -y
   displayName: 'Install rust'
 
-- script: 
+- script: |
+    pwd
+    ls
+    cd src
+    ls
     cargo build --release
 
