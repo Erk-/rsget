@@ -10,6 +10,7 @@ steps:
 - bash: |
     curl -o rustup-init.sh https://sh.rustup.rs -sSf
     sh rustup-init.sh -y
+    source $HOME/.cargo/env
   displayName: 'Install rust'
 
 - script: |
