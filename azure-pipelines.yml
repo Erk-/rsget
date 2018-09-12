@@ -6,9 +6,11 @@
 pool:
   vmImage: 'Ubuntu 16.04'
 
-steps:
-- bash: curl https://sh.rustup.rs -sSf | sh -y
-  displayName: 'Run a one-line script'
+steps: 
+- bash: |
+    curl -o rustup-init.sh https://sh.rustup.rs -sSf
+    sh rustup-init.sh -y
+  displayName: 'Install rust'
 
 - script: 
     cargo build --release
