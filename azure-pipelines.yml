@@ -15,5 +15,6 @@ steps:
 
 - script: |
     cd rsget_cli
+    source $HOME/.cargo/env
     cargo build --release
 
