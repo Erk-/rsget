@@ -13,9 +13,6 @@ steps:
   displayName: 'Install rust'
 
 - script: |
-    pwd
-    ls
-    cd src
-    ls
+    cd rsget_cli
     cargo build --release
 
