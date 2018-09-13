@@ -14,7 +14,7 @@ jobs:
     name: Linux
     vmImage: ubuntu-1604
 
-- template: azure-template-win.yml  # Template reference
+- template: azure-template.yml  # Template reference
   parameters:
     name: Windows
     vmImage: vs2017-win2016
