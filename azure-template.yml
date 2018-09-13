@@ -1,4 +1,4 @@
-parameters:
+variables:
   name: ''  # defaults for any parameters that aren't specified
   vmImage: ''
   toolchain: 'stable'
@@ -8,7 +8,7 @@ jobs:
   pool: 
     vmImage: ${{ parameters.vmImage }}
   steps: 
-  - script: |
+  - bash: |
       echo "1: $PARAMETERS_TOOLCHAIN"
       echo "2: $TOOLCHAIN"
       echo "3: $(parameters.toolchain)"

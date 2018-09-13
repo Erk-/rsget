@@ -1,4 +1,4 @@
-parameters:
+variables:
   name: ''  # defaults for any parameters that aren't specified
   vmImage: ''
   toolchain: 'stable'
@@ -8,13 +8,13 @@ jobs:
   pool: 
     vmImage: ${{ parameters.vmImage }}
   steps: 
-  - script: |
+  - powershell: |
       echo "1: $env:PARAMETERS_TOOLCHAIN"
       echo "2: $env:TOOLCHAIN"
       echo "3: $(parameters.toolchain)"
       echo "4: $(toolchain)"
-      powershell.exe -Command 'Invoke-WebRequest -Uri "https://win.rustup.rs" -OutFile "rustup-init.exe"'
-      ".\rustup-init.exe" -y --default-toolchain $(parameter.toolchain)
+      Invoke-WebRequest -Uri "https://win.rustup.rs" -OutFile "rustup-init.exe"
+      &".\rustup-init.exe" -y --default-toolchain $(parameter.toolchain)
     displayName: 'Install rust'
 
   - powershell: |
