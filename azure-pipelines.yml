@@ -4,55 +4,55 @@
 # https://aka.ms/yaml
 
 jobs:
-- template: 'templates/azure-template.yml'  # Template reference
+- template: 'azure-template.yml'  # Template reference
   parameters:
     name: 'macOS_stable'
     vmImage: 'xcode9-macos10.13'
     toolchain: 'stable'
 
-- template: 'templates/azure-template.yml'  # Template reference
+- template: 'azure-template.yml'  # Template reference
   parameters:
     name: 'macOS_nightly'
     vmImage: 'xcode9-macos10.13'
     toolchain: 'nightly'
 
-- template: 'templates/azure-template.yml'  # Template reference
+- template: 'azure-template.yml'  # Template reference
   parameters:
     name: 'macOS_1.25.0'
     vmImage: 'xcode9-macos10.13'
     toolchain: '1.25.0'
 
-- template: 'templates/azure-template.yml'  # Template reference
+- template: 'azure-template.yml'  # Template reference
   parameters:
     name: 'Linux_stable'
     vmImage: 'ubuntu-16.04'
     toolchain: 'stable'
 
-- template: 'templates/azure-template.yml'  # Template reference
+- template: 'azure-template.yml'  # Template reference
   parameters:
     name: 'Linux_nightly'
     vmImage: 'ubuntu-16.04'
     toolchain: 'nightly'
 
-- template: 'templates/azure-template.yml'  # Template reference
+- template: 'azure-template.yml'  # Template reference
   parameters:
     name: 'Linux_1.25.0'
     vmImage: 'ubuntu-16.04'
     toolchain: '1.25.0'
 
-- template: 'azura-template-win.yml'  # Template reference
+- template: 'azure-template-win.yml'  # Template reference
   parameters:
     name: 'Windows_stable'
     vmImage: 'vs2017-win2017'
     toolchain: 'stable'
 
-- template: 'templates/azure-template-win.yml'  # Template reference
+- template: 'azure-template-win.yml'  # Template reference
   parameters:
     name: 'Windows_nightly'
     vmImage: 'vs2017-win2017'
     toolchain: 'nightly'
 
-- template: 'templates/azure-template-win.yml'  # Template reference
+- template: 'azure-template-win.yml'  # Template reference
   parameters:
     name: 'Windows_1.25.0'
     vmImage: 'vs2017-win2017'
