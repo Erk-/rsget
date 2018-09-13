@@ -9,8 +9,12 @@ jobs:
     vmImage: ${{ parameters.vmImage }}
   steps: 
   - bash: |
+      echo "1: $PARAMETER_TOOLCHAIN"
+      echo "2: $TOOLCHAIN"
+      echo "3: $(parameter.toolchain)"
+      echo "4: $(toolchain)"
       curl -o rustup-init.sh https://sh.rustup.rs -sSf
-      sh rustup-init.sh -y --default-toolchain $(parameter.toolchain)
+      sh rustup-init.sh --default-toolchain $(parameter.toolchain) -y
     displayName: 'Install rust'
 
   - bash: |
