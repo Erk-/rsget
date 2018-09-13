@@ -4,17 +4,17 @@
 # https://aka.ms/yaml
 
 jobs:
-- template: azure-template.yml  # Template reference
+- template: 'azure-template.yml'  # Template reference
   parameters:
     name: macOS
     vmImage: 'xcode9-macos10.13'
 
-- template: azure-template.yml  # Template reference
+- template: 'azure-template.yml'  # Template reference
   parameters:
     name: Linux
     vmImage: 'ubuntu-16.04'
 
-- template: azure-template-win.yml  # Template reference
+- template: 'azura-template-win.yml'  # Template reference
   parameters:
     name: Windows
     vmImage: 'vs2017-win2017'

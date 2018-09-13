@@ -13,7 +13,7 @@ jobs:
     displayName: 'Install rust'
 
   - powershell: |
-      cd rsget_cli
+      Set-Location rsget_cli
       &"$env:USERPROFILE\.cargo\bin\cargo" build --release
 
   - task: PublishBuildArtifacts@1
