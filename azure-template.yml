@@ -11,10 +11,8 @@ jobs:
     tc: ${{ parameters.name }}
   steps: 
   - bash: |
-      echo "1: $PARAMETERS_TOOLCHAIN"
-      echo "2: $TOOLCHAIN"
-      echo "3: $(parameters.toolchain)"
-      echo "4: $(toolchain)"
+      echo "1: $TC"
+      echo "2: $(tc)"
       curl -o rustup-init.sh https://sh.rustup.rs -sSf
       sh rustup-init.sh --default-toolchain $(parameter.toolchain) -y
     displayName: 'Install rust'

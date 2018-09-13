@@ -11,10 +11,8 @@ jobs:
     tc: ${{ parameters.name }}
   steps: 
   - powershell: |
-      echo "1: $env:PARAMETERS_TOOLCHAIN"
-      echo "2: $env:TOOLCHAIN"
-      echo "3: $(parameters.toolchain)"
-      echo "4: $(toolchain)"
+      echo "2: $env:TC"
+      echo "4: $(tc)"
       Invoke-WebRequest -Uri "https://win.rustup.rs" -OutFile "rustup-init.exe"
       &".\rustup-init.exe" -y --default-toolchain $(parameter.toolchain)
     displayName: 'Install rust'
