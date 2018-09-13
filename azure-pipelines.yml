@@ -18,7 +18,7 @@ jobs:
 
 - template: 'azure-template.yml'  # Template reference
   parameters:
-    name: 'macOS_1.25.0'
+    name: 'macOS_1_25_0'
     vmImage: 'xcode9-macos10.13'
     toolchain: '1.25.0'
 
@@ -36,7 +36,7 @@ jobs:
 
 - template: 'azure-template.yml'  # Template reference
   parameters:
-    name: 'Linux_1.25.0'
+    name: 'Linux_1_25_0'
     vmImage: 'ubuntu-16.04'
     toolchain: '1.25.0'
 
@@ -54,7 +54,7 @@ jobs:
 
 - template: 'azure-template-win.yml'  # Template reference
   parameters:
-    name: 'Windows_1.25.0'
+    name: 'Windows_1_25_0'
     vmImage: 'vs2017-win2017'
     toolchain: '1.25.0'
 
