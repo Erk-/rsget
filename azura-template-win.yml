@@ -1,6 +1,7 @@
 parameters:
   name: ''  # defaults for any parameters that aren't specified
   vmImage: ''
+  toolchain: 'stable'
 
 jobs:
 - job: ${{ parameters.name }}
@@ -9,7 +10,7 @@ jobs:
   steps: 
   - powershell: |
       Invoke-WebRequest -Uri "https://win.rustup.rs" -OutFile "rustup-init.exe"
-      &".\rustup-init.exe" -y
+      &".\rustup-init.exe" -y --default-toolchain ${{ parameters.toolchain }}
     displayName: 'Install rust'
 
   - powershell: |

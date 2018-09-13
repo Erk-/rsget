@@ -8,14 +8,53 @@ jobs:
   parameters:
     name: macOS
     vmImage: 'xcode9-macos10.13'
+    toolchain: 'stable'
 
 - template: 'azure-template.yml'  # Template reference
   parameters:
-    name: Linux
+    name: 'macOS nightly'
+    vmImage: 'xcode9-macos10.13'
+    toolchain: 'nightly'
+
+- template: 'azure-template.yml'  # Template reference
+  parameters:
+    name: 'macOS 1.25.0'
+    vmImage: 'xcode9-macos10.13'
+    toolchain: '1.25.0'
+
+- template: 'azure-template.yml'  # Template reference
+  parameters:
+    name: 'Linux stable'
     vmImage: 'ubuntu-16.04'
+    toolchain: 'stable'
+
+- template: 'azure-template.yml'  # Template reference
+  parameters:
+    name: 'Linux nightly'
+    vmImage: 'ubuntu-16.04'
+    toolchain: 'nightly'
+
+- template: 'azure-template.yml'  # Template reference
+  parameters:
+    name: 'Linux 1.25.0'
+    vmImage: 'ubuntu-16.04'
+    toolchain: '1.25.0'
 
 - template: 'azura-template-win.yml'  # Template reference
   parameters:
-    name: Windows
+    name: 'Windows stable'
     vmImage: 'vs2017-win2017'
+    toolchain: 'stable'
+
+- template: 'azure-template.yml'  # Template reference
+  parameters:
+    name: 'Windows nightly'
+    vmImage: 'vs2017-win2017'
+    toolchain: 'nightly'
+
+- template: 'azure-template.yml'  # Template reference
+  parameters:
+    name: 'Windows 1.25.0'
+    vmImage: 'vs2017-win2017'
+    toolchain: '1.25.0'
 
