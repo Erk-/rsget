@@ -3,17 +3,24 @@
 # Add steps that build, run tests, deploy, and more:
 # https://aka.ms/yaml
 
-pool:
-  vmImage: 'Ubuntu 16.04'
+jobs:
+- job: Linux
+  pool:
+    vmImage: 'ubuntu-16.04'
+- job: macOS
+  pool:
+    vmImage: 'xcode9-macos10.13'
+- job: Windows
+  pool:
+    vmImage: 'vs2017-win2016'
 
 steps: 
 - bash: |
     curl -o rustup-init.sh https://sh.rustup.rs -sSf
     sh rustup-init.sh -y
-    source $HOME/.cargo/env
   displayName: 'Install rust'
 
-- script: |
+- bash: |
     cd rsget_cli
     source $HOME/.cargo/env
     cargo build --release
