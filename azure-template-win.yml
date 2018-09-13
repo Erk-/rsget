@@ -10,7 +10,7 @@ jobs:
   steps: 
   - powershell: |
       Invoke-WebRequest -Uri "https://win.rustup.rs" -OutFile "rustup-init.exe"
-      &".\rustup-init.exe" -y --default-toolchain ${{ parameters.toolchain }}
+      &".\rustup-init.exe" -y --default-toolchain $env:parameters_toolchain
     displayName: 'Install rust'
 
   - powershell: |
