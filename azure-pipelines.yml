@@ -4,27 +4,18 @@
 # https://aka.ms/yaml
 
 jobs:
-- job: Linux
-  pool:
-    vmImage: 'ubuntu-16.04'
-- job: macOS
-  pool:
-    vmImage: 'xcode9-macos10.13'
-- job: Windows
-  pool:
-    vmImage: 'vs2017-win2016'
+- template: azure-template.yml  # Template reference
+  parameters:
+    name: macOS
+    vmImage: xcode9-macos10.13
 
-steps: 
-- bash: |
-    curl -o rustup-init.sh https://sh.rustup.rs -sSf
-    sh rustup-init.sh -y
-  displayName: 'Install rust'
+- template: azure-template.yml  # Template reference
+  parameters:
+    name: Linux
+    vmImage: ubuntu-1604
 
-- bash: |
-    cd rsget_cli
-    source $HOME/.cargo/env
-    cargo build --release
+- template: azure-template-win.yml  # Template reference
+  parameters:
+    name: Windows
+    vmImage: vs2017-win2016
 
-- task: PublishBuildArtifacts@1
-  inputs:
-    pathtoPublish: rsget_cli/target/release/rsget
