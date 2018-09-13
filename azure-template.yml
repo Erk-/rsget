@@ -8,7 +8,7 @@ jobs:
   pool: 
     vmImage: ${{ parameters.vmImage }}
   steps: 
-  - bash: |
+  - script: |
       echo "1: $PARAMETERS_TOOLCHAIN"
       echo "2: $TOOLCHAIN"
       echo "3: $(parameters.toolchain)"
