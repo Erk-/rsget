@@ -10,7 +10,7 @@ jobs:
   steps: 
   - bash: |
       curl -o rustup-init.sh https://sh.rustup.rs -sSf
-      sh rustup-init.sh -y --default-toolchain $PARAMETERS_TOOLCHAIN
+      sh rustup-init.sh -y --default-toolchain $TOOLCHAIN
     displayName: 'Install rust'
 
   - bash: |
