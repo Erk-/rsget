@@ -9,7 +9,7 @@ jobs:
   steps: 
   - powershell: |
       Invoke-WebRequest -Uri "https://win.rustup.rs" -OutFile "rustup-init.exe"
-      &".\rustup-init.exe"
+      &".\rustup-init.exe" -y
     displayName: 'Install rust'
 
   - powershell: |
