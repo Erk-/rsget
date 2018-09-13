@@ -8,11 +8,9 @@ jobs:
   pool: 
     vmImage: ${{ parameters.vmImage }}
   variables:
-    tc: ${{ parameters.name }}
+    tc: ${{ parameters.toolchain }}
   steps: 
   - powershell: |
-      echo "2: $env:TC"
-      echo "4: $(tc)"
       Invoke-WebRequest -Uri "https://win.rustup.rs" -OutFile "rustup-init.exe"
       &".\rustup-init.exe" -y --default-toolchain $(parameter.toolchain)
     displayName: 'Install rust'
