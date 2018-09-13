@@ -7,15 +7,15 @@ jobs:
 - template: azure-template.yml  # Template reference
   parameters:
     name: macOS
-    vmImage: xcode9-macos10.13
+    vmImage: 'xcode9-macos10.13'
 
 - template: azure-template.yml  # Template reference
   parameters:
     name: Linux
-    vmImage: ubuntu-1604
+    vmImage: 'ubuntu-16.04'
 
-- template: azure-template.yml  # Template reference
+- template: azure-template-win.yml  # Template reference
   parameters:
     name: Windows
-    vmImage: vs2017-win2016
+    vmImage: 'vs2017-win2017'
 
