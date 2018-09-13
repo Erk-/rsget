@@ -16,6 +16,7 @@ jobs:
   - powershell: |
       Set-Location rsget_cli
       &"$env:USERPROFILE\.cargo\bin\cargo" build --release
+    displayName: 'Build rsget'
 
   - task: PublishBuildArtifacts@1
     inputs:

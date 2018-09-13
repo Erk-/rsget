@@ -17,6 +17,7 @@ jobs:
       cd rsget_cli
       source $HOME/.cargo/env
       cargo build --release
+    displayName: 'Build rsget'
 
   - task: PublishBuildArtifacts@1
     inputs:
