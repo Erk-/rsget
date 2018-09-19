@@ -1,0 +1,27 @@
+parameters:
+  name: ''  # defaults for any parameters that aren't specified
+  vmImage: ''
+  toolchain: 'stable'
+
+jobs:
+- job: ${{ parameters.name }}
+  pool: 
+    vmImage: ${{ parameters.vmImage }}
+  variables:
+    tc: ${{ parameters.toolchain }}
+  steps: 
+  - bash: |
+      curl -o rustup-init.sh https://sh.rustup.rs -sSf
+      sh rustup-init.sh --default-toolchain $(tc) -y
+    displayName: 'Install rust'
+
+  - bash: |
+      cd rsget_cli
+      source $HOME/.cargo/env
+      cargo build --release
+    displayName: 'Build rsget'
+
+  - task: PublishBuildArtifacts@1
+    inputs:
+      pathtoPublish: 'rsget_cli/target/release/rsget'
+      artifactName: 'rsget-$(Agent.OS)'

@@ -1,0 +1,28 @@
+parameters:
+  name: ''  # defaults for any parameters that aren't specified
+  vmImage: ''
+  toolchain: 'stable'
+
+jobs:
+- job: ${{ parameters.name }}
+  pool: 
+    vmImage: ${{ parameters.vmImage }}
+  variables:
+    tc: ${{ parameters.toolchain }}
+  steps: 
+  - powershell: |
+      echo "2: $env:TC"
+      echo "4: $(tc)"
+      Invoke-WebRequest -Uri "https://win.rustup.rs" -OutFile "rustup-init.exe"
+      &".\rustup-init.exe" --default-toolchain $(tc) -y
+    displayName: 'Install rust'
+
+  - powershell: |
+      Set-Location rsget_cli
+      &"$env:USERPROFILE\.cargo\bin\cargo" build --release
+    displayName: 'Build rsget'
+
+  - task: PublishBuildArtifacts@1
+    inputs:
+      pathtoPublish: 'rsget_cli\target\release\rsget.exe'
+      artifactName: 'rsget-$(Agent.OS)'
