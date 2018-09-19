@@ -169,8 +169,8 @@ pub struct Douyu {
 }
 
 impl Streamable for Douyu {
-    fn new(client: &DownloadClient, url: String) -> Result<Box<Douyu>, StreamError> {
-        let dc = client.clone();
+    fn new(url: String) -> Result<Box<Douyu>, StreamError> {
+        let dc = DownloadClient::new()?;
         let room_id_re = Regex::new(r"com/([a-zA-Z0-9]+)").unwrap();
         let cap = room_id_re.captures(&url).unwrap();
 

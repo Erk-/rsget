@@ -99,8 +99,8 @@ pub struct Xingyan2 {
 
 
 impl Streamable for Xingyan2 {
-    fn new(client: &DownloadClient, url: String) -> Result<Box<Xingyan2>, StreamError> {
-        let dc = client.clone();
+    fn new(url: String) -> Result<Box<Xingyan2>, StreamError> {
+        let dc = DownloadClient::new()?;
         let room_id_re = Regex::new(r"/([0-9]+)")?;
         let cap = room_id_re.captures(&url)
             .ok_or(StreamError::Rsget(RsgetError::new("[Xingyan2] Could not find roomid")))?;

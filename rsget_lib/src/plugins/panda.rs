@@ -163,8 +163,8 @@ pub struct PandaTv {
 }
 
 impl Streamable for PandaTv {
-    fn new(client: &DownloadClient, url: String) -> Result<Box<PandaTv>, StreamError> {
-        let dc = client.clone();
+    fn new(url: String) -> Result<Box<PandaTv>, StreamError> {
+        let dc = DownloadClient::new()?;
 
         let room_id_re = Regex::new(r"/([0-9]+)")?;
         let cap = room_id_re.captures(&url).ok_or(StreamError::Rsget(RsgetError::new("[Panda] Could not find roomid")))?;

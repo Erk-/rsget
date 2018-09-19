@@ -81,8 +81,8 @@ pub struct Inke {
 }
 
 impl Streamable for Inke {
-    fn new(client: &DownloadClient, url: String) -> Result<Box<Inke>, StreamError> {
-        let dc = client.clone();
+    fn new(url: String) -> Result<Box<Inke>, StreamError> {
+        let dc = DownloadClient::new()?;
         let re_inke: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?inke\.cn/live\.html\?uid=([0-9]+)").unwrap();
         let cap = re_inke.captures(&url).unwrap();
         let json_url = format!(

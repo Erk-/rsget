@@ -81,8 +81,8 @@ pub struct Xingyan {
 
 
 impl Streamable for Xingyan {
-    fn new(client: &DownloadClient, url: String) -> Result<Box<Xingyan>, StreamError> {
-        let dc = client.clone();
+    fn new(url: String) -> Result<Box<Xingyan>, StreamError> {
+        let dc = DownloadClient::new()?;
         
         let room_id_re = Regex::new(r"/([0-9]+)")?;
         let cap = match room_id_re.captures(&url) {

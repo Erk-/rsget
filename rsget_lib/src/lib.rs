@@ -17,11 +17,10 @@ extern crate hls_m3u8;
 extern crate reqwest;
 
 use utils::error::StreamError;
-use utils::downloaders::DownloadClient;
 
 pub trait Streamable {
     /// Creates a new streamable
-    fn new(client: &DownloadClient, url: String) -> Result<Box<Self>, StreamError>
+    fn new(url: String) -> Result<Box<Self>, StreamError>
     where
         Self: Sized;
     /// Returns the title of the stream if possible
