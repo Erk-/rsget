@@ -1,7 +1,12 @@
 [package]
 name = "rsget_lib"
-version = "0.2.0"
+version = "0.1.0"
 authors = ["Valdemar Erk <valdemar@erk.io>"]
+description = "Library to get information about and download livestreams"
+license = "ISC"
+documentation = "https://docs.rs/rsget_lib"
+homepage = "https://github.com/Erk-/rsget"
+repository = "https://github.com/Erk-/rsget/tree/master/rsget_lib"
 
 [profile.release]
 panic = "abort"
@@ -21,4 +26,4 @@ chrono = "^0.4"
 md5 = "^0.4"
 url = "^1.7"
 hls_m3u8 = "^0.1.1"
-reqwest = { git = "https://github.com/seanmonstar/reqwest.git" }
+reqwest = "^0.9"
