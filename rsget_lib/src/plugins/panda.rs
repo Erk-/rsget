@@ -9,7 +9,6 @@ use utils::error::RsgetError;
 use utils::downloaders::DownloadClient;
 use chrono::prelude::*;
 
-use HttpsClient;
 use std::fs::File;
 
 #[allow(dead_code)]
@@ -164,11 +163,11 @@ pub struct PandaTv {
 }
 
 impl Streamable for PandaTv {
-    fn new(client: &HttpsClient, url: String) -> Result<Box<PandaTv>, StreamError> {
-        let dc = DownloadClient::new(client.clone())?;
+    fn new(client: &DownloadClient, url: String) -> Result<Box<PandaTv>, StreamError> {
+        let dc = client.clone();
 
-        let room_id_re = Regex::new(r"/([0-9]+)").unwrap();
-        let cap = room_id_re.captures(&url).unwrap();
+        let room_id_re = Regex::new(r"/([0-9]+)")?;
+        let cap = room_id_re.captures(&url).ok_or(StreamError::Rsget(RsgetError::new("[Panda] Could not find roomid")))?;
         let start = SystemTime::now();
         let since_the_epoch = start
             .duration_since(UNIX_EPOCH)
@@ -219,7 +218,7 @@ impl Streamable for PandaTv {
             .split('_')
             .collect();
         let data2: Value =
-            serde_json::from_str(&self.panda_tv_room.data.videoinfo.plflag_list).unwrap();
+            serde_json::de::from_str(&self.panda_tv_room.data.videoinfo.plflag_list).unwrap();
         let rid = &data2["auth"]["rid"].as_str().unwrap();
         let sign = &data2["auth"]["sign"].as_str().unwrap();
         let ts = &data2["auth"]["time"].as_str().unwrap();

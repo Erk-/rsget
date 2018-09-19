@@ -4,10 +4,9 @@ extern crate flexi_logger;
 //#[macro_use]
 extern crate log;
 extern crate rsget_lib;
-extern crate hyper;
-extern crate hyper_tls;
  
 use rsget_lib::Streamable;
+use rsget_lib::utils::downloaders::DownloadClient;
 use clap::{App, Arg}; //, SubCommand};
 use std::process::Command;
 use flexi_logger::{Logger,opt_format};
@@ -59,11 +58,9 @@ fn main() -> Result<(), StreamError> {
         )
         .get_matches();
     let url = String::from(matches.value_of("URL").unwrap());
-    let https = hyper_tls::HttpsConnector::new(4).unwrap();
-    let client = hyper::Client::builder()
-        .build::<_, hyper::Body>(https);
+    let client = DownloadClient::new()?;
 
-    let stream: Box<Streamable> = rsget_lib::utils::sites::get_site(&client, &url)?;
+    let stream: Box<Streamable> = rsget_lib::utils::sites::get_site(client, &url)?;
     
     if !stream.is_online() {
         return Err(StreamError::Rsget(RsgetError::new("Stream is offline")))

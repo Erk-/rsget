@@ -10,10 +10,6 @@ use futures::{Stream, Future};
 
 use tokio::runtime::Runtime;
 
-use hyper;
-
-use http::Request;
-
 use hls_m3u8::MediaPlaylist;
 //use hls_m3u8::MasterPlaylist;
 
@@ -35,11 +31,8 @@ use std::collections::HashSet;
 use std::{thread, time};
 //use std::fmt;
 
-use HttpsClient;
-
 #[derive(Debug, Clone)]
 pub struct DownloadClient {
-    hclient: HttpsClient,
     rclient: RClient,
 }
 
@@ -65,9 +58,8 @@ pub fn ffmpeg_download(url: String, path: String) -> Result<(), StreamError> {
 }
 
 impl DownloadClient {
-    pub fn new(client: HttpsClient) -> Result<Self, StreamError> {
+    pub fn new() -> Result<Self, StreamError> {
         Ok(DownloadClient {
-            hclient: client,
             rclient: RClient::new(),
         })
     }
@@ -122,50 +114,26 @@ impl DownloadClient {
         }
     }
     
-    pub fn make_hyper_request(&self, uri: &str, headers: Option<(&str, &str)>) -> Result<Request<hyper::Body>, StreamError> {
-        let req = match headers {
-            Some(a) => {
-                Request::builder()
-                    .uri(uri)
-                    .header(a.0,a.1)
-                    .body(Default::default())
-            },
-            None => {
-                Request::builder()
-                    .uri(uri)
-                    .body(Default::default())
-            }
-        };
-        req.map_err(StreamError::from)
-    }
-
-    //#[deprecated(note = "Use download_to_file instead")]
-    pub fn download_to_file_no_redir(&self, req: Request<hyper::Body>, mut file: File, spin: bool) -> impl Future<Item = (), Error = StreamError> {
-        trace!("Enters: `download_to_file_no_redir`");
-        //let mut file = File::create(path).unwrap();
-        let resp = self.hclient.request(req);
-        resp
-            .map_err(StreamError::from)
-            .and_then(move |res| {
-                debug!("dtf Status: {}", res.status());
-                debug!("dtf Headers:\n{:#?}", res.headers());
-                let mut size: f64 = 0.0;
-                let spinner = ProgressBar::new_spinner();
-                res.into_body().map_err(StreamError::from).for_each(move |chunk| {
-                    if spin {
-                        spinner.tick();
-                        size += chunk.len() as f64;
-                        spinner.set_message(&format!("Size: {:.2} MB", size / 1000.0 / 1000.0));
-                    }
-                    file.write_all(&chunk)
-                        .map_err(StreamError::from)
-                })
-            }).map(|_| ())
+    pub fn download_to_file_future(&self, url: &str, file: File) -> Result<impl Future<Item = (), Error = StreamError>, StreamError> {
+        use std::io::BufWriter;
+        let mut fileb = BufWriter::new(file);
+        let mut rt: Runtime = Runtime::new()?;
+        use reqwest::async::Client as AsyncClient;
+        let aclient = AsyncClient::new();
+        let req1 = aclient.get(url);
+        let resp_future = req1.send();
+        let resp = rt.block_on(resp_future)?;
+        info!("resp: {:#?}", &resp);
+        let future = resp.into_body().map_err(StreamError::from).for_each(move |chunk| {
+            fileb.write_all(&chunk)
+                .map_err(StreamError::from)
+        });
+        Ok(future.map_err(StreamError::from))
     }
 
     pub fn hls_download(&self, master: &str, url: &str, folder: &str) -> Result<(), StreamError> {
         info!("Uses HLS download");
-        let mut srt = Runtime::new().unwrap();
+        let mut srt = Runtime::new()?;
         let mut links: HashSet<String> = HashSet::new();
         let mut counter = 0;
         let _ = create_dir(&folder);
@@ -180,13 +148,10 @@ impl DownloadClient {
                     let path_formatted = format!("{}/{}.ts", &folder, counter);
                     let url_formatted = format!("{}{}", &master, &e.clone());
                     trace!("Downloads {} to {}", &url_formatted, &path_formatted);
-                    let ts_req = self.make_hyper_request(&url_formatted, None)?;
                     let mut file = File::create(path_formatted)?;
                     trace!("Before work");
-                    let work = self.download_to_file_no_redir(ts_req,
-                                                         file,
-                                                         false
-                    ).map(|_| ()).map_err(|_| ());
+                    let work = self.download_to_file_future(&url_formatted, file,
+                    )?.map(|_| ()).map_err(|_| ());
                     trace!("Adding work ({}) to the executor", counter);
                     srt.spawn(work);
                     counter += 1;

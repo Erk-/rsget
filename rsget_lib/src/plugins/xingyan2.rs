@@ -3,7 +3,6 @@ use regex::Regex;
 use serde_json;
 
 use utils::downloaders::DownloadClient;
-use HttpsClient;
 
 use utils::error::StreamError;
 use utils::error::RsgetError;
@@ -100,18 +99,20 @@ pub struct Xingyan2 {
 
 
 impl Streamable for Xingyan2 {
-    fn new(client: &HttpsClient, url: String) -> Result<Box<Xingyan2>, StreamError> {
-        let dc = DownloadClient::new(client.clone())?;
-        let room_id_re = Regex::new(r"/([0-9]+)").unwrap();
-        let cap = room_id_re.captures(&url).unwrap();
+    fn new(client: &DownloadClient, url: String) -> Result<Box<Xingyan2>, StreamError> {
+        let dc = client.clone();
+        let room_id_re = Regex::new(r"/([0-9]+)")?;
+        let cap = room_id_re.captures(&url)
+            .ok_or(StreamError::Rsget(RsgetError::new("[Xingyan2] Could not find roomid")))?;
         let site_url = format!("https://xingyan.panda.tv/{}", &cap[1]);
         let site_req = dc.make_request(&site_url, None)?;
         let res: Result<String, StreamError> = dc.download_to_string(site_req);
         match res {
             Ok(some) => {
                 info!("Unwrapped xinhua");
-                let hostinfo_re = Regex::new(r"<script>window.HOSTINFO=(.*);</script>").unwrap();
-                let hi_cap = hostinfo_re.captures(&some).unwrap();
+                let hostinfo_re = Regex::new(r"<script>window.HOSTINFO=(.*);</script>")?;
+                let hi_cap = hostinfo_re.captures(&some)
+                    .ok_or(StreamError::Rsget(RsgetError::new("[Xingyan2] Could not find hostinfo")))?;
                 let hi: Xingyan2Info = serde_json::from_str(&hi_cap[1])?;
                 let tmp = Xingyan2 {
                     url: url.clone(),

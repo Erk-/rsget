@@ -1,7 +1,5 @@
 extern crate chrono;
 extern crate futures;
-extern crate hyper;
-extern crate hyper_tls;
 extern crate indicatif;
 #[macro_use]
 extern crate log;
@@ -19,13 +17,11 @@ extern crate hls_m3u8;
 extern crate reqwest;
 
 use utils::error::StreamError;
-
-/// Type of the [hyper_tls] client
-pub type HttpsClient = hyper::Client<hyper_tls::HttpsConnector<hyper::client::HttpConnector>>;
+use utils::downloaders::DownloadClient;
 
 pub trait Streamable {
     /// Creates a new streamable
-    fn new(client: &HttpsClient, url: String) -> Result<Box<Self>, StreamError>
+    fn new(client: &DownloadClient, url: String) -> Result<Box<Self>, StreamError>
     where
         Self: Sized;
     /// Returns the title of the stream if possible
@@ -44,5 +40,10 @@ pub trait Streamable {
     /// Downloads the stream to a file
     fn download(&self, path: String) -> Result<(), StreamError>;
 }
+
+pub trait Stream {
+    fn download(&self) -> Result<(), StreamError>;
+}
+
 pub mod utils;
 pub mod plugins;

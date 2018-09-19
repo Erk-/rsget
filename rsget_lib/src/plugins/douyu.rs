@@ -13,8 +13,6 @@ use std::fs::File;
 
 use md5;
 
-use HttpsClient;
-
 #[allow(dead_code)]
 #[allow(non_snake_case)]
 #[derive(Clone, Debug, Deserialize)]
@@ -171,8 +169,8 @@ pub struct Douyu {
 }
 
 impl Streamable for Douyu {
-    fn new(client: &HttpsClient, url: String) -> Result<Box<Douyu>, StreamError> {
-        let dc = DownloadClient::new(client.clone())?;
+    fn new(client: &DownloadClient, url: String) -> Result<Box<Douyu>, StreamError> {
+        let dc = client.clone();
         let room_id_re = Regex::new(r"com/([a-zA-Z0-9]+)").unwrap();
         let cap = room_id_re.captures(&url).unwrap();
 

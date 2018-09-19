@@ -7,7 +7,7 @@ use std::{
     io::Error as IoError,
 };
 
-use hyper::Error as HyperError;
+//use hyper::Error as HyperError;
 
 use http::uri::InvalidUri;
 use http::header::ToStrError;
@@ -19,6 +19,8 @@ use hls_m3u8::Error as HlsError;
 use serde_urlencoded::ser::Error as UrlEncError;
 
 use reqwest::Error as ReqwestError;
+
+use regex::Error as RegexError;
 
 #[derive(Debug)]
 pub struct RsgetError {
@@ -50,8 +52,6 @@ pub enum StreamError {
     /// An error from the `serde_json` crate while deserializing the body of an
     /// HTTP response.
     Json(JsonError),
-    /// An error from the `hyper` crate while performing an HTTP request.
-    Hyper(HyperError),
     /// An error from the `reqwest` crate while performing an HTTP request.
     /// RsgetError
     Rsget(RsgetError),
@@ -71,6 +71,8 @@ pub enum StreamError {
     UrlEnc(UrlEncError),
     /// Reqwest Error
     Reqwest(ReqwestError),
+    /// Regex Error
+    Regex(RegexError),
 }
 
 impl Display for StreamError {
@@ -83,7 +85,6 @@ impl StdError for StreamError {
     fn description(&self) -> &str {
         match *self {
             StreamError::Fmt(ref inner) => inner.description(),
-            StreamError::Hyper(ref inner) => inner.description(),
             StreamError::Json(ref inner) => inner.description(),
             StreamError::Rsget(ref inner) => inner.description(),
             StreamError::Io(ref inner) => inner.description(),
@@ -94,6 +95,7 @@ impl StdError for StreamError {
             StreamError::Utf8(ref inner) => inner.description(),
             StreamError::UrlEnc(ref inner) => inner.description(),
             StreamError::Reqwest(ref inner) => inner.description(),
+            StreamError::Regex(ref inner) => inner.description(),
         }
     }
 }
@@ -108,12 +110,6 @@ impl From<FmtError> for StreamError {
 impl From<JsonError> for StreamError {
     fn from(err: JsonError) -> Self {
         StreamError::Json(err)
-    }
-}
-
-impl From<HyperError> for StreamError {
-    fn from(err: HyperError) -> Self {
-        StreamError::Hyper(err)
     }
 }
 
@@ -162,5 +158,11 @@ impl From<UrlEncError> for StreamError {
 impl From<ReqwestError> for StreamError {
     fn from(err: ReqwestError) -> Self {
         StreamError::Reqwest(err)
+    }
+}
+
+impl From<RegexError> for StreamError {
+    fn from(err: RegexError) -> Self {
+        StreamError::Regex(err)
     }
 }

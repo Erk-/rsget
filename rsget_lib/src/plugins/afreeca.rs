@@ -122,10 +122,9 @@ fn get_hls_key(client: &DownloadClient, room_id: String, bno: String) -> Result<
 }
 
 impl Streamable for Afreeca {
-    fn new(client: &HttpsClient, url: String) -> Result<Box<Afreeca>, StreamError> {
-        let dc = DownloadClient::new(client.clone())?;
+    fn new(client: &DownloadClient, url: String) -> Result<Box<Afreeca>, StreamError> {
         type ChannelInfo = AfreecaChannelInfo<AfreecaChannelInfoData>;
-        
+        let dc = client.clone();
         let room_id_re = Regex::new(r"(?:http://[^/]+)?/([a-zA-Z0-9]+)(?:/[0-9]+)?").unwrap();
         let cap = room_id_re.captures(&url).unwrap();
         info!("id: {}", &cap[1]);

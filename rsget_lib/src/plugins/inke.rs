@@ -6,7 +6,6 @@ use utils::error::RsgetError;
 use chrono::prelude::*;
 
 use utils::downloaders::DownloadClient;
-use HttpsClient;
 
 use std::fs::File;
 
@@ -82,8 +81,8 @@ pub struct Inke {
 }
 
 impl Streamable for Inke {
-    fn new(client: &HttpsClient, url: String) -> Result<Box<Inke>, StreamError> {
-        let dc = DownloadClient::new(client.clone())?;
+    fn new(client: &DownloadClient, url: String) -> Result<Box<Inke>, StreamError> {
+        let dc = client.clone();
         let re_inke: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?inke\.cn/live\.html\?uid=([0-9]+)").unwrap();
         let cap = re_inke.captures(&url).unwrap();
         let json_url = format!(
