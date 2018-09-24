@@ -1,7 +1,7 @@
 extern crate clap;
 //extern crate pretty_env_logger;
 extern crate flexi_logger;
-//#[macro_use]
+#[macro_use]
 extern crate log;
 extern crate rsget_lib;
  
@@ -18,7 +18,7 @@ fn main() {
         .format(opt_format)
         .start()
         .unwrap_or_else(|e| panic!("Logger initialization failed with {}", e));
-    try_main().map_err(|why| {
+    let _ = try_main().map_err(|why| {
         error!("Error running: {:?}", why);
     });
 }
