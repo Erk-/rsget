@@ -18,11 +18,11 @@ jobs:
     displayName: 'Install rust'
 
   - powershell: |
-      Set-Location rsget_cli
+      Set-Location rsget
       &"$env:USERPROFILE\.cargo\bin\cargo" build --release
     displayName: 'Build rsget'
 
   - task: PublishBuildArtifacts@1
     inputs:
-      pathtoPublish: 'rsget_cli\target\release\rsget.exe'
+      pathtoPublish: 'rsget\target\release\rsget.exe'
       artifactName: 'rsget-$(Agent.OS)'
