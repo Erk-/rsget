@@ -13,13 +13,18 @@ use flexi_logger::{Logger,opt_format};
 use rsget_lib::utils::error::StreamError;
 use rsget_lib::utils::error::RsgetError;
 
-fn main() -> Result<(), StreamError> {
-    //pretty_env_logger::init();
+fn main() {
     Logger::with_env()
         .format(opt_format)
         .start()
         .unwrap_or_else(|e| panic!("Logger initialization failed with {}", e));
+    try_main().map_err(|why| {
+        error!("Error running: {:?}", why);
+    });
+}
 
+fn try_main() -> Result<(), StreamError> {
+    //pretty_env_logger::init();
     let matches = App::new("ruststreamer")
        .version("0.1")
         .author("Valdemar Erk <v@erk.io>")
