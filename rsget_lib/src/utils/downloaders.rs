@@ -11,17 +11,10 @@ use futures::{Stream, Future};
 use tokio::runtime::Runtime;
 
 use hls_m3u8::MediaPlaylist;
-//use hls_m3u8::MasterPlaylist;
 
 use indicatif::ProgressBar;
 
 use serde::de::DeserializeOwned;
-// use serde::ser;
-// use serde_json;
-
-// use serde_urlencoded;
-
-// use tokio;
 
 use reqwest;
 use reqwest::Client as RClient;
@@ -70,28 +63,43 @@ impl DownloadClient {
         res.text().map_err(StreamError::from)
     }
     
-    pub fn download_to_file(&self, url: &str, file: File, spin: bool) -> Result<(), StreamError>{
+    pub fn download_to_file(&self, url: &str, file: File, _spin: bool) -> Result<(), StreamError>{
+        use std::io::Read;
+        use std::io::copy;
+        use std::io::Result as IoResult;
         use std::io::BufWriter;
-        let mut fileb = BufWriter::new(file);
-        let mut rt = Runtime::new()?;
-        use reqwest::async::Client as AsyncClient;
-        let aclient = AsyncClient::new();
-        let req1 = aclient.get(url);
-        let resp_future = req1.send();
-        let resp = rt.block_on(resp_future)?;
-        info!("resp: {:#?}", &resp);
-        let mut size: f64 = 0.0;
-        let spinner = ProgressBar::new_spinner();
-        let future = resp.into_body().map_err(StreamError::from).for_each(move |chunk| {
-            if spin {
-                spinner.tick();
-                size += chunk.len() as f64;
-                spinner.set_message(&format!("Size: {:.2} MB", size / 1000.0 / 1000.0));
+        use indicatif::ProgressStyle;
+        use std::u64;
+
+        struct DownloadProgress<R> {
+            inner: R,
+            progress_bar: ProgressBar,
+        }
+
+        impl<R: Read> Read for DownloadProgress<R> {
+            fn read(&mut self, buf: &mut [u8]) -> IoResult<usize> {
+                self.inner.read(buf).map(|n| {
+                    self.progress_bar.inc(n as u64);
+                    n
+                })
             }
-            fileb.write_all(&chunk)
-                .map_err(StreamError::from)
-        });
-        rt.block_on(future.map_err(StreamError::from))
+        }
+
+        let mut bufw = BufWriter::with_capacity(131072, file);
+
+        let spinner = ProgressBar::new(u64::MAX);
+        spinner.set_style(ProgressStyle::default_bar()
+                          .template("{spinner:.green} [{elapsed_precise}] Streamed {bytes}")
+                          .tick_chars("⠁⠁⠉⠙⠚⠒⠂⠂⠒⠲⠴⠤⠄⠄⠤⠠⠠⠤⠦⠖⠒⠐⠐⠒⠓⠋⠉⠈⠈ "));
+
+        let request = self.rclient.get(url);
+        let mut source = DownloadProgress {
+            progress_bar: spinner,
+            inner: request.send()?,
+        };
+
+        let _ = copy(&mut source, &mut bufw)?;
+        Ok(())
     }
 
     pub fn download_and_de<T: DeserializeOwned>(&self, req: reqwest::Request) -> Result<T,StreamError> {
@@ -145,13 +153,14 @@ impl DownloadClient {
             for e in m3u8_iterator {
                 if links.insert(e.clone()) {
                     debug!("Added: {:?}", &e);
-                    let path_formatted = format!("{}/{}.ts", &folder, counter);
+                    let path_formatted = format!("{}/{}", &folder, &e.clone());
                     let url_formatted = format!("{}{}", &master, &e.clone());
                     trace!("Downloads {} to {}", &url_formatted, &path_formatted);
                     let mut file = File::create(path_formatted)?;
                     trace!("Before work");
-                    let work = self.download_to_file_future(&url_formatted, file,
-                    )?.map(|_| ()).map_err(|_| ());
+                    let work = self.download_to_file_future(&url_formatted, file,)?
+                        .map(|_| ())
+                        .map_err(|_| ());
                     trace!("Adding work ({}) to the executor", counter);
                     srt.spawn(work);
                     counter += 1;

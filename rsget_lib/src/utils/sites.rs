@@ -2,7 +2,7 @@ use regex::Regex;
 use Streamable;
 use utils::error::StreamError;
 use utils::error::RsgetError;
-use plugins::{douyu::Douyu, panda::PandaTv, xingyan::Xingyan, xingyan2::Xingyan2, inke::Inke/*, afreeca*/};
+use plugins::{douyu::Douyu, panda::PandaTv, xingyan::Xingyan, inke::Inke/*, afreeca*/};
 // Option<Box<Streamable + 'static>>
 
 
@@ -18,13 +18,7 @@ pub fn get_site(input: &str) -> Result<Box<Streamable>, StreamError>
             Ok(PandaTv::new(String::from(url))?)
         },
         url if re_xingyan_panda.is_match(url) => {
-            match Xingyan::new(String::from(url)) {
-                Ok(s) => Ok(s),
-                Err(why) => {
-                    error!("Xingyan failed because: {:?}", why);
-                    Ok(Xingyan2::new(String::from(url))?)
-                },
-            }
+            Ok(Xingyan::new(String::from(url))?)
         },
         url if re_douyu.is_match(url) => {
             Ok(Douyu::new(String::from(url))?)

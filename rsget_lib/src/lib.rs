@@ -40,9 +40,16 @@ pub trait Streamable {
     fn download(&self, path: String) -> Result<(), StreamError>;
 }
 
-pub trait Stream {
-    fn download(&self) -> Result<(), StreamError>;
+/*
+enum StreamType {
+    FileStream(url: &str),
+    Hls(url: &str, master: &str),
 }
 
+pub trait Stream {
+    fn new(stream: StreamType) -> Result<(), StreamError>;
+    fn download(&self, path: &str) -> Result<(), StreamError>;
+}
+*/
 pub mod utils;
 pub mod plugins;
