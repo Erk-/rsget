@@ -19,9 +19,7 @@ use serde::de::DeserializeOwned;
 use reqwest;
 use reqwest::Client as RClient;
 
-use std::fs::create_dir;
-use std::collections::HashSet;
-use std::{thread, time};
+use std::time;
 //use std::fmt;
 
 #[derive(Debug, Clone)]
@@ -64,6 +62,7 @@ impl DownloadClient {
     }
     
     pub fn download_to_file(&self, url: &str, file: File, _spin: bool) -> Result<(), StreamError>{
+        info!("Downloads file: {}", url);
         use std::io::Read;
         use std::io::copy;
         use std::io::Result as IoResult;
@@ -85,7 +84,7 @@ impl DownloadClient {
             }
         }
 
-        let mut bufw = BufWriter::with_capacity(131072, file);
+        let mut bufw = BufWriter::with_capacity(131_072, file);
 
         let spinner = ProgressBar::new(u64::MAX);
         spinner.set_style(ProgressStyle::default_bar()
@@ -139,35 +138,90 @@ impl DownloadClient {
         Ok(future.map_err(StreamError::from))
     }
 
-    pub fn hls_download(&self, master: &str, url: &str, folder: &str) -> Result<(), StreamError> {
-        info!("Uses HLS download");
-        let mut srt = Runtime::new()?;
-        let mut links: HashSet<String> = HashSet::new();
-        let mut counter = 0;
-        let _ = create_dir(&folder);
-        loop {
-            let m3u8_str = self.download_to_string(self.make_request(&url, None)?)?;
-            trace!("M3U8: {}", &m3u8_str);
-            let m3u8 = m3u8_str.parse::<MediaPlaylist>()?;
-            let m3u8_iterator = m3u8.segments().iter().map(|e| String::from(e.uri().trim()));
-            for e in m3u8_iterator {
-                if links.insert(e.clone()) {
-                    debug!("Added: {:?}", &e);
-                    let path_formatted = format!("{}/{}", &folder, &e.clone());
-                    let url_formatted = format!("{}{}", &master, &e.clone());
-                    trace!("Downloads {} to {}", &url_formatted, &path_formatted);
-                    let mut file = File::create(path_formatted)?;
-                    trace!("Before work");
-                    let work = self.download_to_file_future(&url_formatted, file,)?
-                        .map(|_| ())
-                        .map_err(|_| ());
-                    trace!("Adding work ({}) to the executor", counter);
-                    srt.spawn(work);
-                    counter += 1;
-                }
-            }
-            thread::sleep(time::Duration::from_secs(5));
+    pub fn hls_download(&self, master: String, url: String, file: &File) -> Result<(), StreamError> {
+        use std::collections::VecDeque;
+        use std::sync::Arc;
+        use parking_lot::Mutex;
+        use std::thread;
+        use std::collections::HashSet;
+        #[derive(Clone)]
+        enum Hls {
+            Url(String),
+            StreamOver,
         }
+        let to_work = Arc::new(Mutex::new(VecDeque::<Hls>::new()));
+        let other_work = to_work.clone();
+        thread::spawn(move || {
+            let inner_client = DownloadClient::new().unwrap();
+            let mut links: HashSet<String> = HashSet::new();
+            let mut counter = 0;
+            loop {
+                trace!("[HLS] First loop");
+                if counter > 12 {
+                    let to_add = &mut to_work.lock();
+                    to_add.push_back(Hls::StreamOver);
+                    break;
+                }
+                trace!("[HLS] Tries to get: {}", url);
+                let req = match inner_client.make_request(&url, None) {
+                    Ok(u) => u,
+                    Err(e) => {
+                        trace!("breaks!!! ({})", e);
+                        break;
+                    },
+                };
+                trace!("[HLS] Begins download");
+                let m3u8_str = match inner_client.download_to_string(req) {
+                    Ok(s) => {
+                        trace!("M3U8:\n{}", s);
+                        s
+                    },
+                    Err(e) => {
+                        warn!("Download failed! ({})", e);
+                        continue;
+                    },
+                };
+                trace!("[HLS] M3U8: {}", &m3u8_str);
+                let m3u8 = match m3u8_str.parse::<MediaPlaylist>() {
+                    Ok(p) => p,
+                    Err(e) => {
+                        warn!("Parsing failed!\n{}", e);
+                        continue;
+                    },
+                };
+                let m3u8_iterator = m3u8.segments().iter().map(|e| String::from(e.uri().trim()));
+                for e in m3u8_iterator {
+                    info!("Tries to inserts: {}", e);
+                    if links.insert(e.clone()) {
+                        counter = 0;
+                        let url_formatted = format!("{}{}", &master, &e.clone());
+                        let to_add = &mut to_work.lock();
+                        info!("Adds {}!", url_formatted);
+                        to_add.push_back(Hls::Url(url_formatted));
+                    }
+                }
+                thread::sleep(time::Duration::from_secs(5));
+                counter += 1;
+            }
+        });
+
+        loop {
+            trace!("[HLS] Second loop");
+            let to_download = other_work.lock().pop_front().clone();
+            match to_download {
+                Some(Hls::Url(u)) => {
+                    trace!("[HLS] Downloads: {}!", u);
+                    let c_file = file.try_clone()?;
+                    self.download_to_file(&u, c_file, false)?;
+                },
+                Some(Hls::StreamOver) => break,
+                None => {
+                    trace!("[HLS] None to download!");
+                    thread::sleep(time::Duration::from_secs(5));
+                },
+            }
+        }
+        Ok(())
     }
 }
 
