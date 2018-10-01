@@ -167,7 +167,7 @@ impl Streamable for PandaTv {
         let dc = DownloadClient::new()?;
 
         let room_id_re = Regex::new(r"/([0-9]+)")?;
-        let cap = room_id_re.captures(&url).ok_or(StreamError::Rsget(RsgetError::new("[Panda] Could not find roomid")))?;
+        let cap = room_id_re.captures(&url).ok_or_else(|| StreamError::Rsget(RsgetError::new("[Panda] Could not find roomid")))?;
         let start = SystemTime::now();
         let since_the_epoch = start
             .duration_since(UNIX_EPOCH)

@@ -103,7 +103,7 @@ impl Streamable for Xingyan2 {
         let dc = DownloadClient::new()?;
         let room_id_re = Regex::new(r"/([0-9]+)")?;
         let cap = room_id_re.captures(&url)
-            .ok_or(StreamError::Rsget(RsgetError::new("[Xingyan2] Could not find roomid")))?;
+            .ok_or_else(|| StreamError::Rsget(RsgetError::new("[Xingyan2] Could not find roomid")))?;
         let site_url = format!("https://xingyan.panda.tv/{}", &cap[1]);
         let site_req = dc.make_request(&site_url, None)?;
         let res: Result<String, StreamError> = dc.download_to_string(site_req);
@@ -112,7 +112,7 @@ impl Streamable for Xingyan2 {
                 info!("Unwrapped xinhua");
                 let hostinfo_re = Regex::new(r"<script>window.HOSTINFO=(.*);</script>")?;
                 let hi_cap = hostinfo_re.captures(&some)
-                    .ok_or(StreamError::Rsget(RsgetError::new("[Xingyan2] Could not find hostinfo")))?;
+                    .ok_or_else(|| StreamError::Rsget(RsgetError::new("[Xingyan2] Could not find hostinfo")))?;
                 let hi: Xingyan2Info = serde_json::from_str(&hi_cap[1])?;
                 let tmp = Xingyan2 {
                     url: url.clone(),

@@ -97,7 +97,7 @@ impl Streamable for Xingyan {
                 let hostinfo_re = Regex::new(r"<script>window.HOSTINFO=(.*);</script>")?;
                 let hi_cap = hostinfo_re
                     .captures(&some)
-                    .ok_or(StreamError::Rsget(RsgetError::new("Regex did not find any hostinfo")))?;
+                    .ok_or_else(|| StreamError::Rsget(RsgetError::new("Regex did not find any hostinfo")))?;
                 let hi: XingyanInfo = match serde_json::from_str(&hi_cap[1]) {
                     Ok(info) => info,
                     Err(why) => return Err(StreamError::Json(why)),
