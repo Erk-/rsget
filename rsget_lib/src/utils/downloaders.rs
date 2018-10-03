@@ -20,11 +20,10 @@ use reqwest;
 use reqwest::Client as RClient;
 
 use std::time;
-//use std::fmt;
 
 #[derive(Debug, Clone)]
 pub struct DownloadClient {
-    rclient: RClient,
+    pub rclient: RClient,
 }
 
 pub fn ffmpeg_download(url: String, path: String) -> Result<(), StreamError> {
@@ -101,6 +100,46 @@ impl DownloadClient {
         Ok(())
     }
 
+    pub fn download_to_file_request(&self, request: reqwest::RequestBuilder, file: File, _spin: bool) -> Result<u64, StreamError>{
+        use std::io::Read;
+        use std::io::copy;
+        use std::io::Result as IoResult;
+        use std::io::BufWriter;
+        use indicatif::ProgressStyle;
+        use std::u64;
+
+        struct DownloadProgress<R> {
+            inner: R,
+            progress_bar: ProgressBar,
+        }
+
+
+        impl<R: Read> Read for DownloadProgress<R> {
+            fn read(&mut self, buf: &mut [u8]) -> IoResult<usize> {
+                self.inner.read(buf).map(|n| {
+                    self.progress_bar.inc(n as u64);
+                    n
+                })
+            }
+        }
+
+        let mut bufw = BufWriter::with_capacity(131_072, file);
+
+        let spinner = ProgressBar::new(u64::MAX);
+        spinner.set_style(ProgressStyle::default_bar()
+                          .template("{spinner:.green} [{elapsed_precise}] Streamed {bytes}")
+                          .tick_chars("⠁⠁⠉⠙⠚⠒⠂⠂⠒⠲⠴⠤⠄⠄⠤⠠⠠⠤⠦⠖⠒⠐⠐⠒⠓⠋⠉⠈⠈ "));
+
+        let mut source = DownloadProgress {
+            progress_bar: spinner,
+            inner: request.send()?,
+        };
+
+        let n = copy(&mut source, &mut bufw)?;
+        Ok(n)
+    }
+
+    
     pub fn download_and_de<T: DeserializeOwned>(&self, req: reqwest::Request) -> Result<T,StreamError> {
         let c = &self.rclient;
         let mut res = c.execute(req)?;
@@ -138,12 +177,20 @@ impl DownloadClient {
         Ok(future.map_err(StreamError::from))
     }
 
-    pub fn hls_download(&self, master: String, url: String, file: &File) -> Result<(), StreamError> {
+    
+    pub fn hls_download(&self,
+                        user_url: String,
+                        aid: String,
+                        murl: String,
+                        file: &File) -> Result<(), StreamError> {
         use std::collections::VecDeque;
         use std::sync::Arc;
         use parking_lot::Mutex;
         use std::thread;
         use std::collections::HashSet;
+        use url::Url;
+        use regex::Regex;
+        use reqwest::header::REFERER;
         #[derive(Clone)]
         enum Hls {
             Url(String),
@@ -155,6 +202,11 @@ impl DownloadClient {
             let inner_client = DownloadClient::new().unwrap();
             let mut links: HashSet<String> = HashSet::new();
             let mut counter = 0;
+            let mut parsed_url = Url::parse(&murl).expect("[HLS] could not parse url");
+            let master = parsed_url.join(".").expect("[HLS] Joining failed");
+            let re_preloading = Regex::new(".*preloading.*").expect("[HLS] regex");
+            parsed_url.set_query(Some(&format!("aid={}",aid.clone())));
+            let url = parsed_url.into_string();
             loop {
                 trace!("[HLS] First loop");
                 if counter > 12 {
@@ -178,6 +230,7 @@ impl DownloadClient {
                     },
                     Err(e) => {
                         warn!("Download failed! ({})", e);
+                        counter += 1;
                         continue;
                     },
                 };
@@ -186,18 +239,23 @@ impl DownloadClient {
                     Ok(p) => p,
                     Err(e) => {
                         warn!("Parsing failed!\n{}", e);
+                        counter += 1;
                         continue;
                     },
                 };
                 let m3u8_iterator = m3u8.segments().iter().map(|e| String::from(e.uri().trim()));
                 for e in m3u8_iterator {
-                    info!("Tries to inserts: {}", e);
+                    trace!("Tries to inserts: {}", e);
                     if links.insert(e.clone()) {
                         counter = 0;
                         let url_formatted = format!("{}{}", &master, &e.clone());
                         let to_add = &mut to_work.lock();
-                        info!("Adds {}!", url_formatted);
-                        to_add.push_back(Hls::Url(url_formatted));
+                        if re_preloading.is_match(&e) {
+                            ()
+                        } else {
+                            info!("Adds {}!", url_formatted);
+                            to_add.push_back(Hls::Url(url_formatted));
+                        }
                     }
                 }
                 thread::sleep(time::Duration::from_secs(5));
@@ -205,14 +263,22 @@ impl DownloadClient {
             }
         });
 
+        use reqwest::header::USER_AGENT;
+        let mut size = 0;
         loop {
             trace!("[HLS] Second loop");
             let to_download = other_work.lock().pop_front().clone();
             match to_download {
                 Some(Hls::Url(u)) => {
-                    trace!("[HLS] Downloads: {}!", u);
                     let c_file = file.try_clone()?;
-                    self.download_to_file(&u, c_file, false)?;
+                    let req = self.rclient
+                        .get(&u)
+                        //.query(&[("aid", &aid)])
+                        .header(&REFERER, user_url.clone())
+                        .header(&USER_AGENT, "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.62 Safari/537.36");
+                    
+                    trace!("[HLS] Downloads: {:#?}", req);
+                    size = self.download_to_file_request(req, c_file, false)?;
                 },
                 Some(Hls::StreamOver) => break,
                 None => {
@@ -221,6 +287,7 @@ impl DownloadClient {
                 },
             }
         }
+        println!("Downloaded: {} bytes", size);
         Ok(())
     }
 }

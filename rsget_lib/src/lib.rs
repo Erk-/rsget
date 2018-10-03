@@ -12,10 +12,10 @@ extern crate serde_json;
 extern crate serde_urlencoded;
 extern crate tokio;
 extern crate http;
-extern crate url;
 extern crate hls_m3u8;
 extern crate reqwest;
 extern crate parking_lot;
+extern crate url;
 
 use utils::error::StreamError;
 

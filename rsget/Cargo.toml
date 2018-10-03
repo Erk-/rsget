@@ -9,7 +9,7 @@ homepage = "https://github.com/Erk-/rsget"
 repository = "https://github.com/Erk-/rsget/tree/master/rsget"
 
 [dependencies]
-rsget_lib = "0.1.1"
+rsget_lib = { path = "../rsget_lib" }
 clap = "^2.32.0"
 log = "^0.4"
 flexi_logger = "^0.9"
