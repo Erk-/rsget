@@ -114,7 +114,7 @@ fn get_hls_key(dc: DownloadClient, url: String, room_id: String, bno: String) ->
         _type: "pwd".to_string(),
     };
     let mut res = rc.post("http://live.afreecatv.com:8057/afreeca/player_live_api.php")
-        .header(&REFERER, url)
+        .header(REFERER, url)
         .form(&data)
         .send()?;
     let json: AfreecaChannelInfo<AfreecaHlsKey> = res.json()?;
@@ -237,8 +237,8 @@ impl Streamable for Afreeca {
             params.insert("aid", &self.hls_key);
             let file = File::create(path)?;
             self.client
-                .hls_download(self.url.clone(),
-                              self.hls_key.clone(),
+                .hls_download(Some(&self.url),
+                              Some(self.hls_key.clone()),
                               self.get_stream(),
                               &file)
         }   

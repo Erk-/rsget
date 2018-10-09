@@ -10,8 +10,6 @@ use futures::{Stream, Future};
 
 use tokio::runtime::Runtime;
 
-use hls_m3u8::MediaPlaylist;
-
 use indicatif::ProgressBar;
 
 use serde::de::DeserializeOwned;
@@ -179,23 +177,29 @@ impl DownloadClient {
 
     
     pub fn hls_download(&self,
-                        user_url: String,
-                        aid: String,
+                        user_url: Option<&str>,
+                        aid: Option<String>,
                         murl: String,
-                        file: &File) -> Result<(), StreamError> {
+                        file: &File
+    ) -> Result<(), StreamError> {
         use std::collections::VecDeque;
         use std::sync::Arc;
+        use std::time::Duration;
         use parking_lot::Mutex;
         use std::thread;
         use std::collections::HashSet;
         use url::Url;
         use regex::Regex;
         use reqwest::header::REFERER;
+        use hls_m3u8::MediaPlaylistOptions;
+        use reqwest::header::USER_AGENT;
+    
         #[derive(Clone)]
         enum Hls {
             Url(String),
             StreamOver,
         }
+        
         let to_work = Arc::new(Mutex::new(VecDeque::<Hls>::new()));
         let other_work = to_work.clone();
         thread::spawn(move || {
@@ -205,7 +209,9 @@ impl DownloadClient {
             let mut parsed_url = Url::parse(&murl).expect("[HLS] could not parse url");
             let master = parsed_url.join(".").expect("[HLS] Joining failed");
             let re_preloading = Regex::new(".*preloading.*").expect("[HLS] regex");
-            parsed_url.set_query(Some(&format!("aid={}",aid.clone())));
+            if let Some(a) = aid {
+                parsed_url.set_query(Some(&format!("aid={}",a)));
+            }
             let url = parsed_url.into_string();
             loop {
                 trace!("[HLS] First loop");
@@ -218,52 +224,57 @@ impl DownloadClient {
                 let req = match inner_client.make_request(&url, None) {
                     Ok(u) => u,
                     Err(e) => {
-                        trace!("breaks!!! ({})", e);
+                        trace!("[HLS] breaks!!! ({})", e);
                         break;
                     },
                 };
                 trace!("[HLS] Begins download");
                 let m3u8_str = match inner_client.download_to_string(req) {
                     Ok(s) => {
-                        trace!("M3U8:\n{}", s);
+                        trace!("[HLS] M3U8:\n{}", s);
+                        if s.is_empty() { continue; }
                         s
                     },
                     Err(e) => {
-                        warn!("Download failed! ({})", e);
+                        warn!("[HLS] Download failed! ({})", e);
                         counter += 1;
                         continue;
                     },
                 };
-                trace!("[HLS] M3U8: {}", &m3u8_str);
-                let m3u8 = match m3u8_str.parse::<MediaPlaylist>() {
-                    Ok(p) => p,
-                    Err(e) => {
-                        warn!("Parsing failed!\n{}", e);
-                        counter += 1;
-                        continue;
-                    },
-                };
+                warn!("[HLS] M3U8: {}", &m3u8_str);
+                let m3u8 = match MediaPlaylistOptions::new()
+                    .allowable_excess_segment_duration(Duration::from_secs(10))
+                    .parse(&m3u8_str) {
+                        Ok(p) => {
+                            p
+                        },
+                        Err(e) => {
+                            warn!("[HLS] Parsing failed!\n{}", e);
+                            trace!("[HLS]\n{}", &m3u8_str);
+                            counter += 1;
+                            continue;
+                        },
+                    };
+                let target_duration = m3u8.target_duration_tag().duration();
                 let m3u8_iterator = m3u8.segments().iter().map(|e| String::from(e.uri().trim()));
                 for e in m3u8_iterator {
-                    trace!("Tries to inserts: {}", e);
+                    trace!("[HLS] Tries to inserts: {}", e);
                     if links.insert(e.clone()) {
                         counter = 0;
                         let url_formatted = format!("{}{}", &master, &e.clone());
                         let to_add = &mut to_work.lock();
-                        if re_preloading.is_match(&e) {
-                            ()
-                        } else {
-                            info!("Adds {}!", url_formatted);
+                        if !re_preloading.is_match(&e) {
+                            info!("[HLS] Adds {}!", url_formatted);
                             to_add.push_back(Hls::Url(url_formatted));
                         }
                     }
                 }
-                thread::sleep(time::Duration::from_secs(5));
+                warn!("[HLS] Sleeps for {:#?}", target_duration);
+                thread::sleep(target_duration);
                 counter += 1;
             }
         });
 
-        use reqwest::header::USER_AGENT;
         let mut size = 0;
         loop {
             trace!("[HLS] Second loop");
@@ -271,11 +282,19 @@ impl DownloadClient {
             match to_download {
                 Some(Hls::Url(u)) => {
                     let c_file = file.try_clone()?;
-                    let req = self.rclient
-                        .get(&u)
-                        //.query(&[("aid", &aid)])
-                        .header(&REFERER, user_url.clone())
-                        .header(&USER_AGENT, "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.62 Safari/537.36");
+                    let req = match user_url {
+                        Some(uurl) => {
+                            self.rclient
+                                .get(&u)
+                                .header(REFERER, uurl)
+                                .header(USER_AGENT, "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.62 Safari/537.36")
+                        },
+                        None => {
+                            self.rclient
+                                .get(&u)
+                                .header(USER_AGENT, "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.62 Safari/537.36")
+                        },
+                    };
                     
                     trace!("[HLS] Downloads: {:#?}", req);
                     size = self.download_to_file_request(req, c_file, false)?;
@@ -287,7 +306,7 @@ impl DownloadClient {
                 },
             }
         }
-        println!("Downloaded: {} bytes", size);
+        println!("[HLS] Downloaded: {} bytes", size);
         Ok(())
     }
 }
