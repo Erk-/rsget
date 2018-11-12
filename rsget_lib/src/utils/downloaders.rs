@@ -83,11 +83,24 @@ impl DownloadClient {
 
         let mut bufw = BufWriter::with_capacity(131_072, file);
 
-        let spinner = ProgressBar::new(u64::MAX);
-        spinner.set_style(ProgressStyle::default_bar()
-                          .template("{spinner:.green} [{elapsed_precise}] Streamed {bytes}")
-                          .tick_chars("⠁⠁⠉⠙⠚⠒⠂⠂⠒⠲⠴⠤⠄⠄⠤⠠⠠⠤⠦⠖⠒⠐⠐⠒⠓⠋⠉⠈⠈ "));
+        let size = if _spin {
+            reqwest::get(url)?.headers()
+                .get(reqwest::header::CONTENT_LENGTH)
+                .and_then(|ct_len| ct_len.to_str().ok())
+                .and_then(|ct_len| ct_len.parse().ok())
+                .unwrap_or(0)
+        } else { u64::MAX };
 
+        let spinner = ProgressBar::new(size);
+        if _spin {
+            spinner.set_style(ProgressStyle::default_bar()
+                              .template("{spinner:.green} [{elapsed_precise}]  [{bar:40.cyan/blue}] {bytes}/{total_bytes} ({eta})")
+                              .tick_chars("⠁⠁⠉⠙⠚⠒⠂⠂⠒⠲⠴⠤⠄⠄⠤⠠⠠⠤⠦⠖⠒⠐⠐⠒⠓⠋⠉⠈⠈ "));
+        } else {
+            spinner.set_style(ProgressStyle::default_bar()
+                              .template("{spinner:.green} [{elapsed_precise}] Streamed {bytes}")
+                              .tick_chars("⠁⠁⠉⠙⠚⠒⠂⠂⠒⠲⠴⠤⠄⠄⠤⠠⠠⠤⠦⠖⠒⠐⠐⠒⠓⠋⠉⠈⠈ "));
+        }
         let request = self.rclient.get(url);
         let mut source = DownloadProgress {
             progress_bar: spinner,
@@ -306,7 +319,7 @@ impl DownloadClient {
                 },
             }
         }
-        println!("[HLS] Downloaded: {} bytes", size);
+        println!("[HLS] Downloaded: {} bytes.", size);
         Ok(())
     }
 }

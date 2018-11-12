@@ -1,0 +1,1073 @@
+* TODO TikTok/Douyin
+** DONE Douyin
+CLOSED: [2018-11-12 man 03:17]
+Douyins api seems to be a lot easier to navigate compared to TikTok
+which returns a giant inlined json file.
+*** Example
+[[https://v.douyin.com/R9jmtM]]
+*** Regex
+Could be ='web:component\/reflow_video\/index'\)\.create\(([^;]*)\);=
+
+*** json
+#+BEGIN_SRC json
+{
+                hasData: 1,
+                videoWidth: 720,
+                videoHeight: 1280,
+                playAddr: "https://aweme.snssdk.com/aweme/v1/playwm/?video_id=v0200f120000bfimkngghl0gulds6f2g&line=0",
+                cover: "https://p99.pstatp.com/large/10f06000a770831f33e30.jpg"
+
+            }
+#+END_SRC
+
+*** serde
+#+BEGIN_SRC rust
+#[derive(Serialize, Deserialize)]
+struct DouyinRoot {
+  #[serde(rename = "hasData")]
+  has_data: i64,
+  #[serde(rename = "videoWidth")]
+  video_width: i64,
+  #[serde(rename = "videoHeight")]
+  video_height: i64,
+  #[serde(rename = "playAddr")]
+  play_addr: String,
+  cover: String,
+}
+#+END_SRC
+
+*** Notes
+The adress of the video is in playAddr you have to get it to redirect
+to the real address.
+The videos content type is =video/mp4=
+** TODO Tiktok
+*** Example
+[[https://m.tiktok.com/v/6606727368545406213.html]]
+*** Regex
+=var data = ({.*});=
+*** Json
+#+BEGIN_SRC json
+{
+  "risk_infos": {
+    "warn": false,
+    "content": "",
+    "risk_sink": false,
+    "type": 0
+  },
+  "label_top": {
+    "url_list": [
+      "http://p16-tiktokcdn-com.akamaized.net/obj/tiktok-obj/1598708589477025.PNG",
+      "https://p16-tiktokcdn-com.akamaized.net/obj/tiktok-obj/1598708589477025.PNG",
+      "http://p16-tiktokcdn-com.akamaized.net/obj/tiktok-obj/1598708589477025.PNG",
+      "https://p16-tiktokcdn-com.akamaized.net/obj/tiktok-obj/1598708589477025.PNG",
+      "http://p16-tiktokcdn-com.akamaized.net/obj/tiktok-obj/1598708589477025.PNG",
+      "https://p16-tiktokcdn-com.akamaized.net/obj/tiktok-obj/1598708589477025.PNG"
+    ],
+    "uri": "tiktok-obj/1598708589477025.PNG"
+  },
+  "author_user_id": 188294915489964032,
+  "item_comment_settings": 0,
+  "rate": 12,
+  "create_time": 1538248586,
+  "video": {
+    "ratio": "720p",
+    "origin_cover": {
+      "url_list": [
+        "http://p16.muscdn.com/img/tos-maliva-p-0068/5e7a4ec40fb146888fa27aa8d78f86fd~noop.image",
+        "http://p16.muscdn.com/img/tos-maliva-p-0068/5e7a4ec40fb146888fa27aa8d78f86fd~noop.image",
+        "http://p16.muscdn.com/img/tos-maliva-p-0068/5e7a4ec40fb146888fa27aa8d78f86fd~noop.image"
+      ],
+      "uri": "tos-maliva-p-0068/5e7a4ec40fb146888fa27aa8d78f86fd"
+    },
+    "play_addr": {
+      "url_list": [
+        "//m-v16.akamaized.net/25f8625ba23dc40ed66d9cefb25c528a/5be6a851/video/tos/maliva/tos-maliva-v-0068/bc79589b052d4e9b809ae0696bfdcffd/?rc=amlpN212NDN2aDMzOzczM0ApQHRwbndsQG8zOjQ8NDYzNDQzNjQ8NDszQCl1KUBnM3cpQGZlemV6b2Z2cGY2NUAtaXAtc20xc2tfLS00MTZzczVvI1xsaHFvIzYvMzYxLi4tLTAxLy0uLi9pOmItbyM6YC1vI2IrYiteZnI6IzAuXg%3D%3D",
+        "//api2.musical.ly/aweme/v1/play/?video_id=v09044780000bensv041psvj04sflf0g&line=0&ratio=720p&media_type=4&vr_type=0&test_cdn=None&improve_bitrate=0"
+      ],
+      "url_key": "v09044780000bensv041psvj04sflf0g_h264_720p",
+      "uri": "v09044780000bensv041psvj04sflf0g"
+    },
+    "cover": {
+      "url_list": [
+        "//m-p16.akamaized.net/img/tos-maliva-p-0068/5e7a4ec40fb146888fa27aa8d78f86fd~noop.image",
+        "//m-p16.akamaized.net/img/tos-maliva-p-0068/5e7a4ec40fb146888fa27aa8d78f86fd~noop.image",
+        "//m-p16.akamaized.net/img/tos-maliva-p-0068/5e7a4ec40fb146888fa27aa8d78f86fd~noop.image"
+      ],
+      "uri": "tos-maliva-p-0068/5e7a4ec40fb146888fa27aa8d78f86fd"
+    },
+    "height": 960,
+    "width": 540,
+    "download_addr": {
+      "url_list": [
+        "https://api2.musical.ly/aweme/v1/play/?video_id=v09044780000bensv041psvj04sflf0g&line=0&ratio=720p&watermark=0&media_type=4&vr_type=0&test_cdn=None&improve_bitrate=0&logo_name=musically",
+        "https://api2.musical.ly/aweme/v1/play/?video_id=v09044780000bensv041psvj04sflf0g&line=1&ratio=720p&watermark=0&media_type=4&vr_type=0&test_cdn=None&improve_bitrate=0&logo_name=musically"
+      ],
+      "url_key": "v09044780000bensv041psvj04sflf0g_h264_720p",
+      "uri": "v09044780000bensv041psvj04sflf0g"
+    },
+    "has_watermark": true,
+    "play_addr_lowbr": {
+      "url_list": [
+        "//m-v16.akamaized.net/25f8625ba23dc40ed66d9cefb25c528a/5be6a851/video/tos/maliva/tos-maliva-v-0068/bc79589b052d4e9b809ae0696bfdcffd/?rc=amlpN212NDN2aDMzOzczM0ApQHRwbndsQG8zOjQ8NDYzNDQzNjQ8NDszQCl1KUBnM3cpQGZlemV6b2Z2cGY2NUAtaXAtc20xc2tfLS00MTZzczVvI1xsaHFvIzYvMzYxLi4tLTAxLy0uLi9pOmItbyM6YC1vI2IrYiteZnI6IzAuXg%3D%3D",
+        "//api2.musical.ly/aweme/v1/play/?video_id=v09044780000bensv041psvj04sflf0g&line=0&ratio=720p&media_type=4&vr_type=0&test_cdn=None&improve_bitrate=0"
+      ],
+      "url_key": "v09044780000bensv041psvj04sflf0g_h264_720p",
+      "uri": "v09044780000bensv041psvj04sflf0g"
+    },
+    "dynamic_cover": {
+      "url_list": [
+        "https://m-p16.akamaized.net/obj/tos-maliva-p-0068/e628bcb6f3f847b79f8c4ae402e3da72",
+        "https://m-p16.akamaized.net/obj/tos-maliva-p-0068/e628bcb6f3f847b79f8c4ae402e3da72",
+        "https://m-p16.akamaized.net/obj/tos-maliva-p-0068/e628bcb6f3f847b79f8c4ae402e3da72"
+      ],
+      "uri": "tos-maliva-p-0068/e628bcb6f3f847b79f8c4ae402e3da72"
+    }
+  },
+  "comments": [
+    {
+      "status": 1,
+      "from_author": false,
+      "reply_comment": [],
+      "text": "She’s asserting her dominance I have to back down",
+      "cid": "1613040934182053",
+      "digg_count": 365,
+      "text_extra": [],
+      "create_time": 1538286910,
+      "reply_id": "0",
+      "user": {
+        "youtube_channel_title": "",
+        "share_qrcode_uri": "",
+        "app_id": 1233,
+        "original_music_qrcode": null,
+        "is_gov_media_vip": false,
+        "live_commerce": false,
+        "account_region": "",
+        "user_period": 0,
+        "reflow_page_gid": 0,
+        "is_binded_weibo": false,
+        "video_icon_virtual_URI": "",
+        "risk_flag": 0,
+        "school_name": "",
+        "download_setting": 3,
+        "cv_level": "",
+        "custom_verify": "",
+        "special_lock": 1,
+        "user_canceled": false,
+        "shield_comment_notice": 0,
+        "type_label": [],
+        "hide_location": false,
+        "gender": 0,
+        "video_icon": {
+          "url_list": [],
+          "uri": ""
+        },
+        "school_poi_id": "",
+        "live_agreement": 0,
+        "is_phone_binded": false,
+        "prevent_download": false,
+        "weibo_schema": "",
+        "create_time": 1469864615,
+        "has_insights": false,
+        "react_setting": 0,
+        "google_account": "",
+        "community_discipline_status": 0,
+        "user_mode": 1,
+        "need_recommend": 0,
+        "update_before": 0,
+        "has_register_notice": 0,
+        "room_id": 0,
+        "avatar_medium": {
+          "url_list": [
+            "http://p16.muscdn.com/img/musically-maliva-obj/1613340330000390~c5_720x720.jpeg",
+            "http://p16.muscdn.com/img/musically-maliva-obj/1613340330000390~c5_720x720.jpeg",
+            "http://p16.muscdn.com/img/musically-maliva-obj/1613340330000390~c5_720x720.jpeg"
+          ],
+          "uri": "musically-maliva-obj/1613340330000390"
+        },
+        "has_orders": false,
+        "reflow_page_uid": 0,
+        "cover_url": [
+          {
+            "url_list": [
+              "http://p16.muscdn.com/obj/musically-maliva-obj/1612555907887110",
+              "http://p16.muscdn.com/obj/musically-maliva-obj/1612555907887110",
+              "http://p16.muscdn.com/obj/musically-maliva-obj/1612555907887110"
+            ],
+            "uri": "musically-maliva-obj/1612555907887110"
+          }
+        ],
+        "duet_setting": 0,
+        "language": "en",
+        "geofencing": [],
+        "ins_id": "screwthisname_shit",
+        "unique_id_modify_time": 1541799810,
+        "school_type": 0,
+        "twitter_name": "",
+        "avatar_uri": "musically-maliva-obj/1613340330000390",
+        "signature": "I need something to fill the void",
+        "weibo_verify": "",
+        "comment_setting": 0,
+        "with_fusion_shop_entry": false,
+        "youtube_channel_id": "",
+        "avatar_larger": {
+          "url_list": [
+            "http://p16.muscdn.com/img/musically-maliva-obj/1613340330000390~c5_1080x1080.jpeg",
+            "http://p16.muscdn.com/img/musically-maliva-obj/1613340330000390~c5_1080x1080.jpeg",
+            "http://p16.muscdn.com/img/musically-maliva-obj/1613340330000390~c5_1080x1080.jpeg"
+          ],
+          "uri": "musically-maliva-obj/1613340330000390"
+        },
+        "enterprise_verify_reason": "",
+        "user_rate": 1,
+        "live_verify": 0,
+        "short_id": "21717982150",
+        "secret": 0,
+        "avatar_thumb": {
+          "url_list": [
+            "http://p16.muscdn.com/img/musically-maliva-obj/1613340330000390~c5_100x100.jpeg",
+            "http://p16.muscdn.com/img/musically-maliva-obj/1613340330000390~c5_100x100.jpeg",
+            "http://p16.muscdn.com/img/musically-maliva-obj/1613340330000390~c5_100x100.jpeg"
+          ],
+          "uri": "musically-maliva-obj/1613340330000390"
+        },
+        "is_verified": false,
+        "hide_search": false,
+        "with_commerce_entry": false,
+        "download_prompt_ts": 0,
+        "twitter_id": "",
+        "has_email": false,
+        "policy_version": {
+          "GLOBAL": 1001
+        },
+        "region": "US",
+        "uid": "123703028091666432",
+        "bind_phone": "",
+        "weibo_url": "",
+        "live_agreement_time": 0,
+        "weibo_name": "",
+        "commerce_user_level": 0,
+        "verify_info": "",
+        "apple_account": 0,
+        "accept_private_policy": true,
+        "shield_digg_notice": 0,
+        "verification_type": 0,
+        "neiguang_shield": 0,
+        "live_rec_level": 0,
+        "authority_status": 0,
+        "enterprise_verify": false,
+        "birthday": "",
+        "is_ad_fake": false,
+        "nickname": "Disappointment ",
+        "shield_follow_notice": 0,
+        "original_music_cover": null,
+        "creator_level": -1,
+        "nickname_lock": 0,
+        "status": 1,
+        "unique_id": "beastslayer_509"
+      },
+      "aweme_id": "6606727368545406213",
+      "user_digged": 0
+    },
+    {
+      "status": 1,
+      "from_author": false,
+      "reply_comment": [],
+      "text": "I\\'m not sure whether to hate you or love you for this.",
+      "cid": "1612989456257030",
+      "digg_count": 218,
+      "text_extra": [],
+      "create_time": 1538237817,
+      "reply_id": "0",
+      "user": {
+        "youtube_channel_title": "",
+        "share_qrcode_uri": "",
+        "app_id": 1233,
+        "original_music_qrcode": null,
+        "is_gov_media_vip": false,
+        "live_commerce": false,
+        "account_region": "",
+        "user_period": 0,
+        "reflow_page_gid": 0,
+        "is_binded_weibo": false,
+        "video_icon_virtual_URI": "",
+        "risk_flag": 0,
+        "school_name": "",
+        "download_setting": 3,
+        "cv_level": "",
+        "custom_verify": "",
+        "special_lock": 1,
+        "user_canceled": false,
+        "shield_comment_notice": 0,
+        "type_label": [],
+        "hide_location": false,
+        "gender": 0,
+        "video_icon": {
+          "url_list": [],
+          "uri": ""
+        },
+        "school_poi_id": "",
+        "live_agreement": 0,
+        "is_phone_binded": false,
+        "prevent_download": false,
+        "weibo_schema": "",
+        "create_time": 1463370369,
+        "has_insights": false,
+        "react_setting": 0,
+        "google_account": "",
+        "community_discipline_status": 0,
+        "user_mode": 0,
+        "need_recommend": 0,
+        "update_before": 0,
+        "has_register_notice": 0,
+        "room_id": 0,
+        "avatar_medium": {
+          "url_list": [
+            "http://p16.muscdn.com/img/musically-maliva-obj/1610722569857030~c5_720x720.jpeg",
+            "http://p16.muscdn.com/img/musically-maliva-obj/1610722569857030~c5_720x720.jpeg",
+            "http://p16.muscdn.com/img/musically-maliva-obj/1610722569857030~c5_720x720.jpeg"
+          ],
+          "uri": "musically-maliva-obj/1610722569857030"
+        },
+        "has_orders": false,
+        "reflow_page_uid": 0,
+        "cover_url": [
+          {
+            "url_list": [
+              "http://p16.muscdn.com/obj/musically-maliva-obj/1612555907887110",
+              "http://p16.muscdn.com/obj/musically-maliva-obj/1612555907887110",
+              "http://p16.muscdn.com/obj/musically-maliva-obj/1612555907887110"
+            ],
+            "uri": "musically-maliva-obj/1612555907887110"
+          }
+        ],
+        "duet_setting": 0,
+        "language": "en",
+        "geofencing": [],
+        "ins_id": "i_just_want_to_rest_",
+        "unique_id_modify_time": 1541799810,
+        "school_type": 0,
+        "twitter_name": "",
+        "avatar_uri": "musically-maliva-obj/1610722569857030",
+        "signature": "",
+        "weibo_verify": "",
+        "comment_setting": 0,
+        "with_fusion_shop_entry": false,
+        "youtube_channel_id": "",
+        "avatar_larger": {
+          "url_list": [
+            "http://p16.muscdn.com/img/musically-maliva-obj/1610722569857030~c5_1080x1080.jpeg",
+            "http://p16.muscdn.com/img/musically-maliva-obj/1610722569857030~c5_1080x1080.jpeg",
+            "http://p16.muscdn.com/img/musically-maliva-obj/1610722569857030~c5_1080x1080.jpeg"
+          ],
+          "uri": "musically-maliva-obj/1610722569857030"
+        },
+        "enterprise_verify_reason": "",
+        "user_rate": 1,
+        "live_verify": 0,
+        "short_id": "21468165024",
+        "secret": 0,
+        "avatar_thumb": {
+          "url_list": [
+            "http://p16.muscdn.com/img/musically-maliva-obj/1610722569857030~c5_100x100.jpeg",
+            "http://p16.muscdn.com/img/musically-maliva-obj/1610722569857030~c5_100x100.jpeg",
+            "http://p16.muscdn.com/img/musically-maliva-obj/1610722569857030~c5_100x100.jpeg"
+          ],
+          "uri": "musically-maliva-obj/1610722569857030"
+        },
+        "is_verified": false,
+        "hide_search": false,
+        "with_commerce_entry": false,
+        "download_prompt_ts": 0,
+        "twitter_id": "",
+        "has_email": false,
+        "policy_version": {
+          "GLOBAL": 1001,
+          "GB": 1
+        },
+        "region": "GB",
+        "uid": "96464184564969472",
+        "bind_phone": "",
+        "weibo_url": "",
+        "live_agreement_time": 0,
+        "weibo_name": "",
+        "commerce_user_level": 0,
+        "verify_info": "",
+        "apple_account": 0,
+        "accept_private_policy": true,
+        "shield_digg_notice": 0,
+        "verification_type": 0,
+        "neiguang_shield": 0,
+        "live_rec_level": 0,
+        "authority_status": 0,
+        "enterprise_verify": false,
+        "birthday": "",
+        "is_ad_fake": false,
+        "nickname": "Little Devil",
+        "shield_follow_notice": 0,
+        "original_music_cover": null,
+        "creator_level": -1,
+        "nickname_lock": 0,
+        "status": 1,
+        "unique_id": "deathbycake599"
+      },
+      "aweme_id": "6606727368545406213",
+      "user_digged": 0
+    },
+    {
+      "status": 1,
+      "from_author": false,
+      "reply_comment": [],
+      "text": "“Haha guys look am so quirky get it I do unnatural movement and do funny fortcraft dance”",
+      "cid": "1614895655827477",
+      "digg_count": 87,
+      "text_extra": [],
+      "create_time": 1540055711,
+      "reply_id": "0",
+      "user": {
+        "youtube_channel_title": "",
+        "share_qrcode_uri": "",
+        "app_id": 1233,
+        "original_music_qrcode": null,
+        "is_gov_media_vip": false,
+        "live_commerce": false,
+        "account_region": "",
+        "user_period": 0,
+        "reflow_page_gid": 0,
+        "is_binded_weibo": false,
+        "video_icon_virtual_URI": "",
+        "risk_flag": 0,
+        "school_name": "",
+        "download_setting": 3,
+        "cv_level": "",
+        "custom_verify": "",
+        "special_lock": 1,
+        "user_canceled": false,
+        "shield_comment_notice": 0,
+        "type_label": [],
+        "hide_location": false,
+        "gender": 0,
+        "video_icon": {
+          "url_list": [],
+          "uri": ""
+        },
+        "school_poi_id": "",
+        "live_agreement": 0,
+        "is_phone_binded": false,
+        "prevent_download": false,
+        "weibo_schema": "",
+        "create_time": 1539393179,
+        "has_insights": false,
+        "react_setting": 0,
+        "google_account": "",
+        "community_discipline_status": 0,
+        "user_mode": 0,
+        "need_recommend": 1,
+        "update_before": 0,
+        "has_register_notice": 0,
+        "room_id": 0,
+        "avatar_medium": {
+          "url_list": [
+            "http://p16.muscdn.com/img/musically-maliva-obj/1614171021895845~c5_720x720.jpeg",
+            "http://p16.muscdn.com/img/musically-maliva-obj/1614171021895845~c5_720x720.jpeg",
+            "http://p16.muscdn.com/img/musically-maliva-obj/1614171021895845~c5_720x720.jpeg"
+          ],
+          "uri": "musically-maliva-obj/1614171021895845"
+        },
+        "has_orders": false,
+        "reflow_page_uid": 0,
+        "cover_url": [
+          {
+            "url_list": [
+              "http://p16.muscdn.com/obj/musically-maliva-obj/1612555907887110",
+              "http://p16.muscdn.com/obj/musically-maliva-obj/1612555907887110",
+              "http://p16.muscdn.com/obj/musically-maliva-obj/1612555907887110"
+            ],
+            "uri": "musically-maliva-obj/1612555907887110"
+          }
+        ],
+        "duet_setting": 0,
+        "language": "en",
+        "geofencing": [],
+        "ins_id": "",
+        "unique_id_modify_time": 1541799810,
+        "school_type": 0,
+        "twitter_name": "",
+        "avatar_uri": "musically-maliva-obj/1614171021895845",
+        "signature": "Drop thee boogie bvomb like oh y’all are rookie I’m the Doug grab the bag an",
+        "weibo_verify": "",
+        "comment_setting": 0,
+        "with_fusion_shop_entry": false,
+        "youtube_channel_id": "",
+        "avatar_larger": {
+          "url_list": [
+            "http://p16.muscdn.com/img/musically-maliva-obj/1614171021895845~c5_1080x1080.jpeg",
+            "http://p16.muscdn.com/img/musically-maliva-obj/1614171021895845~c5_1080x1080.jpeg",
+            "http://p16.muscdn.com/img/musically-maliva-obj/1614171021895845~c5_1080x1080.jpeg"
+          ],
+          "uri": "musically-maliva-obj/1614171021895845"
+        },
+        "enterprise_verify_reason": "",
+        "user_rate": 1,
+        "live_verify": 0,
+        "short_id": "31899340328",
+        "secret": 0,
+        "avatar_thumb": {
+          "url_list": [
+            "http://p16.muscdn.com/img/musically-maliva-obj/1614171021895845~c5_100x100.jpeg",
+            "http://p16.muscdn.com/img/musically-maliva-obj/1614171021895845~c5_100x100.jpeg",
+            "http://p16.muscdn.com/img/musically-maliva-obj/1614171021895845~c5_100x100.jpeg"
+          ],
+          "uri": "musically-maliva-obj/1614171021895845"
+        },
+        "is_verified": false,
+        "hide_search": false,
+        "with_commerce_entry": false,
+        "download_prompt_ts": 0,
+        "twitter_id": "",
+        "has_email": false,
+        "policy_version": null,
+        "region": "US",
+        "uid": "6611637411686662149",
+        "bind_phone": "",
+        "weibo_url": "",
+        "live_agreement_time": 0,
+        "weibo_name": "",
+        "commerce_user_level": 0,
+        "verify_info": "",
+        "apple_account": 0,
+        "accept_private_policy": true,
+        "shield_digg_notice": 0,
+        "verification_type": 0,
+        "neiguang_shield": 0,
+        "live_rec_level": 0,
+        "authority_status": 0,
+        "enterprise_verify": false,
+        "birthday": "",
+        "is_ad_fake": false,
+        "nickname": "coochiechaser420",
+        "shield_follow_notice": 0,
+        "original_music_cover": null,
+        "creator_level": -1,
+        "nickname_lock": 0,
+        "status": 1,
+        "unique_id": "coochiechaser420"
+      },
+      "aweme_id": "6606727368545406213",
+      "user_digged": 0
+    }
+  ],
+  "aweme_id": "6606727368545406213",
+  "video_labels": [],
+  "is_vr": false,
+  "vr_type": 0,
+  "statistics": {
+    "comment_count_str": "515",
+    "digg_count_str": "20k",
+    "forward_count": 0,
+    "digg_count": 20028,
+    "share_count_str": "2040",
+    "play_count": 0,
+    "comment_count": 515,
+    "aweme_id": "6606727368545406213",
+    "share_count": 2040
+  },
+  "author": {
+    "uid": "188294915489964032",
+    "avatar_larger": {
+      "url_list": [
+        "//mpak-suse1.akamaized.net/res/user_v_icon/694/icon_188294915489964032-YwvysZKetc.jpg"
+      ],
+      "uri": "s3://musically-prod/res/user_v_icon/694/icon_188294915489964032-YwvysZKetc.jpg"
+    },
+    "birthday": "",
+    "custom_verify": "",
+    "is_verified": false,
+    "nickname": "Zureeal",
+    "user_mode": 1,
+    "short_id": "21656858553",
+    "hide_location": true,
+    "gender": 0,
+    "secret": 0,
+    "user_period": 0,
+    "avatar_medium": {
+      "url_list": [
+        "//mpak-suse1.akamaized.net/res/user_v_icon/694/icon_188294915489964032-YwvysZKetc.jpg"
+      ],
+      "uri": "s3://musically-prod/res/user_v_icon/694/icon_188294915489964032-YwvysZKetc.jpg"
+    },
+    "signature": "雪花❄️🏳️🌈\nFollow my insta \nPG-13 \nCosplayer ✨\nBritish+Chinese英國+香港 混血兒",
+    "avatar_thumb": {
+      "url_list": [
+        "//mpak-suse1.akamaized.net/res/user_v_icon/694/icon_188294915489964032-YwvysZKetc.jpg"
+      ],
+      "uri": "s3://musically-prod/res/user_v_icon/694/icon_188294915489964032-YwvysZKetc.jpg"
+    },
+    "weibo_verify": "",
+    "unique_id": "zureeal"
+  },
+  "prevent_download": false,
+  "cmt_swt": false,
+  "share_url": "https://www.musical.ly/share/video/6606727368545406213/?mid=6576279366609668870",
+  "is_ads": false,
+  "comment_count": 515,
+  "music": {
+    "cover_hd": {
+      "url_list": [
+        "http://p16.muscdn.com/img/musically-maliva-obj/1613432698851333~c5_1080x1080.jpeg",
+        "http://p16.muscdn.com/img/musically-maliva-obj/1613432698851333~c5_1080x1080.jpeg",
+        "http://p16.muscdn.com/img/musically-maliva-obj/1613432698851333~c5_1080x1080.jpeg"
+      ],
+      "uri": "musically-maliva-obj/1613432698851333"
+    },
+    "status": 1,
+    "owner_nickname": "JoogieBoy1596",
+    "user_count": 0,
+    "is_video_self_see": false,
+    "title": "original sound - joogieboy1596",
+    "play_url": {
+      "url_list": [
+        "https://p3.pstatp.com/obj/musically-maliva-obj/1605536954578950.mp3"
+      ],
+      "uri": "musically-maliva-obj/1605536954578950.mp3"
+    },
+    "owner_id": "6576271770876182534",
+    "app_unshelve_info": null,
+    "mid": "6576279366609668870",
+    "author_name": "JoogieBoy1596",
+    "schema_url": "",
+    "is_only_owner_use": false,
+    "source": 72,
+    "cover_large": {
+      "url_list": [
+        "http://p16.muscdn.com/img/musically-maliva-obj/1613432698851333~c5_1080x1080.jpeg",
+        "http://p16.muscdn.com/img/musically-maliva-obj/1613432698851333~c5_1080x1080.jpeg",
+        "http://p16.muscdn.com/img/musically-maliva-obj/1613432698851333~c5_1080x1080.jpeg"
+      ],
+      "uri": "musically-maliva-obj/1613432698851333"
+    },
+    "owner_handle": "joogieboy1596",
+    "is_del_video": false,
+    "cover_thumb": {
+      "url_list": [
+        "//m-p16.akamaized.net/img/musically-maliva-obj/1613432698851333~c5_100x100.jpeg",
+        "//m-p16.akamaized.net/img/musically-maliva-obj/1613432698851333~c5_100x100.jpeg",
+        "//m-p16.akamaized.net/img/musically-maliva-obj/1613432698851333~c5_100x100.jpeg"
+      ],
+      "uri": "musically-maliva-obj/1613432698851333"
+    },
+    "cover_medium": {
+      "url_list": [
+        "http://p16.muscdn.com/img/musically-maliva-obj/1613432698851333~c5_720x720.jpeg",
+        "http://p16.muscdn.com/img/musically-maliva-obj/1613432698851333~c5_720x720.jpeg",
+        "http://p16.muscdn.com/img/musically-maliva-obj/1613432698851333~c5_720x720.jpeg"
+      ],
+      "uri": "musically-maliva-obj/1613432698851333"
+    },
+    "music_name": "original sound - joogieboy1596"
+  },
+  "bodydance_score": 0,
+  "xigua_task": {
+    "is_xigua_task": false
+  },
+  "is_hash_tag": 1,
+  "status": {
+    "private_status": 0,
+    "reviewed": 1,
+    "is_prohibited": false,
+    "with_goods": false,
+    "is_private": false,
+    "download_status": 0,
+    "is_delete": false,
+    "with_fusion_goods": false,
+    "self_see": false,
+    "in_reviewing": false,
+    "allow_share": true,
+    "allow_comment": true
+  },
+  "sort_label": "",
+  "share_info": {
+    "share_weibo_desc": "TikTok: 每秒都精彩快來觀看 Zureeal 的影片吧！#TikTok > ",
+    "bool_persist": 0,
+    "share_quote": "",
+    "share_title": "快來觀看 Zureeal 的影片吧！#TikTok > ",
+    "share_signature_desc": "TikTok: 每秒都精彩",
+    "share_signature_url": "https://tiktokv.com/",
+    "share_link_desc": "",
+    "share_url": "https://t.tiktok.com/i18n/share/video/6606727368545406213/?region=CN&mid=6576279366609668870",
+    "share_desc": ""
+  },
+  "video_text": [],
+  "is_top": 0,
+  "aweme_type": 0,
+  "desc": "#bowsette#mario#cosplay#uk#lgbt#gaming#asian#bowsettecosplay",
+  "group_id": "6606727368545406213",
+  "geofencing": [],
+  "region": "GB",
+  "is_pgcshow": false,
+  "is_relieve": false,
+  "text_extra": [
+    {
+      "start": 0,
+      "end": 9,
+      "hashtag_name": "bowsette",
+      "type": 1
+    },
+    {
+      "start": 9,
+      "end": 15,
+      "hashtag_name": "mario",
+      "type": 1
+    },
+    {
+      "start": 15,
+      "end": 23,
+      "hashtag_name": "cosplay",
+      "type": 1
+    },
+    {
+      "start": 23,
+      "end": 26,
+      "hashtag_name": "uk",
+      "type": 1
+    },
+    {
+      "start": 26,
+      "end": 31,
+      "hashtag_name": "lgbt",
+      "type": 1
+    },
+    {
+      "start": 31,
+      "end": 38,
+      "hashtag_name": "gaming",
+      "type": 1
+    },
+    {
+      "start": 38,
+      "end": 44,
+      "hashtag_name": "asian",
+      "type": 1
+    },
+    {
+      "start": 44,
+      "end": 60,
+      "hashtag_name": "bowsettecosplay",
+      "type": 1
+    }
+  ],
+  "user_digged": 0
+}
+#+END_SRC
+
+*** Serde
+#+BEGIN_SRC rust
+#[derive(Serialize, Deserialize)]
+struct Author {
+  uid: String,
+  avatar_larger: LabelTop,
+  birthday: String,
+  custom_verify: String,
+  is_verified: bool,
+  nickname: String,
+  user_mode: i64,
+  short_id: String,
+  hide_location: bool,
+  gender: i64,
+  secret: i64,
+  user_period: i64,
+  avatar_medium: LabelTop,
+  signature: String,
+  avatar_thumb: LabelTop,
+  weibo_verify: String,
+  unique_id: String,
+}
+
+#[derive(Serialize, Deserialize)]
+struct Comments {
+  status: i64,
+  from_author: bool,
+  reply_comment: Vec<>,
+  text: String,
+  cid: String,
+  digg_count: i64,
+  #[serde(skip_serializing)]
+  text_extra: Vec<>,
+  create_time: i64,
+  reply_id: String,
+  user: User,
+  aweme_id: String,
+  user_digged: i64,
+}
+
+#[derive(Serialize, Deserialize)]
+struct LabelTop {
+  url_list: Vec<String>,
+  uri: String,
+}
+
+#[derive(Serialize, Deserialize)]
+struct Music {
+  cover_hd: LabelTop,
+  status: i64,
+  owner_nickname: String,
+  user_count: i64,
+  is_video_self_see: bool,
+  title: String,
+  play_url: LabelTop,
+  owner_id: String,
+  app_unshelve_info: (),
+  mid: String,
+  author_name: String,
+  schema_url: String,
+  is_only_owner_use: bool,
+  source: i64,
+  cover_large: LabelTop,
+  owner_handle: String,
+  is_del_video: bool,
+  cover_thumb: LabelTop,
+  cover_medium: LabelTop,
+  music_name: String,
+}
+
+#[derive(Serialize, Deserialize)]
+struct PlayAddr {
+  url_list: Vec<String>,
+  url_key: String,
+  uri: String,
+}
+
+#[derive(Serialize, Deserialize)]
+struct PolicyVersion {
+  #[serde(rename = "GLOBAL")]
+  _global: i64,
+  #[serde(rename = "SE")]
+  _se: i64,
+}
+
+#[derive(Serialize, Deserialize)]
+struct RiskInfos {
+  warn: bool,
+  content: String,
+  risk_sink: bool,
+  #[serde(rename = "type")]
+  _type: i64,
+}
+
+#[derive(Serialize, Deserialize)]
+struct TikTokRoot {
+  risk_infos: RiskInfos,
+  label_top: LabelTop,
+  author_user_id: i64,
+  item_comment_settings: i64,
+  rate: i64,
+  create_time: i64,
+  video: Video,
+  comments: Vec<Comments>,
+  aweme_id: String,
+  #[serde(skip_serializing)]
+  video_labels: Vec<>,
+  is_vr: bool,
+  vr_type: i64,
+  statistics: Statistics,
+  author: Author,
+  prevent_download: bool,
+  cmt_swt: bool,
+  share_url: String,
+  is_ads: bool,
+  comment_count: i64,
+  music: Music,
+  bodydance_score: i64,
+  xigua_task: XiguaTask,
+  is_hash_tag: i64,
+  status: Status,
+  sort_label: String,
+  share_info: ShareInfo,
+  #[serde(skip_serializing)]
+  video_text: Vec<>,
+  is_top: i64,
+  aweme_type: i64,
+  desc: String,
+  group_id: String,
+  #[serde(skip_serializing)]
+  geofencing: Vec<>,
+  region: String,
+  is_pgcshow: bool,
+  is_relieve: bool,
+  text_extra: Vec<TextExtra>,
+  user_digged: i64,
+}
+
+#[derive(Serialize, Deserialize)]
+struct ShareInfo {
+  share_weibo_desc: String,
+  bool_persist: i64,
+  share_quote: String,
+  share_title: String,
+  share_signature_desc: String,
+  share_signature_url: String,
+  share_link_desc: String,
+  share_url: String,
+  share_desc: String,
+}
+
+#[derive(Serialize, Deserialize)]
+struct Statistics {
+  comment_count_str: String,
+  digg_count_str: String,
+  forward_count: i64,
+  digg_count: i64,
+  share_count_str: String,
+  play_count: i64,
+  comment_count: i64,
+  aweme_id: String,
+  share_count: i64,
+}
+
+#[derive(Serialize, Deserialize)]
+struct Status {
+  private_status: i64,
+  reviewed: i64,
+  is_prohibited: bool,
+  with_goods: bool,
+  is_private: bool,
+  download_status: i64,
+  is_delete: bool,
+  with_fusion_goods: bool,
+  self_see: bool,
+  in_reviewing: bool,
+  allow_share: bool,
+  allow_comment: bool,
+}
+
+#[derive(Serialize, Deserialize)]
+struct TextExtra {
+  start: i64,
+  end: i64,
+  hashtag_name: String,
+  #[serde(rename = "type")]
+  _type: i64,
+}
+
+#[derive(Serialize, Deserialize)]
+struct User {
+  youtube_channel_title: String,
+  share_qrcode_uri: String,
+  app_id: i64,
+  original_music_qrcode: string,
+  is_gov_media_vip: bool,
+  live_commerce: bool,
+  account_region: String,
+  user_period: i64,
+  reflow_page_gid: i64,
+  is_binded_weibo: bool,
+  #[serde(rename = "video_icon_virtual_URI")]
+  video_icon_virtual_uri: String,
+  risk_flag: i64,
+  school_name: String,
+  download_setting: i64,
+  cv_level: String,
+  custom_verify: String,
+  special_lock: i64,
+  user_canceled: bool,
+  shield_comment_notice: i64,
+  #[serde(skip_serializing)]
+  type_label: Vec<>,
+  hide_location: bool,
+  gender: i64,
+  video_icon: LabelTop,
+  school_poi_id: String,
+  live_agreement: i64,
+  is_phone_binded: bool,
+  prevent_download: bool,
+  weibo_schema: String,
+  create_time: i64,
+  has_insights: bool,
+  react_setting: i64,
+  google_account: String,
+  community_discipline_status: i64,
+  user_mode: i64,
+  need_recommend: i64,
+  update_before: i64,
+  has_register_notice: i64,
+  room_id: i64,
+  avatar_medium: LabelTop,
+  has_orders: bool,
+  reflow_page_uid: i64,
+  cover_url: Vec<LabelTop>,
+  duet_setting: i64,
+  language: String,
+  #[serde(skip_serializing)]
+  geofencing: Vec<>,
+  ins_id: String,
+  unique_id_modify_time: i64,
+  school_type: i64,
+  twitter_name: String,
+  avatar_uri: String,
+  signature: String,
+  weibo_verify: String,
+  comment_setting: i64,
+  with_fusion_shop_entry: bool,
+  youtube_channel_id: String,
+  avatar_larger: LabelTop,
+  enterprise_verify_reason: String,
+  user_rate: i64,
+  live_verify: i64,
+  short_id: String,
+  secret: i64,
+  avatar_thumb: LabelTop,
+  is_verified: bool,
+  hide_search: bool,
+  with_commerce_entry: bool,
+  download_prompt_ts: i64,
+  twitter_id: String,
+  has_email: bool,
+  policy_version: PolicyVersion,
+  region: String,
+  uid: String,
+  bind_phone: String,
+  weibo_url: String,
+  live_agreement_time: i64,
+  weibo_name: String,
+  commerce_user_level: i64,
+  verify_info: String,
+  apple_account: i64,
+  accept_private_policy: bool,
+  shield_digg_notice: i64,
+  verification_type: i64,
+  neiguang_shield: i64,
+  live_rec_level: i64,
+  authority_status: i64,
+  enterprise_verify: bool,
+  birthday: String,
+  is_ad_fake: bool,
+  nickname: String,
+  shield_follow_notice: i64,
+  original_music_cover: string,
+  creator_level: i64,
+  nickname_lock: i64,
+  status: i64,
+  unique_id: String,
+}
+
+#[derive(Serialize, Deserialize)]
+struct Video {
+  ratio: String,
+  origin_cover: LabelTop,
+  play_addr: PlayAddr,
+  cover: LabelTop,
+  height: i64,
+  width: i64,
+  download_addr: PlayAddr,
+  has_watermark: bool,
+  play_addr_lowbr: PlayAddr,
+  dynamic_cover: LabelTop,
+}
+
+#[derive(Serialize, Deserialize)]
+struct XiguaTask {
+  is_xigua_task: bool,
+}
+
+#+END_SRC
+
+ 

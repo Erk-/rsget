@@ -28,11 +28,11 @@ pub trait Streamable {
     fn get_title(&self) -> Option<String>;
     /// Returns the author of the stream if possible
     fn get_author(&self) -> Option<String>;
-    //fn get_stream(&self) -> <T: Stream>
     /// Returns if the stream is online
     fn is_online(&self) -> bool;
     /// Gets the url of the stream
     fn get_stream(&self) -> String; // May be rewritten to no longer be a string but a enum to differentiate between types of stream
+    //fn get_stream(&self) -> <T: Stream>
     /// Returns what extension the stream should be
     fn get_ext(&self) -> String;
     /// Gets the default name of the stream

@@ -19,7 +19,7 @@ fn main() {
         .start()
         .unwrap_or_else(|e| panic!("Logger initialization failed with {}", e));
     let _ = try_main().map_err(|why| {
-        error!("Error running: {:?}", why);
+        println!("Error running: {:?}", why);
     });
 }
 

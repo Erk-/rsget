@@ -148,7 +148,13 @@ impl Streamable for Afreeca {
             let json_str = res.text()?;
             debug!("{}", json_str);
             use serde_json;
-            let json: ChannelInfo = serde_json::from_str(&json_str)?;
+            let json: ChannelInfo = match serde_json::from_str(&json_str) {
+                Ok(s) => s,
+                Err(e) => {
+                    debug!("[Afreeca] Json failed with:\n{}", e);
+                    return Err(StreamError::Rsget(RsgetError::new("[Afreeca] Stream not online")));
+                },
+            };
             json
         };
         debug!("Getting room_id");
