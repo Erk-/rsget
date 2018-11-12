@@ -40,7 +40,7 @@ impl Streamable for Douyin {
         let res: Result<String, StreamError> = dc.download_to_string(site_req);
         match res {
             Ok(some) => {
-                let url_re = Regex::new(r"^(?:https?://)?(?:www\.)?(?:v\.)?douyin\.com/([a-zA-Z0-9]+)")?;
+                let url_re: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?iesdouyin\.com/share/video/([a-zA-Z0-9]+)/.*")?;
                 let video_re = Regex::new(r#"playAddr:\s*"(.+)""#)?;
                 let description_re = Regex::new(r#"<p class="desc">([^<]*)</p>"#)?;
                 let author_re = Regex::new(r#"<p class="name nowrap">@([^<]*)</p>"#)?;
