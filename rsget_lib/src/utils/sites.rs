@@ -5,15 +5,27 @@ use utils::error::RsgetError;
 use plugins::{douyu::Douyu, panda::PandaTv, xingyan::Xingyan, inke::Inke, afreeca::Afreeca, douyin::Douyin, tiktok::TikTok};
 // Option<Box<Streamable + 'static>>
 
+use reqwest;
 
-pub fn get_site(input: &str) -> Result<Box<Streamable>, StreamError>
-{
+pub fn get_site(input: &str) -> Result<Box<Streamable>, StreamError> {
+    match _get_site(input) {
+        Ok(s) => Ok(s),
+        Err(StreamError::Rsget(_)) => {
+            let res = reqwest::get(input)?;
+            let final_url = res.url().as_str();
+            _get_site(final_url)
+        },
+        Err(why) => Err(why),
+    }
+}
+
+fn _get_site(input: &str) -> Result<Box<Streamable>, StreamError> {
     let re_xingyan_panda: Regex = Regex::new(r"^(?:https?://)?xingyan\.panda\.tv/[0-9]+/?")?;
     let re_panda: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?panda\.tv/[0-9]+/?")?;
     let re_douyu: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?douyu\.com/[a-zA-Z0-9]+/?")?;
     let re_afreeca: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?(?:play\.)?afreecatv.com/[a-zA-Z0-9]+/?(?:/[0-9]+)?")?;
     let re_inke: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?inke\.cn/live\.html\?uid=[0-9]+")?;
-    let re_douyin: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?(?:v\.)?douyin\.com/(?:[a-zA-Z0-9]+)")?;
+    let re_douyin: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?iesdouyin\.com/.*")?;
     let re_tiktok: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?(?:m\.)?tiktok\.com/v/(?:[a-zA-Z0-9]+)(?:\.html)?")?;
     match input {
         url if re_panda.is_match(url) => {
