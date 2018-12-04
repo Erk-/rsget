@@ -31,11 +31,11 @@ jobs:
 - template: 'azure-template-win.yml'  # Template reference
   parameters:
     name: 'Windows_stable'
-    vmImage: 'vs2017-win2017'
+    vmImage: 'vs2017-win2016'
     toolchain: 'stable'
 
 - template: 'azure-template-win.yml'  # Template reference
   parameters:
     name: 'Windows_nightly'
-    vmImage: 'vs2017-win2017'
+    vmImage: 'vs2017-win2016'
     toolchain: 'nightly'
