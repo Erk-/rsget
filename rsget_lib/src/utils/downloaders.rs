@@ -190,7 +190,7 @@ impl DownloadClient {
 
     
     pub fn hls_download(&self,
-                        user_url: Option<&str>,
+                        user_url: Option<String>,
                         aid: Option<String>,
                         murl: String,
                         file: &File
@@ -215,6 +215,7 @@ impl DownloadClient {
         
         let to_work = Arc::new(Mutex::new(VecDeque::<Hls>::new()));
         let other_work = to_work.clone();
+        let inner_user_url = user_url.clone().unwrap();
         thread::spawn(move || {
             let inner_client = DownloadClient::new().unwrap();
             let mut links: HashSet<String> = HashSet::new();
@@ -226,7 +227,9 @@ impl DownloadClient {
                 parsed_url.set_query(Some(&format!("aid={}",a)));
             }
             let url = parsed_url.into_string();
+
             loop {
+                // let loop_uu = inner_user_url.unwrap().clone();
                 trace!("[HLS] First loop");
                 if counter > 12 {
                     let to_add = &mut to_work.lock();
@@ -234,7 +237,8 @@ impl DownloadClient {
                     break;
                 }
                 trace!("[HLS] Tries to get: {}", url);
-                let req = match inner_client.make_request(&url, None) {
+
+                let req = match inner_client.make_request(&url, Some(("Referer", &inner_user_url))) {
                     Ok(u) => u,
                     Err(e) => {
                         trace!("[HLS] breaks!!! ({})", e);
@@ -295,7 +299,7 @@ impl DownloadClient {
             match to_download {
                 Some(Hls::Url(u)) => {
                     let c_file = file.try_clone()?;
-                    let req = match user_url {
+                    let req = match user_url.clone() {
                         Some(uurl) => {
                             self.rclient
                                 .get(&u)
@@ -323,4 +327,3 @@ impl DownloadClient {
         Ok(())
     }
 }
-

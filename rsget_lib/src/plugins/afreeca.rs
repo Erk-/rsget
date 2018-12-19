@@ -243,7 +243,7 @@ impl Streamable for Afreeca {
             params.insert("aid", &self.hls_key);
             let file = File::create(path)?;
             self.client
-                .hls_download(Some(&self.url),
+                .hls_download(Some(self.url.clone()),
                               Some(self.hls_key.clone()),
                               self.get_stream(),
                               &file)

@@ -1,7 +1,6 @@
 extern crate clap;
 //extern crate pretty_env_logger;
 extern crate flexi_logger;
-#[macro_use]
 extern crate log;
 extern crate rsget_lib;
  
