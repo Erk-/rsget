@@ -56,7 +56,7 @@ struct XingyanHostInfo {
     rid: String,
     nickName: String,
     avatar: String,
-    gender: String,
+    //gender: String,
     signature: String,
     is_anchor: String,
 }
