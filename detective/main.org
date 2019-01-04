@@ -1,4 +1,5 @@
-* TODO TikTok/Douyin
+* DONE TikTok/Douyin
+CLOSED: [2018-11-12 man 23:52]
 ** DONE Douyin
 CLOSED: [2018-11-12 man 03:17]
 Douyins api seems to be a lot easier to navigate compared to TikTok
@@ -40,7 +41,8 @@ struct DouyinRoot {
 The adress of the video is in playAddr you have to get it to redirect
 to the real address.
 The videos content type is =video/mp4=
-** TODO Tiktok
+** DONE Tiktok
+CLOSED: [2018-11-12 man 23:52]
 *** Example
 [[https://m.tiktok.com/v/6606727368545406213.html]]
 *** Regex

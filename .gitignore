@@ -3,4 +3,7 @@
 *.mp4
 #*#
 .#*
+
+/target
+**/*.rs.bk
 Cargo.lock

@@ -174,9 +174,9 @@ impl Streamable for Douyu {
         let room_id_re = Regex::new(r"com/([a-zA-Z0-9]+)").unwrap();
         let cap = room_id_re.captures(&url).unwrap();
 
-        let head = "Mozilla/5.0 (compatible; MSIE 10.0; \
-             Windows Phone 8.0; Trident/6.0; IEMobile/10.0; \
-             ARM; Touch; NOKIA; Lumia 920)";
+        let head = "Mozilla/5.0 (iPad; CPU OS 8_1_3 like Mac OS X) \
+                    AppleWebKit/600.1.4 (KHTML, like Gecko) \
+                    Version/8.0 Mobile/12B466 Safari/600.1.4";
         
 
         let room_id = match cap[1].parse::<u32>() {
