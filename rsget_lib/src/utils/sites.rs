@@ -1,9 +1,16 @@
 use regex::Regex;
-use Streamable;
-use utils::error::StreamError;
-use utils::error::RsgetError;
-use plugins::{douyu::Douyu, panda::PandaTv, xingyan::Xingyan, inke::Inke, afreeca::Afreeca, douyin::Douyin, tiktok::TikTok};
-// Option<Box<Streamable + 'static>>
+use crate::Streamable;
+use crate::utils::error::StreamError;
+use crate::utils::error::RsgetError;
+use crate::plugins::{
+    douyu::Douyu,
+    panda::PandaTv,
+    xingyan::Xingyan,
+    inke::Inke,
+    afreeca::Afreeca,
+    douyin::Douyin,
+    tiktok::TikTok
+};
 
 use reqwest;
 

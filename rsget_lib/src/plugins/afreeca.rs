@@ -1,10 +1,10 @@
-use Streamable;
+use crate::Streamable;
 use regex::Regex;
 
-use utils::error::StreamError;
-use utils::error::RsgetError;
+use crate::utils::error::StreamError;
+use crate::utils::error::RsgetError;
 
-use utils::downloaders::DownloadClient;
+use crate::utils::downloaders::DownloadClient;
 use chrono::prelude::*;
 
 use reqwest::header::REFERER;

@@ -1,14 +1,14 @@
-use Streamable;
+use crate::Streamable;
 use regex::Regex;
 
-use utils::error::StreamError;
-use utils::error::RsgetError;
+use crate::utils::error::StreamError;
+use crate::utils::error::RsgetError;
 use chrono::prelude::*;
 
 use stream_lib::stream::Stream;
 use stream_lib::stream::StreamType;
 
-use utils::downloaders::DownloadClient;
+use crate::utils::downloaders::DownloadClient;
 
 use std::fs::File;
 

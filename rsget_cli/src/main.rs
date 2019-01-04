@@ -11,6 +11,7 @@ use flexi_logger::{Logger,opt_format};
 
 use rsget_lib::utils::error::StreamError;
 use rsget_lib::utils::error::RsgetError;
+use rsget_lib::utils::stream_type_to_url;
 
 fn main() {
     Logger::with_env()
@@ -68,14 +69,14 @@ fn try_main() -> Result<(), StreamError> {
     }
 
     if matches.is_present("info") {
-        println!("{}", stream.get_stream());
+        println!("{:#?}", stream.get_stream()?);
         return Ok(())
     }
 
     if matches.is_present("play") {
         let status = Command::new("mpv")
             .arg("--no-ytdl")
-            .arg(stream.get_stream())
+            .arg(stream_type_to_url(stream.get_stream()?))
             .status()
             .expect("Mpv failed to start");
         std::process::exit(status.code().unwrap())
@@ -90,8 +91,9 @@ fn try_main() -> Result<(), StreamError> {
 
     let size = stream.download(
         format!("{}{}", path, strip_characters(&file_name, "<>:\"/\\|?*\0")),
-    );
+    )?;
     println!("Downloaded: {} MB", size as f64 / 1000.0 / 1000.0);
+    Ok(())
 }
 
 fn strip_characters(original: &str, to_strip: &str) -> String {

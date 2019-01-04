@@ -1,3 +1,5 @@
+#![allow(clippy::new_ret_no_self)]
+
 extern crate chrono;
 extern crate futures;
 extern crate indicatif;
@@ -18,7 +20,7 @@ extern crate parking_lot;
 extern crate url;
 extern crate stream_lib;
 
-use utils::error::StreamError;
+use crate::utils::error::StreamError;
 
 use stream_lib::stream::StreamType;
 

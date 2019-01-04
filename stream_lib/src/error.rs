@@ -1,6 +1,6 @@
 use std::{
     error::Error as StdError,
-    fmt::{Display, Error as FmtError, Formatter, Result as FmtResult},
+    fmt::{Display, Formatter, Result as FmtResult},
     io::Error as IoError,
 };
 use reqwest::Error as ReqwestError;

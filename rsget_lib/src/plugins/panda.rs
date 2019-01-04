@@ -1,12 +1,12 @@
-use Streamable;
+use crate::Streamable;
 use std::time::{SystemTime, UNIX_EPOCH};
 use regex::Regex;
 use serde_json;
 use serde_json::Value;
 
-use utils::error::StreamError;
-use utils::error::RsgetError;
-use utils::downloaders::DownloadClient;
+use crate::utils::error::StreamError;
+use crate::utils::error::RsgetError;
+use crate::utils::downloaders::DownloadClient;
 use chrono::prelude::*;
 
 use stream_lib::stream::Stream;

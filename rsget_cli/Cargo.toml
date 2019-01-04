@@ -1,6 +1,6 @@
 [package]
 name = "rsget"
-version = "0.1.3"
+version = "0.1.4"
 authors = ["Valdemar Erk <valdemar@erk.io>"]
 description = "Tool to get information about and download livestreams"
 license = "ISC"

@@ -24,6 +24,7 @@ const WRITE_SIZE: usize = 131_072;
 const HLS_MAX_RETRIES: usize = 12;
 
 /// A Enum with the types of streams supported
+#[derive(Debug)]
 pub enum StreamType {
     /// A stream that is just a chunked http response.
     Chuncked(Request),
@@ -31,11 +32,13 @@ pub enum StreamType {
     HLS(Request),
 }
 
+#[derive(Debug, Clone)]
 enum _StreamType {
     Chuncked,
     HLS,
 }
 
+#[derive(Debug)]
 pub struct Stream {
     request: Request,
     stream_type: _StreamType,
