@@ -201,6 +201,7 @@ impl Stream {
         spinner.set_style(ProgressStyle::default_bar()
                           .template("{spinner:.green} [{elapsed_precise}] {bytes} Segments")
                           .tick_chars("⠁⠁⠉⠙⠚⠒⠂⠂⠒⠲⠴⠤⠄⠄⠤⠠⠠⠤⠦⠖⠒⠐⠐⠒⠓⠋⠉⠈⠈ "));
+        spinner.enable_steady_tick(100);
 
         let mut buf_writer = BufWriter::with_capacity(WRITE_SIZE, file);
 
@@ -209,7 +210,9 @@ impl Stream {
             match to_download {
                 Some(Hls::Url(u)) => {
                     let req = client.get(&u).headers(headers.clone()).build()?;
-                    total_size += download_to_file(client, req, &mut buf_writer)?;
+                    let size = download_to_file(client, req, &mut buf_writer)?;
+                    spinner.inc(size);
+                    total_size += size;
                 }
                 Some(Hls::StreamOver) => break,
                 None => {
