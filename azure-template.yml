@@ -16,12 +16,11 @@ jobs:
     displayName: 'Install rust'
 
   - bash: |
-      cd rsget
       source $HOME/.cargo/env
       cargo build --release
     displayName: 'Build rsget'
 
   - task: PublishBuildArtifacts@1
     inputs:
-      pathtoPublish: 'rsget/target/release/rsget'
+      pathtoPublish: 'target/release/rsget'
       artifactName: 'rsget-$(Agent.OS)'
