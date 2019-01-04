@@ -6,6 +6,9 @@ use utils::error::RsgetError;
 
 use utils::downloaders::DownloadClient;
 
+use stream_lib::stream::Stream;
+use stream_lib::stream::StreamType;
+
 use std::fs::File;
 
 /*
@@ -87,8 +90,8 @@ impl Streamable for Douyin {
         true
     }
 
-    fn get_stream(&self) -> String {
-        self.douyin_url.clone()
+    fn get_stream(&self) -> Result<StreamType, StreamError> {
+        Ok(StreamType::Chuncked(self.client.rclient.get(&self.douyin_url).build()?))
     }
 
     fn get_ext(&self) -> String {
@@ -105,17 +108,15 @@ impl Streamable for Douyin {
         )
     }
 
-    fn download(&self, path: String) -> Result<(), StreamError> {
+    fn download(&self, path: String) -> Result<u64, StreamError> {
         println!(
             "{} by {} ({})",
             self.get_title().unwrap(),
             self.get_author().unwrap(),
             self.video_id
         );
-        self.client.download_to_file(
-            &self.get_stream(),
-            File::create(path)?,
-            true,
-        )
+        let file = File::create(path)?;
+        let stream = Stream::new(self.get_stream()?);
+        Ok(stream.write_file(&self.client.rclient, file)?)
     }    
 }

@@ -16,8 +16,11 @@ extern crate hls_m3u8;
 extern crate reqwest;
 extern crate parking_lot;
 extern crate url;
+extern crate stream_lib;
 
 use utils::error::StreamError;
+
+use stream_lib::stream::StreamType;
 
 pub trait Streamable {
     /// Creates a new streamable
@@ -31,26 +34,14 @@ pub trait Streamable {
     /// Returns if the stream is online
     fn is_online(&self) -> bool;
     /// Gets the url of the stream
-    fn get_stream(&self) -> String; // May be rewritten to no longer be a string but a enum to differentiate between types of stream
-    //fn get_stream(&self) -> <T: Stream>
+    fn get_stream(&self) -> Result<StreamType, StreamError>;
     /// Returns what extension the stream should be
     fn get_ext(&self) -> String;
     /// Gets the default name of the stream
     fn get_default_name(&self) -> String;
     /// Downloads the stream to a file
-    fn download(&self, path: String) -> Result<(), StreamError>;
+    fn download(&self, path: String) -> Result<u64, StreamError>;
 }
 
-/*
-enum StreamType {
-    FileStream(url: &str),
-    Hls(url: &str, master: &str),
-}
-
-pub trait Stream {
-    fn new(stream: StreamType) -> Result<(), StreamError>;
-    fn download(&self, path: &str) -> Result<(), StreamError>;
-}
-*/
 pub mod utils;
 pub mod plugins;

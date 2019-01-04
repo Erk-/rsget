@@ -9,6 +9,9 @@ use utils::error::RsgetError;
 use utils::downloaders::DownloadClient;
 use chrono::prelude::*;
 
+use stream_lib::stream::Stream;
+use stream_lib::stream::StreamType;
+
 use std::fs::File;
 
 #[allow(dead_code)]
@@ -210,7 +213,7 @@ impl Streamable for PandaTv {
         self.panda_tv_room.data.videoinfo.status == "2"
     }
 
-    fn get_stream(&self) -> String {
+    fn get_stream(&self) -> Result<StreamType, StreamError> {
         let plflag: Vec<&str> = self.panda_tv_room
             .data
             .videoinfo
@@ -223,14 +226,15 @@ impl Streamable for PandaTv {
         let sign = &data2["auth"]["sign"].as_str().unwrap();
         let ts = &data2["auth"]["time"].as_str().unwrap();
 
-        format!(
-            "http://pl{}.live.panda.tv/live_panda/{}.flv?sign={}&ts={}&rid={}",
-            plflag[1],
-            self.panda_tv_room.data.videoinfo.room_key,
-            sign,
-            ts,
-            rid
-        )
+        Ok(StreamType::Chuncked(self.client.rclient.get(
+            &format!(
+                "http://pl{}.live.panda.tv/live_panda/{}.flv?sign={}&ts={}&rid={}",
+                plflag[1],
+                self.panda_tv_room.data.videoinfo.room_key,
+                sign,
+                ts,
+                rid
+            )).build()?))
     }
 
     fn get_ext(&self) -> String {
@@ -253,7 +257,7 @@ impl Streamable for PandaTv {
         )
     }
 
-    fn download(&self, path: String) -> Result<(), StreamError> {
+    fn download(&self, path: String) -> Result<u64, StreamError> {
         if !self.is_online() {
             Err(StreamError::Rsget(RsgetError::new("Stream offline")))
         } else {
@@ -263,11 +267,9 @@ impl Streamable for PandaTv {
                 self.get_author().unwrap(),
                 self.room_id
             );
-            self.client.download_to_file(
-                &self.get_stream(),
-                File::create(path)?,
-                true,
-            )
+            let file = File::create(path)?;
+            let stream = Stream::new(self.get_stream()?);
+            Ok(stream.write_file(&self.client.rclient, file)?)
         }
     }
 }

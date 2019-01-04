@@ -5,6 +5,9 @@ use utils::error::StreamError;
 use utils::error::RsgetError;
 use chrono::prelude::*;
 
+use stream_lib::stream::Stream;
+use stream_lib::stream::StreamType;
+
 use utils::downloaders::DownloadClient;
 
 use std::fs::File;
@@ -119,9 +122,11 @@ impl Streamable for Inke {
     fn is_online(&self) -> bool {
         self.inke_info.error_code == 0
     }
-
-    fn get_stream(&self) -> String {
-        self.inke_info.data.live_addr[0].stream_addr.clone()
+    
+    fn get_stream(&self) -> Result<StreamType, StreamError> {
+        Ok(StreamType::Chuncked(self.client.rclient.get(
+            &self.inke_info.data.live_addr[0].stream_addr
+        ).build()?))
     }
 
     fn get_ext(&self) -> String {
@@ -144,7 +149,7 @@ impl Streamable for Inke {
         )
     }
 
-    fn download(&self, path: String) -> Result<(), StreamError> {
+    fn download(&self, path: String) -> Result<u64, StreamError> {
         if !self.is_online() {
             Err(StreamError::Rsget(RsgetError::new("Stream offline")))
         } else {
@@ -154,11 +159,9 @@ impl Streamable for Inke {
                 self.get_author().unwrap(),
                 self.room_id
             );
-            self.client.download_to_file(
-                &self.get_stream(),
-                File::create(path)?,
-                true,
-            )
+            let file = File::create(path)?;
+            let stream = Stream::new(self.get_stream()?);
+            Ok(stream.write_file(&self.client.rclient, file)?)
         }
     }
 }

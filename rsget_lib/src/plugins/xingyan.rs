@@ -2,6 +2,9 @@ use Streamable;
 use regex::Regex;
 use serde_json;
 
+use stream_lib::stream::Stream;
+use stream_lib::stream::StreamType;
+
 use utils::downloaders::DownloadClient;
 
 use utils::error::StreamError;
@@ -129,8 +132,10 @@ impl Streamable for Xingyan {
         self.host_info.roominfo.playstatus != "0"
     }
 
-    fn get_stream(&self) -> String {
-        self.host_info.videoinfo.streamurl.clone()
+    fn get_stream(&self) -> Result<StreamType, StreamError> {
+        Ok(StreamType::Chuncked(self.client.rclient.get(
+            &self.host_info.videoinfo.streamurl
+        ).build()?))
     }
 
     fn get_ext(&self) -> String {
@@ -153,7 +158,7 @@ impl Streamable for Xingyan {
         )
     }
 
-    fn download(&self, path: String) -> Result<(), StreamError> {
+    fn download(&self, path: String) -> Result<u64, StreamError> {
         if !self.is_online() {
             Err(StreamError::Rsget(RsgetError::new("Stream offline")))
         } else {
@@ -163,11 +168,9 @@ impl Streamable for Xingyan {
                 self.get_author().unwrap(),
                 self.room_id
             );
-            self.client.download_to_file(
-                &self.get_stream(),
-                File::create(path)?,
-                true,
-            )
+            let file = File::create(path)?;
+            let stream = Stream::new(self.get_stream()?);
+            Ok(stream.write_file(&self.client.rclient, file)?)
         }
     }
 }

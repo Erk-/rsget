@@ -9,6 +9,9 @@ use utils::error::RsgetError;
 use utils::downloaders::DownloadClient;
 use chrono::prelude::*;
 
+use stream_lib::stream::Stream;
+use stream_lib::stream::StreamType;
+
 use std::fs::File;
 
 use md5;
@@ -242,8 +245,12 @@ impl Streamable for Douyu {
         self.data.data.online != 0
     }
 
-    fn get_stream(&self) -> String {
-        format!("{}/{}", &self.data.data.rtmp_url, &self.data.data.rtmp_live)
+    fn get_stream(&self) -> Result<StreamType, StreamError> {
+        Ok(StreamType::Chuncked(
+            self.client.rclient.get(&format!("{}/{}",
+                                            &self.data.data.rtmp_url,
+                                            &self.data.data.rtmp_live)
+            ).build()?))
     }
 
     fn get_ext(&self) -> String {
@@ -266,7 +273,7 @@ impl Streamable for Douyu {
         )
     }
 
-    fn download(&self, path: String) -> Result<(), StreamError> {
+    fn download(&self, path: String) -> Result<u64, StreamError> {
         //let own_client = client.clone();
         if !self.is_online() {
             Err(StreamError::Rsget(RsgetError::new("Stream offline")))
@@ -283,11 +290,9 @@ impl Streamable for Douyu {
                 local.hour(),
                 local.minute(),
             );
-            self.client.download_to_file(
-                &self.get_stream(),
-                File::create(path)?,
-                true,
-            )
+            let file = File::create(path)?;
+            let stream = Stream::new(self.get_stream()?);
+            Ok(stream.write_file(&self.client.rclient, file)?)
         }
     }
 }

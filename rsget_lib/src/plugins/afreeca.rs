@@ -7,6 +7,12 @@ use utils::error::RsgetError;
 use utils::downloaders::DownloadClient;
 use chrono::prelude::*;
 
+use reqwest::header::REFERER;
+use reqwest::Client as RClient;
+
+use stream_lib::stream::Stream;
+use stream_lib::stream::StreamType;
+
 use std::str;
 use std::fs::File;
     
@@ -97,9 +103,6 @@ pub struct Afreeca {
     stream_info: AfreecaStream,
     client: DownloadClient,
 }
-
-use reqwest::Client as RClient;
-use reqwest::header::REFERER;
 
 // Helper functions
 fn get_hls_key(dc: DownloadClient, url: String, room_id: String, bno: String) -> Result<String, StreamError> {
@@ -200,11 +203,12 @@ impl Streamable for Afreeca {
         }
     }
 
-    fn get_stream(&self) -> String {
+    fn get_stream(&self) -> Result<StreamType, StreamError> {
         let cdn = self.afreeca_info.CHANNEL.CDN.clone();
         trace!("CDN: {}", &cdn);
         debug!("view_url: {}", self.stream_info.view_url);
-        format!("{}?aid={}", self.stream_info.view_url, self.hls_key)
+        let url = format!("{}?aid={}", self.stream_info.view_url, self.hls_key);
+        Ok(StreamType::HLS(self.client.rclient.get(&url).header(REFERER, self.url.clone()).build()?))
     }
 
     fn get_ext(&self) -> String {
@@ -228,25 +232,14 @@ impl Streamable for Afreeca {
         )
     }
 
-    fn download(&self, path: String) -> Result<(), StreamError> {
-        use std::collections::HashMap;
-        if !self.is_online() {
-            Err(StreamError::Rsget(RsgetError::new("Stream offline")))
-        } else {
-            println!(
-                "{} by {} ({})",
-                self.get_title().unwrap(),
-                self.get_author().unwrap(),
-                self.room_id
-            );
-            let mut params = HashMap::new();
-            params.insert("aid", &self.hls_key);
-            let file = File::create(path)?;
-            self.client
-                .hls_download(Some(self.url.clone()),
-                              Some(self.hls_key.clone()),
-                              self.get_stream(),
-                              &file)
-        }   
+    fn download(&self, path: String) -> Result<u64, StreamError> {
+        println!(
+            "{}\n{}",
+            self.get_title().unwrap(),
+            self.get_author().unwrap(),
+        );
+        let file = File::create(path)?;
+        let stream = Stream::new(self.get_stream()?);
+        Ok(stream.write_file(&self.client.rclient, file)?)
     }
 }

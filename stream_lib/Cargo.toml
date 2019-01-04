@@ -1,9 +1,12 @@
 [package]
-name = "stream-tool"
+name = "stream_lib"
 version = "0.1.0"
 authors = ["Valdemar Erk <v@erk.io>"]
 license = "ISC"
 edition = "2018"
+documentation = "https://docs.rs/stream_lib"
+homepage = "https://github.com/Erk-/rsget"
+repository = "https://github.com/Erk-/rsget/tree/master/stream_lib"
 
 [dependencies]
 hls_m3u8 = "^0.1.3"

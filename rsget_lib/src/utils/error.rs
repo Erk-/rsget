@@ -7,8 +7,6 @@ use std::{
     io::Error as IoError,
 };
 
-//use hyper::Error as HyperError;
-
 use http::uri::InvalidUri;
 use http::header::ToStrError;
 
@@ -21,6 +19,8 @@ use serde_urlencoded::ser::Error as UrlEncError;
 use reqwest::Error as ReqwestError;
 
 use regex::Error as RegexError;
+
+use stream_lib::error::Error as StreamLibError;
 
 #[derive(Debug)]
 pub struct RsgetError {
@@ -73,6 +73,8 @@ pub enum StreamError {
     Reqwest(ReqwestError),
     /// Regex Error
     Regex(RegexError),
+    /// Stream lib
+    Stream(StreamLibError),
 }
 
 impl Display for StreamError {
@@ -96,6 +98,7 @@ impl StdError for StreamError {
             StreamError::UrlEnc(ref inner) => inner.description(),
             StreamError::Reqwest(ref inner) => inner.description(),
             StreamError::Regex(ref inner) => inner.description(),
+            StreamError::Stream(ref inner) => inner.description(),
         }
     }
 }
@@ -164,5 +167,11 @@ impl From<ReqwestError> for StreamError {
 impl From<RegexError> for StreamError {
     fn from(err: RegexError) -> Self {
         StreamError::Regex(err)
+    }
+}
+
+impl From<StreamLibError> for StreamError {
+    fn from(err: StreamLibError) -> Self {
+        StreamError::Stream(err)
     }
 }

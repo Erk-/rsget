@@ -88,9 +88,10 @@ fn try_main() -> Result<(), StreamError> {
             .unwrap_or(&stream.get_default_name()),
     );
 
-    stream.download(
+    let size = stream.download(
         format!("{}{}", path, strip_characters(&file_name, "<>:\"/\\|?*\0")),
-    )
+    );
+    println!("Downloaded: {} MB", size as f64 / 1000.0 / 1000.0);
 }
 
 fn strip_characters(original: &str, to_strip: &str) -> String {

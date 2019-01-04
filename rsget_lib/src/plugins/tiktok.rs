@@ -3,6 +3,9 @@ use regex::Regex;
 use serde_json;
 use serde_json::Value;
 
+use stream_lib::stream::Stream;
+use stream_lib::stream::StreamType;
+
 use utils::error::StreamError;
 use utils::error::RsgetError;
 
@@ -367,8 +370,10 @@ impl Streamable for TikTok {
         true
     }
 
-    fn get_stream(&self) -> String {
-        self.tiktok.video.download_addr.url_list[0].clone()
+    fn get_stream(&self) -> Result<StreamType, StreamError> {
+        Ok(StreamType::Chuncked(self.client.rclient.get(
+            &self.tiktok.video.download_addr.url_list[0]
+        ).build()?))
     }
 
     fn get_ext(&self) -> String {
@@ -385,17 +390,15 @@ impl Streamable for TikTok {
         )
     }
 
-    fn download(&self, path: String) -> Result<(), StreamError> {
+    fn download(&self, path: String) -> Result<u64, StreamError> {
         println!(
             "{} by {} ({})",
             self.get_title().unwrap(),
             self.get_author().unwrap(),
             self.video_id
         );
-        self.client.download_to_file(
-            &self.get_stream(),
-            File::create(path)?,
-            true,
-        )
+        let file = File::create(path)?;
+        let stream = Stream::new(self.get_stream()?);
+        Ok(stream.write_file(&self.client.rclient, file)?)
     }    
 }

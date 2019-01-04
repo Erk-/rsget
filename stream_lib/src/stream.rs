@@ -67,7 +67,7 @@ impl Stream {
     }
 
     /// Writes the stream to a file.
-    pub fn stream_to_write(self, client: &ReqwestClient, file: File) -> Result<u64, Error> {
+    pub fn write_file(self, client: &ReqwestClient, file: File) -> Result<u64, Error> {
         match self.stream_type {
             _StreamType::Chuncked => Ok(self.chunked(client, file)?),
             _StreamType::HLS => Ok(self.hls(client, file)?),
