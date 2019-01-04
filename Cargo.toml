@@ -1,0 +1,10 @@
+[workspace]
+members = [
+    "rsget_lib",
+    "rsget_cli",
+    "stream_lib",
+]
+
+[profile.release]
+panic = "abort"
+lto = true
