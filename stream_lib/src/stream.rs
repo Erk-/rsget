@@ -25,7 +25,7 @@ use indicatif::{
 use reqwest::{
     Client as ReqwestClient,
     Request,
-}
+};
 
 use hls_m3u8::MediaPlaylistOptions;
 
