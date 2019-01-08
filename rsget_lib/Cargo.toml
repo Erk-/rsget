@@ -1,6 +1,6 @@
 [package]
 name = "rsget_lib"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Valdemar Erk <valdemar@erk.io>"]
 description = "Library to get information about and download livestreams"
 license = "ISC"
@@ -26,4 +26,4 @@ url = "1.7.2"
 hls_m3u8 = "^0.1.3"
 reqwest = "0.9.5"
 parking_lot = "0.7.1"
-stream_lib = { version = "0.1.0", path = "../stream_lib" }
+stream_lib = { version = "0.2.0", path = "../stream_lib", features = ["spinner"] }

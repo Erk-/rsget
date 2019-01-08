@@ -1,18 +1,31 @@
-use std::collections::HashSet;
-use std::collections::VecDeque;
-use std::fs::File;
-use std::io::copy;
-use std::io::BufWriter;
-use std::sync::Arc;
-use std::thread;
-use std::time;
-use std::time::Duration;
+use std::{
+    collections::{
+        HashSet,
+        VecDeque,
+    },
+    io::{
+        copy,
+        BufWriter,
+        Write,
+    },
+    sync::Arc,
+    thread,
+    time::{
+        self,
+        Duration,
+    },
+};
 
-use indicatif::ProgressBar;
-use indicatif::ProgressStyle;
+#[cfg(features = "spinner")]
+use indicatif::{
+    ProgressBar,
+    ProgressStyle,
+};
 
-use reqwest::Client as ReqwestClient;
-use reqwest::Request;
+use reqwest::{
+    Client as ReqwestClient,
+    Request,
+}
 
 use hls_m3u8::MediaPlaylistOptions;
 
@@ -70,28 +83,42 @@ impl Stream {
     }
 
     /// Writes the stream to a file.
-    pub fn write_file(self, client: &ReqwestClient, file: File) -> Result<u64, Error> {
+    pub fn write_file<W>(self, client: &ReqwestClient, writer: W) -> Result<u64, Error>
+    where
+        W: Write
+    {
         match self.stream_type {
-            _StreamType::Chuncked => Ok(self.chunked(client, file)?),
-            _StreamType::HLS => Ok(self.hls(client, file)?),
+            _StreamType::Chuncked => Ok(self.chunked(client, writer)?),
+            _StreamType::HLS => Ok(self.hls(client, writer)?),
         }
     }
 
-    fn chunked(self, client: &ReqwestClient, file: File) -> Result<u64, Error> {
+    fn chunked<W>(self, client: &ReqwestClient, writer: W) -> Result<u64, Error>
+    where
+        W: Write
+    {
+        #[cfg(features = "spinner")]
         let spinner = ProgressBar::new(0);
+        #[cfg(features = "spinner")]
         spinner.set_style(ProgressStyle::default_bar()
                           .template("{spinner:.green} [{elapsed_precise}] Streamed {bytes}")
                           .tick_chars("⠁⠁⠉⠙⠚⠒⠂⠂⠒⠲⠴⠤⠄⠄⠤⠠⠠⠤⠦⠖⠒⠐⠐⠒⠓⠋⠉⠈⠈ "));
         
-        let mut buf_writer = BufWriter::with_capacity(WRITE_SIZE, file);
-        let source = client.execute(self.request)?;
+        let mut buf_writer = BufWriter::with_capacity(WRITE_SIZE, writer);
+        let mut source = client.execute(self.request)?;
 
+        #[cfg(features = "spinner")]
         let size = copy(&mut spinner.wrap_read(source), &mut buf_writer);
+        #[cfg(not(features = "spinner"))]
+        let size = copy(&mut source, &mut buf_writer);
         Ok(size?)
     }
 
     // This currently clones the client to get a client to run the inner calls as well.
-    fn hls(self, client: &ReqwestClient, file: File) -> Result<u64, Error> {
+    fn hls<W>(self, client: &ReqwestClient, writer: W) -> Result<u64, Error>
+    where
+        W: Write
+    {
         #[derive(Clone)]
         enum Hls {
             Url(String),
@@ -197,13 +224,16 @@ impl Stream {
 
         let mut total_size = 0;
 
+        #[cfg(features = "spinner")]
         let spinner = ProgressBar::new(0);
+        #[cfg(features = "spinner")]
         spinner.set_style(ProgressStyle::default_bar()
                           .template("{spinner:.green} [{elapsed_precise}] {bytes} Segments")
                           .tick_chars("⠁⠁⠉⠙⠚⠒⠂⠂⠒⠲⠴⠤⠄⠄⠤⠠⠠⠤⠦⠖⠒⠐⠐⠒⠓⠋⠉⠈⠈ "));
+        #[cfg(features = "spinner")]
         spinner.enable_steady_tick(100);
 
-        let mut buf_writer = BufWriter::with_capacity(WRITE_SIZE, file);
+        let mut buf_writer = BufWriter::with_capacity(WRITE_SIZE, writer);
 
         loop {
             let to_download = other_work.lock().pop_front();
@@ -211,6 +241,7 @@ impl Stream {
                 Some(Hls::Url(u)) => {
                     let req = client.get(&u).headers(headers.clone()).build()?;
                     let size = download_to_file(client, req, &mut buf_writer)?;
+                    #[cfg(features = "spinner")]
                     spinner.inc(size);
                     total_size += size;
                 }
@@ -226,7 +257,10 @@ impl Stream {
 }
 
 #[inline]
-fn download_to_file(client: &ReqwestClient, request: Request, mut file: &mut BufWriter<File>) -> Result<u64, Error> {
+fn download_to_file<W>(client: &ReqwestClient, request: Request, mut file: &mut BufWriter<W>) -> Result<u64, Error>
+where
+    W: Write
+{
     let mut source = client.execute(request)?;
     let size = copy(&mut source, &mut file)?;
     Ok(size)
