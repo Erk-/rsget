@@ -20,7 +20,7 @@ use reqwest::Error as ReqwestError;
 
 use regex::Error as RegexError;
 
-use stream_lib::error::Error as StreamLibError;
+use stream_lib::Error as StreamLibError;
 
 #[derive(Debug)]
 pub struct RsgetError {
@@ -167,6 +167,12 @@ impl From<ReqwestError> for StreamError {
 impl From<RegexError> for StreamError {
     fn from(err: RegexError) -> Self {
         StreamError::Regex(err)
+    }
+}
+
+impl From<RsgetError> for StreamError {
+    fn from(err: RsgetError) -> Self {
+        StreamError::Rsget(err)
     }
 }
 

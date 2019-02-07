@@ -22,7 +22,7 @@ extern crate stream_lib;
 
 use crate::utils::error::StreamError;
 
-use stream_lib::stream::StreamType;
+use stream_lib::StreamType;
 
 pub trait Streamable {
     /// Creates a new streamable

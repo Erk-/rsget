@@ -4,6 +4,8 @@
 #[macro_use]
 extern crate log;
 
-pub mod error;
-pub mod stream;
+mod error;
+mod stream;
 
+pub use error::Error;
+pub use stream::{Stream, StreamType};

@@ -2,8 +2,8 @@ use crate::Streamable;
 use regex::Regex;
 use serde_json;
 
-use stream_lib::stream::Stream;
-use stream_lib::stream::StreamType;
+use stream_lib::Stream;
+use stream_lib::StreamType;
 
 use crate::utils::downloaders::DownloadClient;
 

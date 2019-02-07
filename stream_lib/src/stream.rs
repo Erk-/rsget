@@ -16,7 +16,7 @@ use std::{
     },
 };
 
-#[cfg(features = "spinner")]
+#[cfg(feature = "spinner")]
 use indicatif::{
     ProgressBar,
     ProgressStyle,
@@ -33,7 +33,10 @@ use parking_lot::{Mutex, RwLock};
 
 use crate::error::Error;
 
+/// Write buffer
 const WRITE_SIZE: usize = 131_072;
+
+/// HLS will try and look for new segments 12 times, 
 const HLS_MAX_RETRIES: usize = 12;
 
 /// A Enum with the types of streams supported
@@ -62,11 +65,6 @@ pub struct Stream {
 
 impl Stream {
     /// Creates a new stream handler.
-    ///
-    /// # Note:
-    ///
-    /// For hls the headers are carried over to every subsequent call but the body
-    /// is not.
     pub fn new(request: StreamType) -> Self {
         match request {
             StreamType::HLS(req) => Stream {
@@ -81,8 +79,7 @@ impl Stream {
             },
         }
     }
-
-    /// Writes the stream to a file.
+    /// Writes the stream to a writer.
     pub fn write_file<W>(self, client: &ReqwestClient, writer: W) -> Result<u64, Error>
     where
         W: Write
@@ -97,19 +94,21 @@ impl Stream {
     where
         W: Write
     {
-        #[cfg(features = "spinner")]
+        #[cfg(feature = "spinner")]
         let spinner = ProgressBar::new(0);
-        #[cfg(features = "spinner")]
+        #[cfg(feature = "spinner")]
         spinner.set_style(ProgressStyle::default_bar()
                           .template("{spinner:.green} [{elapsed_precise}] Streamed {bytes}")
                           .tick_chars("⠁⠁⠉⠙⠚⠒⠂⠂⠒⠲⠴⠤⠄⠄⠤⠠⠠⠤⠦⠖⠒⠐⠐⠒⠓⠋⠉⠈⠈ "));
         
         let mut buf_writer = BufWriter::with_capacity(WRITE_SIZE, writer);
+        #[cfg(feature = "spinner")]
+        let source = client.execute(self.request)?;
+        #[cfg(not(feature = "spinner"))]
         let mut source = client.execute(self.request)?;
-
-        #[cfg(features = "spinner")]
+        #[cfg(feature = "spinner")]
         let size = copy(&mut spinner.wrap_read(source), &mut buf_writer);
-        #[cfg(not(features = "spinner"))]
+        #[cfg(not(feature = "spinner"))]
         let size = copy(&mut source, &mut buf_writer);
         Ok(size?)
     }
@@ -129,13 +128,17 @@ impl Stream {
         let other_work = to_work.clone(); // Used in Outer
         let links: Arc<RwLock<HashSet<String>>> = Arc::new(RwLock::new(HashSet::new())); // Used in Inner
         let _outer_links = links.clone(); // Used in Outer (Not currently in use)
-
+        let headers = self.request.headers().clone();
+        
         // Inner loop -- Start
         // Here the handling of the m3u8 file is happening
         // it pushes it through the `to_work` mutex
+
+        // Only used if the body of the request is not able to be cloned.
         let inner_url = self.request.url().clone();
         let inner_headers = self.request.headers().clone();
-        let headers = inner_headers.clone();
+
+
         let master_url = self.request.url().clone().join(".")?;
         let inner_client = client.to_owned();
         thread::spawn(move || {
@@ -152,10 +155,27 @@ impl Stream {
                 }
 
                 // Use the same headers as the original request
-                let mut res = match inner_client
-                    .get(inner_url.clone())
-                    .headers(inner_headers.clone())
-                    .send()
+                let req = match self.request.try_clone() {
+                    Some(r) => r,
+                    // If the body is not able to be cloned it will only clone the headers.
+                    None => {
+                        warn!("[HLS] body not able to be cloned only clones headers.");
+                        match inner_client
+                            .get(inner_url.clone())
+                            .headers(inner_headers.clone())
+                            .build() {
+                                Ok(br) => br,
+                                Err(e) => {
+                                    warn!("[HLS] Request creation failed!\n{}", e);
+                                    counter += 1;
+                                    continue;
+                                }
+
+                            }
+                    },
+                };
+                
+                let mut res = match inner_client.execute(req)
                 {
                     Ok(r) => r,
                     Err(e) => {
@@ -224,13 +244,13 @@ impl Stream {
 
         let mut total_size = 0;
 
-        #[cfg(features = "spinner")]
+        #[cfg(feature = "spinner")]
         let spinner = ProgressBar::new(0);
-        #[cfg(features = "spinner")]
+        #[cfg(feature = "spinner")]
         spinner.set_style(ProgressStyle::default_bar()
                           .template("{spinner:.green} [{elapsed_precise}] {bytes} Segments")
                           .tick_chars("⠁⠁⠉⠙⠚⠒⠂⠂⠒⠲⠴⠤⠄⠄⠤⠠⠠⠤⠦⠖⠒⠐⠐⠒⠓⠋⠉⠈⠈ "));
-        #[cfg(features = "spinner")]
+        #[cfg(feature = "spinner")]
         spinner.enable_steady_tick(100);
 
         let mut buf_writer = BufWriter::with_capacity(WRITE_SIZE, writer);
@@ -241,7 +261,7 @@ impl Stream {
                 Some(Hls::Url(u)) => {
                     let req = client.get(&u).headers(headers.clone()).build()?;
                     let size = download_to_file(client, req, &mut buf_writer)?;
-                    #[cfg(features = "spinner")]
+                    #[cfg(feature = "spinner")]
                     spinner.inc(size);
                     total_size += size;
                 }

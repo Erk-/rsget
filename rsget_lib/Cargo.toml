@@ -26,4 +26,10 @@ url = "1.7.2"
 hls_m3u8 = "^0.1.3"
 reqwest = "0.9.5"
 parking_lot = "0.7.1"
-stream_lib = { version = "0.2.0", path = "../stream_lib", features = ["spinner"] }
+#stream_lib = { version = "0.3.0", path = "../stream_lib", features = ["spinner"] }
+
+[dependencies.stream_lib]
+default-features = false
+version = "0.3"
+path = "../stream_lib"
+features = ["spinner"]

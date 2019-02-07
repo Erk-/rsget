@@ -6,8 +6,8 @@ use crate::utils::error::RsgetError;
 
 use crate::utils::downloaders::DownloadClient;
 
-use stream_lib::stream::Stream;
-use stream_lib::stream::StreamType;
+use stream_lib::Stream;
+use stream_lib::StreamType;
 
 use std::fs::File;
 

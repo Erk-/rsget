@@ -10,8 +10,8 @@ use chrono::prelude::*;
 use reqwest::header::REFERER;
 use reqwest::Client as RClient;
 
-use stream_lib::stream::Stream;
-use stream_lib::stream::StreamType;
+use stream_lib::Stream;
+use stream_lib::StreamType;
 
 use std::str;
 use std::fs::File;

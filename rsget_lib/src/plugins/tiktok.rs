@@ -3,8 +3,8 @@ use regex::Regex;
 use serde_json;
 use serde_json::Value;
 
-use stream_lib::stream::Stream;
-use stream_lib::stream::StreamType;
+use stream_lib::Stream;
+use stream_lib::StreamType;
 
 use crate::utils::error::StreamError;
 use crate::utils::error::RsgetError;
