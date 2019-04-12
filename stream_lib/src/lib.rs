@@ -7,5 +7,5 @@ extern crate log;
 mod error;
 mod stream;
 
-pub use error::Error;
-pub use stream::{Stream, StreamType};
+pub use crate::error::Error;
+pub use crate::stream::{Stream, StreamType};
