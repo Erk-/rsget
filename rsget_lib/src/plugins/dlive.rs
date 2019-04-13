@@ -45,14 +45,16 @@ impl Streamable for DLive {
                     Ok(state) => state,
                     Err(why) => return Err(StreamError::Json(why)),
                 };
+
+                let aps = apollo_state["defaultClient"].as_object().ok_or(RsgetError::new("Stream offline"))?
+                        .into_iter()
+                        .find(|e| e.0.starts_with("user:"))
+                        .ok_or(RsgetError::new("Stream offline"))?.1.clone();
                 
                 let xy = DLive {
                     client: dc,
                     url: url.clone(),
-                    apollo_state: apollo_state["defaultClient"].as_object().unwrap()
-                        .into_iter()
-                        .find(|e| e.0.starts_with("user:"))
-                        .unwrap().1.clone(),
+                    apollo_state: aps,
                 };  
                 debug!("{:#?}", &xy);
                 Ok(Box::new(xy))

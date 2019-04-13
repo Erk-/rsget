@@ -10,6 +10,7 @@ use crate::plugins::{
     tiktok::TikTok,
     huya::Huya,
     dlive::DLive,
+    twitch::Twitch,
 };
 
 use reqwest;
@@ -34,6 +35,7 @@ fn _get_site(input: &str) -> Result<Box<Streamable>, StreamError> {
     let re_tiktok: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?(?:m\.)?tiktok\.com/v/(?:[a-zA-Z0-9]+)(?:\.html)?")?;
     let re_huya: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?huya\.com/[a-zA-Z0-9]+")?;
     let re_dlive: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?dlive\.tv/[a-zA-Z0-9]+")?;
+    let re_twitch: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?twitch\.tv/([a-zA-Z0-9]+)")?;
     match input {
         url if re_douyu.is_match(url) => {
             Ok(Douyu::new(String::from(url))?)
@@ -55,6 +57,9 @@ fn _get_site(input: &str) -> Result<Box<Streamable>, StreamError> {
         },
         url if re_dlive.is_match(url) => {
             Ok(DLive::new(String::from(url))?)
+        },
+        url if re_twitch.is_match(url) => {
+            Ok(Twitch::new(String::from(url))?)
         },
         _ => Err(StreamError::Rsget(RsgetError::new("Site not supported."))),
     }

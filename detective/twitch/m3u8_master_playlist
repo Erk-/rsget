@@ -1,0 +1,331 @@
+MasterPlaylist {
+    version_tag: ExtXVersion {
+        version: V1
+    },
+    independent_segments_tag: None,
+    start_tag: None,
+    media_tags: [
+        ExtXMedia {
+            media_type: Video,
+            uri: None,
+            group_id: QuotedString(
+                "chunked"
+            ),
+            language: None,
+            assoc_language: None,
+            name: QuotedString(
+                "1080p60 (source)"
+            ),
+            default: true,
+            autoselect: true,
+            forced: false,
+            instream_id: None,
+            characteristics: None,
+            channels: None
+        },
+        ExtXMedia {
+            media_type: Video,
+            uri: None,
+            group_id: QuotedString(
+                "720p60"
+            ),
+            language: None,
+            assoc_language: None,
+            name: QuotedString(
+                "720p60"
+            ),
+            default: true,
+            autoselect: true,
+            forced: false,
+            instream_id: None,
+            characteristics: None,
+            channels: None
+        },
+        ExtXMedia {
+            media_type: Video,
+            uri: None,
+            group_id: QuotedString(
+                "720p30"
+            ),
+            language: None,
+            assoc_language: None,
+            name: QuotedString(
+                "720p"
+            ),
+            default: true,
+            autoselect: true,
+            forced: false,
+            instream_id: None,
+            characteristics: None,
+            channels: None
+        },
+        ExtXMedia {
+            media_type: Video,
+            uri: None,
+            group_id: QuotedString(
+                "480p30"
+            ),
+            language: None,
+            assoc_language: None,
+            name: QuotedString(
+                "480p"
+            ),
+            default: true,
+            autoselect: true,
+            forced: false,
+            instream_id: None,
+            characteristics: None,
+            channels: None
+        },
+        ExtXMedia {
+            media_type: Video,
+            uri: None,
+            group_id: QuotedString(
+                "360p30"
+            ),
+            language: None,
+            assoc_language: None,
+            name: QuotedString(
+                "360p"
+            ),
+            default: true,
+            autoselect: true,
+            forced: false,
+            instream_id: None,
+            characteristics: None,
+            channels: None
+        },
+        ExtXMedia {
+            media_type: Video,
+            uri: None,
+            group_id: QuotedString(
+                "160p30"
+            ),
+            language: None,
+            assoc_language: None,
+            name: QuotedString(
+                "160p"
+            ),
+            default: true,
+            autoselect: true,
+            forced: false,
+            instream_id: None,
+            characteristics: None,
+            channels: None
+        },
+        ExtXMedia {
+            media_type: Video,
+            uri: None,
+            group_id: QuotedString(
+                "audio_only"
+            ),
+            language: None,
+            assoc_language: None,
+            name: QuotedString(
+                "audio_only"
+            ),
+            default: false,
+            autoselect: false,
+            forced: false,
+            instream_id: None,
+            characteristics: None,
+            channels: None
+        }
+    ],
+    stream_inf_tags: [
+        ExtXStreamInf {
+            uri: SingleLineString(
+                "https://video-weaver.vie01.hls.ttvnw.net/v1/playlist/CrsDhn_U6ubwJDUfcAT6Ge2YwSeJO_Jn3K65pOjMzELrqAWFpdrqr4FC0XBypk3VI0WsHjdod6t83qbFRxL_zXkP2lzsNvsI2iJxPr9rWXgJauqdXFiZ7i5ovKXgHgV3-bU06rwtmmycpgL6Y3xbErhEx-HIWk2O1Vt2ocqsKsLUaye_nmd83vKq9a2guUE4S_wI1nAz6PqJAMvU83-_esTLOkNkhv0Mr5g8JZO23Uf1HNDVMLRcppP4p1-DSdSkrAus9aCQ5bXMMmxGN-0BzRw5nF1n3YFeRLH7UjGq5jypaH6fRpzzIo2KC9GlMzQ4fE6XtswHoAvWW7CVKu1Hb5r_cWCINZrV2S5bfV-DqpVu64srppI2NrqdKt4MfRQYtycNjK6x0pQVl5O6AjL0Ug3dArKX2j4Fi_sAZ75trZnpByTPeaOh1IBCLoQVvqymqVLPu_XJTeyVoN6FUrFGF6Cff0dsQg7VTcM17OX0QZkNqqGTBchPMZjamuq7QNviQBC18WRvZtUTkxM-hQWCtwvlUVbk8z4NccAsGN0B_q-BQ5QLKHpyonVTvPDM1wXbPKoCUqY5AplT_nY7rtgSELFKKk95y2RhgSSc9uZPP0gaDA8p6qan1enIvM4FIA.m3u8"
+            ),
+            bandwidth: 9006796,
+            average_bandwidth: None,
+            codecs: Some(
+                QuotedString(
+                    "avc1.64002A,mp4a.40.2"
+                )
+            ),
+            resolution: Some(
+                DecimalResolution {
+                    width: 1920,
+                    height: 1080
+                }
+            ),
+            frame_rate: None,
+            hdcp_level: None,
+            audio: None,
+            video: Some(
+                QuotedString(
+                    "chunked"
+                )
+            ),
+            subtitles: None,
+            closed_captions: None
+        },
+        ExtXStreamInf {
+            uri: SingleLineString(
+                "https://video-weaver.vie01.hls.ttvnw.net/v1/playlist/CrkDqE7lZKC0NcJM8x5ydz6LQ1ggdROUz5kqYToy2EhGkNZL2N8RJryuIATuTclScCwQmPOrE6s7H_x605JCfk9_TRElpPtuZP9GQbuMj_lPLRXR2mA3l40Bgj7-JPbqfrqE0zowUIVfdm7_ABNvNg1OGcvcjqduqnDjPwdBNMhSy0km5b4mn9WTry1gvenxsvYpoWlqGi0vu5u0rQgbLqRUguMdi2SIO7vsFDff4kq8CDaM3EgrxC7jh0ut61ppyPSa1QiypirsDfwH_ZykK1LBgFmtAhyGznwQLFb_d9kTNSGwu4HuVvNPLfzpPdXPXBQeRHeDwYePflYPuK_LBbve-_BAYP3ac64dlD6HOUPk9go8H4F5JwUYCXlZgbyfdyD_1-h15O6c8Z922Jh4aJ9ikrYaW9lFNzyBEcSZhCdL_FaExXD8UVciPip2BHrpppllHV4zXcd8yIsEbE0GRLXGDFYQToFVyAKF7lf-YuCg-BS9Thx8fDsh2XQBccKZFpvSWs5saAOi73OBDElGiFnN-GC--SyTKi_bxUwDcqQLVRyZ-hxZ1P8KLNyfSqT5BENoniXtQ2i-1UIxEhBRqFu0Zo113GXwiHavkc8FGgymF5Z-fTx0VTjluHA.m3u8"
+            ),
+            bandwidth: 3392875,
+            average_bandwidth: None,
+            codecs: Some(
+                QuotedString(
+                    "avc1.4D401F,mp4a.40.2"
+                )
+            ),
+            resolution: Some(
+                DecimalResolution {
+                    width: 1280,
+                    height: 720
+                }
+            ),
+            frame_rate: None,
+            hdcp_level: None,
+            audio: None,
+            video: Some(
+                QuotedString(
+                    "720p60"
+                )
+            ),
+            subtitles: None,
+            closed_captions: None
+        },
+        ExtXStreamInf {
+            uri: SingleLineString(
+                "https://video-weaver.vie01.hls.ttvnw.net/v1/playlist/CrkDtkApVG2RGWaDGf20czu0eAkJwxQLRPs6tXxp1Xzyu8bOzXGBHYiAZYLrEVo8KSaXk4AJ_WbyvhLrKC10U4OOQmrdC_Pw0H5G-2TgCPy7xNcKKgt6_CI5bldHyBwf4aIxWD9h6UdWkhXiKXfap7GchEqSBs2CYtqVu77KsES9bccRNmulOdMRpoi1UMocTFA_BSK2yMKi-gFCjVI3ONHSNnl_0FfeAJN5UI9bLxet--uINaoo1O5wSdYOMTHtqFmvM0sWg4yrvREREdgI5ThjSKgy7FnUtO2abwOh8c5yhFfuYwG6OisLa0eDRXIngd-is28dTe9quHH_ZUmX7Fa6kaJPEKfe1nZbemsbHtfxf61APhdIf7mbwjPWsI1QFrgdlk-Ifjuau3eSJVcO4Fg90k3xmZoNVyNzCuOv2VtzNK3rjjLVGpeVZYYPf5ECuxQJq-AC9bjKVWNXzA0ohcIuUEaZMmv0NnKEoBFFyZ35o7dZYc8zNP04FyWc2PBmKXLewCjFsx-LuKowXXRGqsU84dfsrrHtjqGH7rm9o-zj8Z-FX6z0VqW020Uw456xtAGZzWH4Umn5LVZdEhDXk-3cWMI8xrxWOB4NM1-GGgzlUSUZoRNVFL2z0EI.m3u8"
+            ),
+            bandwidth: 2342875,
+            average_bandwidth: None,
+            codecs: Some(
+                QuotedString(
+                    "avc1.4D401F,mp4a.40.2"
+                )
+            ),
+            resolution: Some(
+                DecimalResolution {
+                    width: 1280,
+                    height: 720
+                }
+            ),
+            frame_rate: None,
+            hdcp_level: None,
+            audio: None,
+            video: Some(
+                QuotedString(
+                    "720p30"
+                )
+            ),
+            subtitles: None,
+            closed_captions: None
+        },
+        ExtXStreamInf {
+            uri: SingleLineString(
+                "https://video-weaver.vie01.hls.ttvnw.net/v1/playlist/CrkDiwumtfuFQHfJa1ncho3bYpgii2cLgON-EAr5r29Jw7w96otelHPIMsWqNsi3kD0LqaEC6BrfgEm-PkVMdHq2tcEuDGYuV0xPptx5Plz6wYPpd1pfwbjphthV1VHXFlKpMGNj_wrqbjLIsU-P0OrBJyAKhOd3ufhF_H_q9rAq_6-GTqDqYceZWIYFxmbsIYULFDx3gIQJ4-XrAPTTeDag7GadyXW-47V_6vKECYULnUGRbthQnfic2iCqEyCc4hqAh7b0uPei_2Z4otO3uPTb6STIUZbNeUOCmjp9BD0NIHrP6yW2OPGuYT3jJ5McOfC8i2AHf5U6FJe8yXusTDS_Gc03oZ_9i7A0VMouiWz_u25lJRh2iuYi3FIYobPCQXgqU6C4D3UBds5fPIh3gcyfdEMBL9AINl5nsNJWFs64ZlUT0qTrzNxy0HgQlmG4VTzSLY8McBnFSOBFWBiB27g_soFPe4tpPXThWlkScP7EfZ4TvyZ3M09fjlmllzwEIJm33eKg2ppq7esTGmyUWL_AF1rrMSJmi5MGvdkQe4Wd5UfRHi_BOqm1JjApFS2Tswe5R1uLpFQFwI1_EhBeGQh3EbRTn5S1X4ZVFfhmGgy9NP_0iJkD_PxoBQ4.m3u8"
+            ),
+            bandwidth: 1397875,
+            average_bandwidth: None,
+            codecs: Some(
+                QuotedString(
+                    "avc1.4D401F,mp4a.40.2"
+                )
+            ),
+            resolution: Some(
+                DecimalResolution {
+                    width: 852,
+                    height: 480
+                }
+            ),
+            frame_rate: None,
+            hdcp_level: None,
+            audio: None,
+            video: Some(
+                QuotedString(
+                    "480p30"
+                )
+            ),
+            subtitles: None,
+            closed_captions: None
+        },
+        ExtXStreamInf {
+            uri: SingleLineString(
+                "https://video-weaver.vie01.hls.ttvnw.net/v1/playlist/CrkD0Nf1COWIyVZLpDBlUkNsGtuLNhSUtChLUCYEFA76g5WC3iyUB2FoQKlrUyEeXo9zo-jKcSuEhGoXidQnRIs-Z-UGCX67LlTe1iMQo2mkbFQETD97-h2h1nUjmsX7VEYZ5Q0uAsWiPmWAxso7sOalhtthx9jhEohAC4c_z0vHTZZ_oNwvN6YbTtnvfST9i7504jCzM3eEcBlD08FLh0zUuANUZFmVqmYHHwB9_TA5CLcwxLBJEjGXqiy7s7d4bP4BgfmfHE_B1G5lRcyr6KkP0fVvDm8rc9-gqWpDspUZ_OI0Ayubd15Es6XH_6OBEP6CtewDunxgqos4vH_OZ2KpyYbrYMwglnpWIoxyv2VYMWGS5U-XMocH2xf-dJVKVJuuAbH3FLHkxxsuElNynF8Wxhc62gtVIi7JLiHZPQDSPn-I9pra0AKBgurkkrcoz8qhejsPwGBK_FbT4X3XpTifRZv7abU5ff_a7sCERLWRT4Zpn0B0XNEN8dxHAoShk69xad97FtdvBjRK8IkXxxyGINix4hNfjVPvE7BxYmclugGHDNjKvsT8wZp0N-asLcok6PI6DQQP__TjEhBMINMaTfQt4qYD5heDwQHgGgxEQOcBUOueP_Fpb_4.m3u8"
+            ),
+            bandwidth: 630000,
+            average_bandwidth: None,
+            codecs: Some(
+                QuotedString(
+                    "avc1.4D401F,mp4a.40.2"
+                )
+            ),
+            resolution: Some(
+                DecimalResolution {
+                    width: 640,
+                    height: 360
+                }
+            ),
+            frame_rate: None,
+            hdcp_level: None,
+            audio: None,
+            video: Some(
+                QuotedString(
+                    "360p30"
+                )
+            ),
+            subtitles: None,
+            closed_captions: None
+        },
+        ExtXStreamInf {
+            uri: SingleLineString(
+                "https://video-weaver.vie01.hls.ttvnw.net/v1/playlist/CrkD-aPqiNGwdUbEO_1lVwTRbvLWpCC3ZfeVjRbpmMFk1eH_yXa07l7w5fBorN0co2ZOx4_358TSjNKJKXpbW9-I3BSWcW2Q5FPiHTGB9c9IKYXmXmcoBd9LW8t3uS8lKYZfC_Q6WKuSNE8fxDmB5Kax3wjlVOyMUfiFnYxTUjh47xG4q5jjcWvDV6jRJ6E6JIIDmDw5LTVrGlKrQ5E_N_vzIpUZyXfkNeHkyUGAYkD28wRImPxQLnsqdMEACzKkTrrGQS6zMJ-ipGrnyuEH-STJb1f2cV9P_gPNOfC9cj7QxMfn1WRsBoObDd4GscgKK-hV4XWAxnKMEbRVFfI0vrwiwVDKQQDCKyosCXwklZ4R7QdcbGujmn1u0S9AHsyhtJR1NcuvuQWM8j40UmBWkDem7keo5PMHSze-SJl-UBpOtTpPrNhIyLQTnH6p_tfdCBvssfA4xMjHjR99nVN5SlqFLYy8PHvmiuT08e2p5HNht17wa4HBmZwax4bWmbTP2_yK318VUnFrwlO_67UyiPwzCYzOIE8WYo20tFZojCI4un5u1w0U9yYNdZtMrV90Kf6NXMESTwwswOubEhCfWlpsWxZDFhexba26-tVpGgyBKACDxqGImVr62uc.m3u8"
+            ),
+            bandwidth: 230000,
+            average_bandwidth: None,
+            codecs: Some(
+                QuotedString(
+                    "avc1.4D401F,mp4a.40.2"
+                )
+            ),
+            resolution: Some(
+                DecimalResolution {
+                    width: 284,
+                    height: 160
+                }
+            ),
+            frame_rate: None,
+            hdcp_level: None,
+            audio: None,
+            video: Some(
+                QuotedString(
+                    "160p30"
+                )
+            ),
+            subtitles: None,
+            closed_captions: None
+        },
+        ExtXStreamInf {
+            uri: SingleLineString(
+                "https://video-weaver.vie01.hls.ttvnw.net/v1/playlist/CsED9XrIniyxPe7cd5qWG7j0lCZyvlDZ5TukoNNeJ_LJtfiFhRKHDHdRWHPjSsCxlecpIzR316p3l9WZUqYyUn7rxUI5-ebU-RMC8YVgPuPhZdLopgRgQXOkrUjlRWBVEm8BEPU-kQ-7ldpieB9vEiUSROeh_M3WwyRFVISumIela7WFRoPFLAyoHopmAWS8QlZYc3dr3QX6irsYUebVxcMTTRnS-WBOAZQFaVRM-yOGnmUqxy9zeC-IbGlW-R8l-BLZOrIj6z-DYUsSDd7wJxlAwirmGPKZV8rdnpTLGu07yhnEyXfLvheLr8OVLJ1pQt-wrJhlUthUZgepcNU9xWF91vKmUbRMnYb-iqiwg-bP0DA1eWSSJuQadeInFIlS45c9t1QtigfsqYl7unsqEEgZKmZxcQ-M9B8Cc2VuqthLhVCYtnDZIQmRUKxukRCw2c4hRF51xzr1tVv_JyWizsygRbh7cVTxYLvY7CW2ycqGTuMsyFk04-2rbFXR_QbtRf-ka9d6WrH2auQXlsqHCWS1-gfUpujIEQ-tc2BAVCxCKcnOn9of-stVYs3RAwWrC7krErELbNsIKgz1s3k59bZ91ZISEE_snuJOGw5W_TZgH9kHiQ4aDJzZLw6nOA8mTClcQA.m3u8"
+            ),
+            bandwidth: 131310,
+            average_bandwidth: None,
+            codecs: Some(
+                QuotedString(
+                    "mp4a.40.2"
+                )
+            ),
+            resolution: None,
+            frame_rate: None,
+            hdcp_level: None,
+            audio: None,
+            video: Some(
+                QuotedString(
+                    "audio_only"
+                )
+            ),
+            subtitles: None,
+            closed_captions: None
+        }
+    ],
+    i_frame_stream_inf_tags: [],
+    session_data_tags: [],
+    session_key_tags: []
+}
