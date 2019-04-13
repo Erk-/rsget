@@ -11,6 +11,7 @@ use crate::plugins::{
     douyin::Douyin,
     tiktok::TikTok,
     huya::Huya,
+    dlive::DLive,
 };
 
 use reqwest;
@@ -36,6 +37,7 @@ fn _get_site(input: &str) -> Result<Box<Streamable>, StreamError> {
     let re_douyin: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?iesdouyin\.com/.*")?;
     let re_tiktok: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?(?:m\.)?tiktok\.com/v/(?:[a-zA-Z0-9]+)(?:\.html)?")?;
     let re_huya: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?huya\.com/[a-zA-Z0-9]+")?;
+    let re_dlive: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?dlive\.tv/[a-zA-Z0-9]+")?;
     match input {
         url if re_panda.is_match(url) => {
             Ok(PandaTv::new(String::from(url))?)
@@ -60,6 +62,9 @@ fn _get_site(input: &str) -> Result<Box<Streamable>, StreamError> {
         },
         url if re_huya.is_match(url) => {
             Ok(Huya::new(String::from(url))?)
+        },
+        url if re_dlive.is_match(url) => {
+            Ok(DLive::new(String::from(url))?)
         },
         _ => Err(StreamError::Rsget(RsgetError::new("Site not supported."))),
     }

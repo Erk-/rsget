@@ -15,7 +15,6 @@ use std::{
         Duration,
     },
 };
-use std::str::FromStr;
 
 #[cfg(feature = "spinner")]
 use indicatif::{
@@ -50,6 +49,7 @@ pub enum StreamType {
     HLS(Request),
     /// A m3u8 master playlist and a string which is the name of the stream to download.
 	NamedPlaylist(Request, String),
+    
 }
 
 #[derive(Debug, Clone)]
@@ -57,6 +57,8 @@ enum _StreamType {
     Chuncked,
     HLS,
 	NamedPlaylist(String),
+    #[doc(hidden)]
+    __Nonexhaustive,
 }
 
 #[derive(Debug)]
@@ -101,6 +103,7 @@ impl Stream {
                 let name = name.to_owned();
                 Ok(self.named_playlist(client, writer, name)?)
             },
+            _ => unimplemented!(),
         }
     }
 
@@ -331,7 +334,6 @@ impl Stream {
                 }
 
                 // Use the same headers as the original request
-                println!("{}", inner_url);
                 let req = match self.request.try_clone() {
                     Some(r) => r,
                     // If the body is not able to be cloned it will only clone the headers.
@@ -371,11 +373,8 @@ impl Stream {
                     }
                 };
 
-                //println!("{}", master_string);
-
 				let master_playlist = master_string.parse::<MasterPlaylist>()
                                                    .unwrap();
-                println!("{}", master_playlist);
 
                 let segment_pos = master_playlist.media_tags()
                                     .iter()
@@ -391,7 +390,6 @@ impl Stream {
                
 
                 let segment = master_iter[segment_pos].clone();
-                println!("segment: {}", segment);
                 let master_url = (&segment).parse::<reqwest::Url>().unwrap().join(".").unwrap();
 
                 let mp_hls = match inner_client
