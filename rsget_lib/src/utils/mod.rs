@@ -12,6 +12,7 @@ pub fn stream_type_to_url(stream: StreamType) -> String {
         StreamType::Chuncked(req) => req.url().to_string(),
         StreamType::HLS(req) => req.url().to_string(),
         StreamType::NamedPlaylist(req, _) => req.url().to_string(),
+        StreamType::NamedPlaylist(_, _) => unimplemented!(),
         _ => unimplemented!(),
     }
 }
