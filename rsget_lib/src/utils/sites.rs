@@ -4,8 +4,6 @@ use crate::utils::error::StreamError;
 use crate::utils::error::RsgetError;
 use crate::plugins::{
     douyu::Douyu,
-    panda::PandaTv,
-    xingyan::Xingyan,
     inke::Inke,
     afreeca::Afreeca,
     douyin::Douyin,
@@ -29,8 +27,6 @@ pub fn get_site(input: &str) -> Result<Box<Streamable>, StreamError> {
 }
 
 fn _get_site(input: &str) -> Result<Box<Streamable>, StreamError> {
-    let re_xingyan_panda: Regex = Regex::new(r"^(?:https?://)?xingyan\.panda\.tv/[0-9]+/?")?;
-    let re_panda: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?panda\.tv/[0-9]+/?")?;
     let re_douyu: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?douyu\.com/[a-zA-Z0-9]+/?")?;
     let re_afreeca: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?(?:play\.)?afreecatv.com/[a-zA-Z0-9]+/?(?:/[0-9]+)?")?;
     let re_inke: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?inke\.cn/live\.html\?uid=[0-9]+")?;
@@ -39,12 +35,6 @@ fn _get_site(input: &str) -> Result<Box<Streamable>, StreamError> {
     let re_huya: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?huya\.com/[a-zA-Z0-9]+")?;
     let re_dlive: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?dlive\.tv/[a-zA-Z0-9]+")?;
     match input {
-        url if re_panda.is_match(url) => {
-            Ok(PandaTv::new(String::from(url))?)
-        },
-        url if re_xingyan_panda.is_match(url) => {
-            Ok(Xingyan::new(String::from(url))?)
-        },
         url if re_douyu.is_match(url) => {
             Ok(Douyu::new(String::from(url))?)
         },
