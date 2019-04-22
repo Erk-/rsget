@@ -25,6 +25,7 @@ use indicatif::{
 use reqwest::{
     Client as ReqwestClient,
     Request,
+    Url,
 };
 
 use hls_m3u8::MediaPlaylistOptions;
@@ -241,7 +242,11 @@ impl Stream {
                         counter = 0;
 
                         // Construct a url from the master and the segment.
-                        let url_formatted = format!("{}{}", master_url.as_str(), &e.clone());
+                        let url_formatted = if let Ok(u) = Url::parse(&e) {
+                            u.as_str().to_owned()
+                        } else {
+                            format!("{}{}", master_url.as_str(), &e)
+                        };
                         let work_queue = &mut to_work.lock();
 
                         // Check if the segment is a Afreeca preloading segment.
@@ -454,7 +459,11 @@ impl Stream {
                         counter = 0;
 
                         // Construct a url from the master and the segment.
-                        let url_formatted = format!("{}{}", master_url.as_str(), &e.clone());
+                        let url_formatted = if let Ok(u) = Url::parse(&e) {
+                            u.as_str().to_owned()
+                        } else {
+                            format!("{}{}", master_url.as_str(), &e)
+                        };
                         let work_queue = &mut to_work.lock();
 
                         // Check if the segment is a Afreeca preloading segment.
