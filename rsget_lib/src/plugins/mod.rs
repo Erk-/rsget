@@ -5,3 +5,4 @@ pub mod douyin;
 pub mod tiktok;
 pub mod huya;
 pub mod dlive;
+pub mod twitch;
