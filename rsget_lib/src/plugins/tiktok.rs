@@ -3,15 +3,12 @@ use regex::Regex;
 use serde_json;
 use serde_json::Value;
 
-use stream_lib::Stream;
 use stream_lib::StreamType;
 
 use crate::utils::error::StreamError;
 use crate::utils::error::RsgetError;
 
 use crate::utils::downloaders::DownloadClient;
-
-use std::fs::File;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Author {
@@ -389,16 +386,7 @@ impl Streamable for TikTok {
             self.get_ext()
         )
     }
-
-    fn download(&self, path: String) -> Result<u64, StreamError> {
-        println!(
-            "{} by {} ({})",
-            self.get_title().unwrap(),
-            self.get_author().unwrap(),
-            self.video_id
-        );
-        let file = File::create(path)?;
-        let stream = Stream::new(self.get_stream()?);
-        Ok(stream.write_file(&self.client.rclient, file)?)
-    }    
+    fn get_reqwest_client(&self) -> &reqwest::Client {
+        &self.client.rclient
+    }
 }

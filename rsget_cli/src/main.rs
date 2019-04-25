@@ -3,10 +3,15 @@ extern crate clap;
 extern crate flexi_logger;
 extern crate log;
 extern crate rsget_lib;
+
+use std::process::Command;
+use std::fs::File;
+use std::path::Path;
+use std::boxed::Box;
  
 use rsget_lib::Streamable;
 use clap::{App, Arg}; //, SubCommand};
-use std::process::Command;
+
 use flexi_logger::{Logger,opt_format};
 
 use rsget_lib::utils::error::StreamError;
@@ -88,10 +93,10 @@ fn try_main() -> Result<(), StreamError> {
             .value_of("filename")
             .unwrap_or(&stream.get_default_name()),
     );
-
-    let size = stream.download(
-        format!("{}{}", path, strip_characters(&file_name, "<>:\"/\\|?*\0")),
-    )?;
+    let full_path = format!("{}{}", path, strip_characters(&file_name, "<>:\"/\\|?*\0"));
+    let path = Path::new(&full_path);
+    let file = Box::new(File::create(path)?);
+    let size = stream.download(file)?;
     println!("Downloaded: {} MB", size as f64 / 1000.0 / 1000.0);
     Ok(())
 }

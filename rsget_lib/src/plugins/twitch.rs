@@ -1,5 +1,4 @@
 use std::env;
-use std::fs::File;
 
 use chrono::prelude::*;
 use hls_m3u8::MasterPlaylist;
@@ -8,7 +7,6 @@ use regex::Regex;
 use serde_json;
 use serde_json::Value;
 
-use stream_lib::Stream;
 use stream_lib::StreamType;
 
 use crate::Streamable;
@@ -102,13 +100,7 @@ impl Streamable for Twitch {
             self.get_ext()
         )
     }
-    fn download(&self, path: String) -> Result<u64, StreamError> {
-        if !self.is_online() {
-            Err(StreamError::Rsget(RsgetError::new("Stream offline")))
-        } else {
-            let file = File::create(path)?;
-            let stream = Stream::new(self.get_stream()?);
-            Ok(stream.write_file(&self.client.rclient, file)?)
-        }
+    fn get_reqwest_client(&self) -> &reqwest::Client {
+        &self.client.rclient
     }
 }

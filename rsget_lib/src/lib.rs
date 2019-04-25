@@ -21,8 +21,15 @@ extern crate url;
 extern crate stream_lib;
 
 use crate::utils::error::StreamError;
+use crate::utils::error::RsgetError;
+
+use std::io::Write;
+use std::boxed::Box;
 
 use stream_lib::StreamType;
+use stream_lib::Stream;
+
+use reqwest::Client as ReqwestClient;
 
 pub trait Streamable {
     /// Creates a new streamable
@@ -41,9 +48,30 @@ pub trait Streamable {
     fn get_ext(&self) -> String;
     /// Gets the default name of the stream
     fn get_default_name(&self) -> String;
+    fn get_reqwest_client(&self) -> &ReqwestClient {
+        Box::leak(Box::new(ReqwestClient::new()))
+    }
     /// Downloads the stream to a file
-    fn download(&self, path: String) -> Result<u64, StreamError>;
+    fn download(&self, writer: Box<dyn Write>) -> Result<u64, StreamError>
+    {
+        if !self.is_online() {
+            Err(StreamError::Rsget(RsgetError::new("Stream offline")))
+        } else {
+            let stream = Stream::new(self.get_stream()?);
+            Ok(stream.write_file(self.get_reqwest_client(), writer)?)
+        }
+    }
 }
+
+// impl From<ReqwestClient> for &ReqwestClient {
+//     fn from(rc: ReqwestClient) -> Self {
+//         &rc
+//     }
+// }
+
+// impl<S> Streamable for Box<S>
+// where S: Streamable
+// { }
 
 pub mod utils;
 pub mod plugins;
