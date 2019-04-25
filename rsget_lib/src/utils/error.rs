@@ -34,7 +34,7 @@ impl RsgetError {
 }
 
 impl Display for RsgetError {
-    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         write!(f,"{}",self.details)
     }
 }
@@ -78,7 +78,7 @@ pub enum StreamError {
 }
 
 impl Display for StreamError {
-    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         f.write_str(self.description())
     }
 }
