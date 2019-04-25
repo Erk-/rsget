@@ -1,10 +1,10 @@
+use hls_m3u8::Error as HlsError;
+use reqwest::Error as ReqwestError;
 use std::{
     error::Error as StdError,
     fmt::{Display, Formatter, Result as FmtResult},
     io::Error as IoError,
 };
-use reqwest::Error as ReqwestError;
-use hls_m3u8::Error as HlsError;
 use url::ParseError;
 
 #[derive(Debug)]
@@ -44,7 +44,9 @@ impl From<ParseError> for Error {
 }
 
 impl Display for Error {
-    fn fmt(&self, f: &mut Formatter) -> FmtResult { f.write_str(self.description()) }
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        f.write_str(self.description())
+    }
 }
 
 impl StdError for Error {

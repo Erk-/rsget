@@ -1,24 +1,10 @@
 #![allow(clippy::new_ret_no_self)]
+#![deny(rust_2018_idioms)]
 
-extern crate chrono;
-extern crate futures;
-extern crate indicatif;
 #[macro_use]
 extern crate log;
-extern crate md5;
-extern crate regex;
-extern crate serde;
 #[macro_use]
 extern crate serde_derive;
-extern crate serde_json;
-extern crate serde_urlencoded;
-extern crate tokio;
-extern crate http;
-extern crate hls_m3u8;
-extern crate reqwest;
-extern crate parking_lot;
-extern crate url;
-extern crate stream_lib;
 
 use crate::utils::error::StreamError;
 use crate::utils::error::RsgetError;

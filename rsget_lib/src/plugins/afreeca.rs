@@ -3,8 +3,8 @@ use regex::Regex;
 
 use crate::utils::error::StreamError;
 use crate::utils::error::RsgetError;
-
 use crate::utils::downloaders::DownloadClient;
+
 use chrono::prelude::*;
 
 use reqwest::header::REFERER;
