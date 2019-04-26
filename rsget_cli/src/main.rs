@@ -1,8 +1,9 @@
-extern crate clap;
 //extern crate pretty_env_logger;
 extern crate flexi_logger;
 extern crate log;
 extern crate rsget_lib;
+extern crate structopt;
+
 
 use std::process::Command;
 use std::fs::File;
@@ -10,13 +11,27 @@ use std::path::Path;
 use std::boxed::Box;
  
 use rsget_lib::Streamable;
-use clap::{App, Arg}; //, SubCommand};
-
 use flexi_logger::{Logger,opt_format};
+use structopt::StructOpt;
 
 use rsget_lib::utils::error::StreamError;
 use rsget_lib::utils::error::RsgetError;
 use rsget_lib::utils::stream_type_to_url;
+
+
+#[derive(Debug, StructOpt)]
+#[structopt(name = "rsget")]
+struct Opt {
+    #[structopt(short = "P", long = "play")]
+    play: bool,
+    #[structopt(short = "i", long = "info")]
+    info: bool,
+    #[structopt(short = "O", long = "path", default_value = "./")]
+    path: String,
+    #[structopt(short = "o", long = "output")]
+    filename: Option<String>,
+    url: String,
+}
 
 fn main() {
     Logger::with_env()
@@ -26,59 +41,25 @@ fn main() {
     let _ = try_main().map_err(|why| {
         println!("Error running: {:?}", why);
     });
+
 }
 
 fn try_main() -> Result<(), StreamError> {
     //pretty_env_logger::init();
-    let matches = App::new("ruststreamer")
-       .version("0.1")
-        .author("Valdemar Erk <v@erk.io>")
-        .about("Downloads streams")
-        .arg(
-            Arg::with_name("play")
-               .short("P")
-                .long("play")
-                .takes_value(false),
-        )
-        .arg(
-            Arg::with_name("info")
-                .short("i")
-                .long("info")
-                .help("info")
-                .required(false),
-        )
-        .arg(
-            Arg::with_name("path")
-                .short("O")
-                .long("path")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::with_name("filename")
-                .short("o")
-                .long("output")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::with_name("URL")
-                .help("The url of the stream")
-                .required(true)
-                .index(1),
-        )
-        .get_matches();
-    let url = String::from(matches.value_of("URL").unwrap());
+    let opt = Opt::from_args();
+    let url = opt.url;
     let stream: Box<Streamable> = rsget_lib::utils::sites::get_site(&url)?;
     
     if !stream.is_online() {
         return Err(StreamError::Rsget(RsgetError::new("Stream is offline")))
     }
 
-    if matches.is_present("info") {
+    if opt.info {
         println!("{:#?}", stream.get_stream()?);
         return Ok(())
     }
 
-    if matches.is_present("play") {
+    if opt.play {
         let status = Command::new("mpv")
             .arg("--no-ytdl")
             .arg(stream_type_to_url(stream.get_stream()?))
@@ -87,11 +68,11 @@ fn try_main() -> Result<(), StreamError> {
         std::process::exit(status.code().unwrap())
     }
 
-    let path = String::from(matches.value_of("path").unwrap_or("./"));
+    let path = opt.path;
     let file_name = String::from(
-        matches
-            .value_of("filename")
-            .unwrap_or(&stream.get_default_name()),
+        opt
+            .filename
+            .unwrap_or(stream.get_default_name()),
     );
     let full_path = format!("{}{}", path, strip_characters(&file_name, "<>:\"/\\|?*\0"));
     let path = Path::new(&full_path);
