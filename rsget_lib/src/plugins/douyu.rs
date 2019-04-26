@@ -4,15 +4,11 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use regex::Regex;
 
 use crate::utils::error::StreamError;
-use crate::utils::error::RsgetError;
 
 use crate::utils::downloaders::DownloadClient;
 use chrono::prelude::*;
 
-use stream_lib::Stream;
 use stream_lib::StreamType;
-
-use std::fs::File;
 
 use md5;
 
@@ -272,27 +268,7 @@ impl Streamable for Douyu {
             self.get_ext()
         )
     }
-
-    fn download(&self, path: String) -> Result<u64, StreamError> {
-        //let own_client = client.clone();
-        if !self.is_online() {
-            Err(StreamError::Rsget(RsgetError::new("Stream offline")))
-        } else {
-            let local: DateTime<Local> = Local::now();
-            println!(
-                "{} by {} ({}) <{:04}-{:02}-{:02}-{:02}-{:02}>",
-                self.get_title().unwrap(),
-                self.get_author().unwrap(),
-                self.room_id,
-                local.year(),
-                local.month(),
-                local.day(),
-                local.hour(),
-                local.minute(),
-            );
-            let file = File::create(path)?;
-            let stream = Stream::new(self.get_stream()?);
-            Ok(stream.write_file(&self.client.rclient, file)?)
-        }
+    fn get_reqwest_client(&self) -> &reqwest::Client {
+        &self.client.rclient
     }
 }

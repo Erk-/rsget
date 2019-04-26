@@ -2,7 +2,6 @@ use crate::Streamable;
 use regex::Regex;
 use serde_json;
 
-use stream_lib::Stream;
 use stream_lib::StreamType;
 
 use crate::utils::downloaders::DownloadClient;
@@ -13,8 +12,6 @@ use crate::utils::error::RsgetError;
 use chrono::prelude::*;
 
 use serde_json::Value;
-
-use std::fs::File;
 
 #[derive(Debug, Clone)]
 pub struct DLive {
@@ -106,18 +103,7 @@ impl Streamable for DLive {
             self.get_ext()
         )
     }
-
-    fn download(&self, path: String) -> Result<u64, StreamError> {
-        if !self.is_online() {
-            Err(StreamError::Rsget(RsgetError::new("Stream offline")))
-        } else {
-            println!(
-                "{}",
-                self.get_author().unwrap(),
-            );
-            let file = File::create(path)?;
-            let stream = Stream::new(self.get_stream()?);
-            Ok(stream.write_file(&self.client.rclient, file)?)
-        }
+    fn get_reqwest_client(&self) -> &reqwest::Client {
+        &self.client.rclient
     }
 }

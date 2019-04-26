@@ -2,7 +2,6 @@ use crate::Streamable;
 use regex::Regex;
 use serde_json;
 
-use stream_lib::Stream;
 use stream_lib::StreamType;
 
 use crate::utils::downloaders::DownloadClient;
@@ -11,8 +10,6 @@ use crate::utils::error::StreamError;
 use crate::utils::error::RsgetError;
 
 use chrono::prelude::*;
-
-use std::fs::File;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct HuyaInfo {
@@ -278,20 +275,7 @@ impl Streamable for Huya {
             self.get_ext()
         )
     }
-
-    fn download(&self, path: String) -> Result<u64, StreamError> {
-        if !self.is_online() {
-            Err(StreamError::Rsget(RsgetError::new("Stream offline")))
-        } else {
-            println!(
-                "{} by {} ({})",
-                self.get_title().unwrap(),
-                self.get_author().unwrap(),
-                self.room_id
-            );
-            let file = File::create(path)?;
-            let stream = Stream::new(self.get_stream()?);
-            Ok(stream.write_file(&self.client.rclient, file)?)
-        }
+    fn get_reqwest_client(&self) -> &reqwest::Client {
+        &self.client.rclient
     }
 }

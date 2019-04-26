@@ -3,9 +3,14 @@ extern crate flexi_logger;
 extern crate log;
 extern crate rsget_lib;
 extern crate structopt;
+
+
+use std::process::Command;
+use std::fs::File;
+use std::path::Path;
+use std::boxed::Box;
  
 use rsget_lib::Streamable;
-use std::process::Command;
 use flexi_logger::{Logger,opt_format};
 use structopt::StructOpt;
 
@@ -69,10 +74,10 @@ fn try_main() -> Result<(), StreamError> {
             .filename
             .unwrap_or(stream.get_default_name()),
     );
-
-    let size = stream.download(
-        format!("{}{}", path, strip_characters(&file_name, "<>:\"/\\|?*\0")),
-    )?;
+    let full_path = format!("{}{}", path, strip_characters(&file_name, "<>:\"/\\|?*\0"));
+    let path = Path::new(&full_path);
+    let file = Box::new(File::create(path)?);
+    let size = stream.download(file)?;
     println!("Downloaded: {} MB", size as f64 / 1000.0 / 1000.0);
     Ok(())
 }

@@ -1,35 +1,17 @@
 use std::{
-    collections::{
-        HashSet,
-        VecDeque,
-    },
-    io::{
-        copy,
-        BufWriter,
-        Write,
-    },
+    collections::{HashSet, VecDeque},
+    io::{copy, BufWriter, Write},
     sync::Arc,
     thread,
-    time::{
-        self,
-        Duration,
-    },
+    time::{self, Duration},
 };
 
 #[cfg(feature = "spinner")]
-use indicatif::{
-    ProgressBar,
-    ProgressStyle,
-};
+use indicatif::{ProgressBar, ProgressStyle};
 
-use reqwest::{
-    Client as ReqwestClient,
-    Request,
-    Url,
-};
+use reqwest::{Client as ReqwestClient, Request, Url};
 
-use hls_m3u8::MediaPlaylistOptions;
-use hls_m3u8::MasterPlaylist;
+use hls_m3u8::{MasterPlaylist, MediaPlaylistOptions};
 
 use parking_lot::{Mutex, RwLock};
 
@@ -38,7 +20,7 @@ use crate::error::Error;
 /// Write buffer
 const WRITE_SIZE: usize = 131_072;
 
-/// HLS will try and look for new segments 12 times, 
+/// HLS will try and look for new segments 12 times,
 const HLS_MAX_RETRIES: usize = 12;
 
 /// A Enum with the types of streams supported
@@ -49,15 +31,14 @@ pub enum StreamType {
     /// A m3u8 playlist, which may be a stream.
     HLS(Request),
     /// A m3u8 master playlist and a string which is the name of the stream to download.
-	NamedPlaylist(Request, String),
-    
+    NamedPlaylist(Request, String),
 }
 
 #[derive(Debug, Clone)]
 enum _StreamType {
     Chuncked,
     HLS,
-	NamedPlaylist(String),
+    NamedPlaylist(String),
     #[doc(hidden)]
     __Nonexhaustive,
 }
@@ -69,7 +50,6 @@ pub struct Stream {
     #[allow(dead_code)]
     spinner: bool,
 }
-
 
 impl Stream {
     /// Creates a new stream handler.
@@ -85,40 +65,44 @@ impl Stream {
                 stream_type: _StreamType::Chuncked,
                 spinner: true,
             },
-			StreamType::NamedPlaylist(req, name) => Stream {
-				request: req,
-				stream_type: _StreamType::NamedPlaylist(name),
-				spinner: true,
-			},
+            StreamType::NamedPlaylist(req, name) => Stream {
+                request: req,
+                stream_type: _StreamType::NamedPlaylist(name),
+                spinner: true,
+            },
         }
     }
     /// Writes the stream to a writer.
     pub fn write_file<W>(self, client: &ReqwestClient, writer: W) -> Result<u64, Error>
     where
-        W: Write
+        W: Write,
     {
         match self.stream_type {
             _StreamType::Chuncked => Ok(self.chunked(client, writer)?),
             _StreamType::HLS => Ok(self.hls(client, writer)?),
-			_StreamType::NamedPlaylist(ref name) => {
+            _StreamType::NamedPlaylist(ref name) => {
                 let name = name.to_owned();
                 Ok(self.named_playlist(client, writer, name)?)
-            },
+            }
             _ => unimplemented!(),
         }
     }
 
     fn chunked<W>(self, client: &ReqwestClient, writer: W) -> Result<u64, Error>
     where
-        W: Write
+        W: Write,
     {
         #[cfg(feature = "spinner")]
         let spinner = ProgressBar::new(0);
         #[cfg(feature = "spinner")]
-        spinner.set_style(ProgressStyle::default_bar()
-                          .template("{spinner:.green} [{elapsed_precise}] Streamed {bytes}")
-                          .tick_chars("⠁⠁⠉⠙⠚⠒⠂⠂⠒⠲⠴⠤⠄⠄⠤⠠⠠⠤⠦⠖⠒⠐⠐⠒⠓⠋⠉⠈⠈ "));
-        
+        spinner.set_style(
+            ProgressStyle::default_bar()
+                .template("{spinner:.green} [{elapsed_precise}] Streamed {bytes}")
+                .tick_chars(
+                    "⠁⠁⠉⠙⠚⠒⠂⠂⠒⠲⠴⠤⠄⠄⠤⠠⠠⠤⠦⠖⠒⠐⠐⠒⠓⠋⠉⠈⠈ ",
+                ),
+        );
+
         let mut buf_writer = BufWriter::with_capacity(WRITE_SIZE, writer);
         #[cfg(feature = "spinner")]
         let source = client.execute(self.request)?;
@@ -134,11 +118,11 @@ impl Stream {
     // This currently clones the client to get a client to run the inner calls as well.
     fn hls<W>(self, client: &ReqwestClient, writer: W) -> Result<u64, Error>
     where
-        W: Write
+        W: Write,
     {
         #[derive(Clone)]
         enum Hls {
-            Url(String),
+            Url(Url),
             StreamOver,
         }
 
@@ -147,7 +131,7 @@ impl Stream {
         let links: Arc<RwLock<HashSet<String>>> = Arc::new(RwLock::new(HashSet::new())); // Used in Inner
         let _outer_links = links.clone(); // Used in Outer (Not currently in use)
         let headers = self.request.headers().clone();
-        
+
         // Inner loop -- Start
         // Here the handling of the m3u8 file is happening
         // it pushes it through the `to_work` mutex
@@ -155,7 +139,6 @@ impl Stream {
         // Only used if the body of the request is not able to be cloned.
         let inner_url = self.request.url().clone();
         let inner_headers = self.request.headers().clone();
-
 
         let master_url = self.request.url().clone().join(".")?;
         let inner_client = client.to_owned();
@@ -181,20 +164,19 @@ impl Stream {
                         match inner_client
                             .get(inner_url.clone())
                             .headers(inner_headers.clone())
-                            .build() {
-                                Ok(br) => br,
-                                Err(e) => {
-                                    warn!("[HLS] Request creation failed!\n{}", e);
-                                    counter += 1;
-                                    continue;
-                                }
-
+                            .build()
+                        {
+                            Ok(br) => br,
+                            Err(e) => {
+                                warn!("[HLS] Request creation failed!\n{}", e);
+                                counter += 1;
+                                continue;
                             }
-                    },
+                        }
+                    }
                 };
-                
-                let mut res = match inner_client.execute(req)
-                {
+
+                let mut res = match inner_client.execute(req) {
                     Ok(r) => r,
                     Err(e) => {
                         warn!("[HLS] Playlist download failed!\n{}", e);
@@ -243,9 +225,10 @@ impl Stream {
 
                         // Construct a url from the master and the segment.
                         let url_formatted = if let Ok(u) = Url::parse(&e) {
-                            u.as_str().to_owned()
+                            u
                         } else {
-                            format!("{}{}", master_url.as_str(), &e)
+                            Url::parse(&format!("{}{}", master_url.as_str(), &e))
+                                .expect("The m3u8 does not currently work with stream_lib, please report the issue on the github repo, with an example of the playlistfile.")
                         };
                         let work_queue = &mut to_work.lock();
 
@@ -269,9 +252,13 @@ impl Stream {
         #[cfg(feature = "spinner")]
         let spinner = ProgressBar::new(0);
         #[cfg(feature = "spinner")]
-        spinner.set_style(ProgressStyle::default_bar()
-                          .template("{spinner:.green} [{elapsed_precise}] {bytes} Segments")
-                          .tick_chars("⠁⠁⠉⠙⠚⠒⠂⠂⠒⠲⠴⠤⠄⠄⠤⠠⠠⠤⠦⠖⠒⠐⠐⠒⠓⠋⠉⠈⠈ "));
+        spinner.set_style(
+            ProgressStyle::default_bar()
+                .template("{spinner:.green} [{elapsed_precise}] {bytes} Segments")
+                .tick_chars(
+                    "⠁⠁⠉⠙⠚⠒⠂⠂⠒⠲⠴⠤⠄⠄⠤⠠⠠⠤⠦⠖⠒⠐⠐⠒⠓⠋⠉⠈⠈ ",
+                ),
+        );
         #[cfg(feature = "spinner")]
         spinner.enable_steady_tick(100);
 
@@ -281,7 +268,7 @@ impl Stream {
             let to_download = other_work.lock().pop_front();
             match to_download {
                 Some(Hls::Url(u)) => {
-                    let req = client.get(&u).headers(headers.clone()).build()?;
+                    let req = client.get(u).headers(headers.clone()).build()?;
                     let size = download_to_file(client, req, &mut buf_writer)?;
                     #[cfg(feature = "spinner")]
                     spinner.inc(size);
@@ -297,14 +284,19 @@ impl Stream {
         Ok(total_size)
     }
 
-	// This currently clones the client to get a client to run the inner calls as well.
-    fn named_playlist<W>(self, client: &ReqwestClient, writer: W, name: String) -> Result<u64, Error>
+    // This currently clones the client to get a client to run the inner calls as well.
+    fn named_playlist<W>(
+        self,
+        client: &ReqwestClient,
+        writer: W,
+        name: String,
+    ) -> Result<u64, Error>
     where
-        W: Write
-	{
+        W: Write,
+    {
         #[derive(Clone)]
         enum Hls {
-            Url(String),
+            Url(Url),
             StreamOver,
         }
 
@@ -313,7 +305,7 @@ impl Stream {
         let links: Arc<RwLock<HashSet<String>>> = Arc::new(RwLock::new(HashSet::new())); // Used in Inner
         let _outer_links = links.clone(); // Used in Outer (Not currently in use)
         let headers = self.request.headers().clone();
-        
+
         // Inner loop -- Start
         // Here the handling of the m3u8 file is happening
         // it pushes it through the `to_work` mutex
@@ -322,8 +314,6 @@ impl Stream {
         let inner_url = self.request.url().clone();
         let inner_headers = self.request.headers().clone();
 
-
-        
         let inner_client = client.to_owned();
         thread::spawn(move || {
             let mut counter = 0;
@@ -347,20 +337,19 @@ impl Stream {
                         match inner_client
                             .get(inner_url.clone())
                             .headers(inner_headers.clone())
-                            .build() {
-                                Ok(br) => br,
-                                Err(e) => {
-                                    warn!("[HLS] Request creation failed!\n{}", e);
-                                    counter += 1;
-                                    continue;
-                                }
-
+                            .build()
+                        {
+                            Ok(br) => br,
+                            Err(e) => {
+                                warn!("[HLS] Request creation failed!\n{}", e);
+                                counter += 1;
+                                continue;
                             }
-                    },
+                        }
+                    }
                 };
-                
-                let mut master_res = match inner_client.execute(req)
-                {
+
+                let mut master_res = match inner_client.execute(req) {
                     Ok(r) => r,
                     Err(e) => {
                         warn!("[HLS] Playlist download failed!\n{}", e);
@@ -378,12 +367,13 @@ impl Stream {
                     }
                 };
 
-				let master_playlist = master_string.parse::<MasterPlaylist>()
-                                                   .unwrap();
+                let master_playlist = master_string.parse::<MasterPlaylist>().unwrap();
 
-                let segment_pos = master_playlist.media_tags()
-                                    .iter()
-                                    .position(|e| &e.name().trim() == &name).unwrap();
+                let segment_pos = master_playlist
+                    .media_tags()
+                    .iter()
+                    .position(|e| &e.name().trim() == &name)
+                    .unwrap();
 
                 let master_iter: Vec<String> = master_playlist
                     .stream_inf_tags()
@@ -392,17 +382,20 @@ impl Stream {
                     .map(|e| String::from(e.trim()))
                     .collect();
 
-               
-
                 let segment = master_iter[segment_pos].clone();
-                let master_url = (&segment).parse::<reqwest::Url>().unwrap().join(".").unwrap();
+                let master_url = (&segment)
+                    .parse::<reqwest::Url>()
+                    .unwrap()
+                    .join(".")
+                    .unwrap();
 
                 let mp_hls = match inner_client
                     .get(&segment)
                     .headers(inner_headers.clone())
-                    .build() {
-                        Ok(p) => p,
-                        Err(e) => {
+                    .build()
+                {
+                    Ok(p) => p,
+                    Err(e) => {
                         warn!("[HLS] URI!\n{}", e);
                         trace!("[HLS]\n{}", segment);
                         counter += 1;
@@ -410,8 +403,7 @@ impl Stream {
                     }
                 };
 
-                let mut res = match inner_client.execute(mp_hls)
-                {
+                let mut res = match inner_client.execute(mp_hls) {
                     Ok(r) => r,
                     Err(e) => {
                         warn!("[HLS] Playlist download failed!\n{}", e);
@@ -460,9 +452,10 @@ impl Stream {
 
                         // Construct a url from the master and the segment.
                         let url_formatted = if let Ok(u) = Url::parse(&e) {
-                            u.as_str().to_owned()
+                            u
                         } else {
-                            format!("{}{}", master_url.as_str(), &e)
+                            Url::parse(&format!("{}{}", master_url.as_str(), &e))
+                                .expect("The m3u8 does not currently work with stream_lib, please report the issue on the github repo, with an example of the playlistfile.")
                         };
                         let work_queue = &mut to_work.lock();
 
@@ -473,12 +466,12 @@ impl Stream {
                             work_queue.push_back(Hls::Url(url_formatted));
                         }
                     }
-					warn!("[HLS] Sleeps for {:?}", target_duration);
-					// Sleeps for the target duration.
-					thread::sleep(target_duration);
-					counter += 1;
+                    warn!("[HLS] Sleeps for {:?}", target_duration);
+                    // Sleeps for the target duration.
+                    thread::sleep(target_duration);
+                    counter += 1;
                 }
-			}
+            }
         });
 
         let mut total_size = 0;
@@ -486,9 +479,13 @@ impl Stream {
         #[cfg(feature = "spinner")]
         let spinner = ProgressBar::new(0);
         #[cfg(feature = "spinner")]
-        spinner.set_style(ProgressStyle::default_bar()
-                          .template("{spinner:.green} [{elapsed_precise}] {bytes} Segments")
-                          .tick_chars("⠁⠁⠉⠙⠚⠒⠂⠂⠒⠲⠴⠤⠄⠄⠤⠠⠠⠤⠦⠖⠒⠐⠐⠒⠓⠋⠉⠈⠈ "));
+        spinner.set_style(
+            ProgressStyle::default_bar()
+                .template("{spinner:.green} [{elapsed_precise}] {bytes} Segments")
+                .tick_chars(
+                    "⠁⠁⠉⠙⠚⠒⠂⠂⠒⠲⠴⠤⠄⠄⠤⠠⠠⠤⠦⠖⠒⠐⠐⠒⠓⠋⠉⠈⠈ ",
+                ),
+        );
         #[cfg(feature = "spinner")]
         spinner.enable_steady_tick(100);
 
@@ -499,7 +496,7 @@ impl Stream {
             match to_download {
                 Some(Hls::Url(u)) => {
                     info!("[MASTER] Downloads: {}", u);
-                    let req = client.get(&u).headers(headers.clone()).build()?;
+                    let req = client.get(u).headers(headers.clone()).build()?;
                     let size = download_to_file(client, req, &mut buf_writer)?;
                     #[cfg(feature = "spinner")]
                     spinner.inc(size);
@@ -517,9 +514,13 @@ impl Stream {
 }
 
 #[inline]
-fn download_to_file<W>(client: &ReqwestClient, request: Request, mut file: &mut BufWriter<W>) -> Result<u64, Error>
+fn download_to_file<W>(
+    client: &ReqwestClient,
+    request: Request,
+    mut file: &mut BufWriter<W>,
+) -> Result<u64, Error>
 where
-    W: Write
+    W: Write,
 {
     let mut source = client.execute(request)?;
     let size = copy(&mut source, &mut file)?;

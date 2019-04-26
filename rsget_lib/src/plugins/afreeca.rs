@@ -3,19 +3,17 @@ use regex::Regex;
 
 use crate::utils::error::StreamError;
 use crate::utils::error::RsgetError;
-
 use crate::utils::downloaders::DownloadClient;
+
 use chrono::prelude::*;
 
 use reqwest::header::REFERER;
 use reqwest::Client as RClient;
 
-use stream_lib::Stream;
 use stream_lib::StreamType;
 
 use std::str;
-use std::fs::File;
-    
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct AfreecaGetInfo {
     bid: String,
@@ -151,7 +149,6 @@ impl Streamable for Afreeca {
             debug!("Gettin channel_info");
             let json_str = res.text()?;
             debug!("{}", json_str);
-            use serde_json;
             let json: ChannelInfo = match serde_json::from_str(&json_str) {
                 Ok(s) => s,
                 Err(e) => {
@@ -232,15 +229,7 @@ impl Streamable for Afreeca {
             self.get_ext()
         )
     }
-
-    fn download(&self, path: String) -> Result<u64, StreamError> {
-        println!(
-            "{}\n{}",
-            self.get_title().unwrap(),
-            self.get_author().unwrap(),
-        );
-        let file = File::create(path)?;
-        let stream = Stream::new(self.get_stream()?);
-        Ok(stream.write_file(&self.client.rclient, file)?)
+    fn get_reqwest_client(&self) -> &reqwest::Client {
+        &self.client.rclient
     }
 }
