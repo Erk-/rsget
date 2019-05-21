@@ -14,6 +14,8 @@ use crate::utils::downloaders::DownloadClient;
 use crate::utils::error::RsgetError;
 use crate::utils::error::StreamError;
 
+const TWITCH_CLIENT_ID: &'static str = "fmdejdpeuc71dz6i5q24kpz8kiiynv";
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AccessToken {
     token: String,
@@ -40,7 +42,7 @@ impl Streamable for Twitch {
         // It  Error running: Reqwest(Error { kind: Url(RelativeUrlWithoutBase), url: None })
         let client_id = match env::var("TWITCH_TOKEN") {
             Ok(val) => val,
-            Err(_) => return Err(StreamError::Rsget(RsgetError::new("Twich token not set"))),
+            Err(_) => String::from(TWITCH_CLIENT_ID),
         };
 
         Ok(Box::new(Twitch {
@@ -57,7 +59,9 @@ impl Streamable for Twitch {
         let stream_res = self.client.download_to_string(stream_req).unwrap();
         let inter_json: Value = serde_json::from_str(stream_res.as_str()).unwrap();
 
-        if inter_json["data"].as_array().unwrap().is_empty() {
+        if inter_json["data"].as_array().is_none() ||
+           inter_json["data"].as_array().unwrap().is_empty()
+        {
             return None;
         }
         Some(String::from(inter_json["data"][0]["title"].as_str().unwrap()))
