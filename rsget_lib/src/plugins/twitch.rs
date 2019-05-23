@@ -14,7 +14,7 @@ use crate::utils::error::RsgetError;
 use crate::utils::error::StreamError;
 use crate::Streamable;
 
-const TWITCH_CLIENT_ID: &'static str = "fmdejdpeuc71dz6i5q24kpz8kiiynv";
+const TWITCH_CLIENT_ID: &str = "fmdejdpeuc71dz6i5q24kpz8kiiynv";
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AccessToken {

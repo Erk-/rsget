@@ -45,10 +45,10 @@ impl Streamable for DLive {
 
                 let aps = apollo_state["defaultClient"]
                     .as_object()
-                    .ok_or(RsgetError::new("Stream offline"))?
+                    .ok_or_else(|| RsgetError::new("Stream offline"))?
                     .into_iter()
                     .find(|e| e.0.starts_with("user:"))
-                    .ok_or(RsgetError::new("Stream offline"))?
+                    .ok_or_else(|| RsgetError::new("Stream offline"))?
                     .1
                     .clone();
 

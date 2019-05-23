@@ -363,12 +363,13 @@ impl Stream {
                 let segment_pos = master_playlist
                     .media_tags()
                     .iter()
-                    .position(|e| &e.name().trim() == &name)
+                    .position(|e| e.name().trim() == name)
                     .unwrap();
 
+                #[allow(clippy::redundant_closure)]
                 let master_iter: Vec<String> = master_playlist
                     .stream_inf_tags()
-                    .into_iter()
+                    .iter()
                     .map(|e| e.uri())
                     .map(|e| String::from(e.trim()))
                     .collect();

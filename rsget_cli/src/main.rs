@@ -66,7 +66,7 @@ fn try_main() -> Result<(), StreamError> {
     }
 
     let path = opt.path;
-    let file_name = String::from(opt.filename.unwrap_or(stream.get_default_name()));
+    let file_name = opt.filename.unwrap_or_else(|| stream.get_default_name());
     let full_path = format!("{}{}", path, strip_characters(&file_name, "<>:\"/\\|?*\0"));
     let path = Path::new(&full_path);
     let file = Box::new(File::create(path)?);
