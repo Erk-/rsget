@@ -6,8 +6,8 @@ use stream_lib::StreamType;
 
 use crate::utils::downloaders::DownloadClient;
 
-use crate::utils::error::StreamError;
 use crate::utils::error::RsgetError;
+use crate::utils::error::StreamError;
 
 use chrono::prelude::*;
 
@@ -23,11 +23,11 @@ pub struct DLive {
 impl Streamable for DLive {
     fn new(url: String) -> Result<Box<DLive>, StreamError> {
         let dc = DownloadClient::new()?;
-        
+
         let room_id_re = Regex::new(r"^(?:https?://)?(?:www\.)?dlive\.tv/([a-zA-Z0-9]+)")?;
         let cap = match room_id_re.captures(&url) {
             Some(capture) => capture,
-            None => return Err(StreamError::Rsget(RsgetError::new("No capture found")))
+            None => return Err(StreamError::Rsget(RsgetError::new("No capture found"))),
         };
         let site_url = format!("https://dlive.tv/{}", &cap[1]);
         let site_req = dc.make_request(&site_url, None)?;
@@ -35,30 +35,32 @@ impl Streamable for DLive {
         match res {
             Ok(some) => {
                 let apollo_state_re = Regex::new(r"__APOLLO_STATE__=(.*);\(function\(\)")?;
-                let apollo_state_cap = apollo_state_re
-                    .captures(&some)
-                    .ok_or_else(|| StreamError::Rsget(RsgetError::new("Regex did not find any hostinfo")))?;
+                let apollo_state_cap = apollo_state_re.captures(&some).ok_or_else(|| {
+                    StreamError::Rsget(RsgetError::new("Regex did not find any hostinfo"))
+                })?;
                 let apollo_state: Value = match serde_json::from_str(&apollo_state_cap[1]) {
                     Ok(state) => state,
                     Err(why) => return Err(StreamError::Json(why)),
                 };
 
-                let aps = apollo_state["defaultClient"].as_object().ok_or(RsgetError::new("Stream offline"))?
-                        .into_iter()
-                        .find(|e| e.0.starts_with("user:"))
-                        .ok_or(RsgetError::new("Stream offline"))?.1.clone();
-                
+                let aps = apollo_state["defaultClient"]
+                    .as_object()
+                    .ok_or(RsgetError::new("Stream offline"))?
+                    .into_iter()
+                    .find(|e| e.0.starts_with("user:"))
+                    .ok_or(RsgetError::new("Stream offline"))?
+                    .1
+                    .clone();
+
                 let xy = DLive {
                     client: dc,
                     url: url.clone(),
                     apollo_state: aps,
-                };  
+                };
                 debug!("{:#?}", &xy);
                 Ok(Box::new(xy))
-            },
-            Err(why) => {
-                Err(why)
-            },
+            }
+            Err(why) => Err(why),
         }
     }
 
@@ -67,10 +69,13 @@ impl Streamable for DLive {
     }
 
     fn get_author(&self) -> Option<String> {
-        Some(self.apollo_state["displayname"].as_str()
-                                             .unwrap()
-                                             .trim_end_matches('"')
-                                             .to_string())
+        Some(
+            self.apollo_state["displayname"]
+                .as_str()
+                .unwrap()
+                .trim_end_matches('"')
+                .to_string(),
+        )
     }
 
     fn is_online(&self) -> bool {
@@ -78,12 +83,20 @@ impl Streamable for DLive {
     }
 
     fn get_stream(&self) -> Result<StreamType, StreamError> {
-        Ok(StreamType::NamedPlaylist(self.client.rclient.get(
-            &format!("https://live.prd.dlive.tv/hls/live/{}.m3u8", 
-                &self.apollo_state["username"].as_str().unwrap()
-                    .trim_start_matches("%22")
-                    .trim_end_matches("%22"))
-        ).build()?, String::from("src")))
+        Ok(StreamType::NamedPlaylist(
+            self.client
+                .rclient
+                .get(&format!(
+                    "https://live.prd.dlive.tv/hls/live/{}.m3u8",
+                    &self.apollo_state["username"]
+                        .as_str()
+                        .unwrap()
+                        .trim_start_matches("%22")
+                        .trim_end_matches("%22")
+                ))
+                .build()?,
+            String::from("src"),
+        ))
     }
 
     fn get_ext(&self) -> String {

@@ -7,8 +7,8 @@ use std::{
     io::Error as IoError,
 };
 
-use http::uri::InvalidUri;
 use http::header::ToStrError;
+use http::uri::InvalidUri;
 
 use http::Error as HttpError;
 
@@ -29,13 +29,15 @@ pub struct RsgetError {
 
 impl RsgetError {
     pub fn new(msg: &str) -> RsgetError {
-        RsgetError{details: String::from(msg)}
+        RsgetError {
+            details: String::from(msg),
+        }
     }
 }
 
 impl Display for RsgetError {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        write!(f,"{}",self.details)
+        write!(f, "{}", self.details)
     }
 }
 
@@ -108,7 +110,6 @@ impl From<FmtError> for StreamError {
         StreamError::Fmt(err)
     }
 }
-
 
 impl From<JsonError> for StreamError {
     fn from(err: JsonError) -> Self {

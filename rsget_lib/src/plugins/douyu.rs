@@ -81,7 +81,8 @@ struct DouyuGift {
     ch: String,
     effect: String,
     himg: String,
-    #[serde(rename = "type")] adtype: String,
+    #[serde(rename = "type")]
+    adtype: String,
     gt: String,
     mobile_small_effect_icon: String,
     grgb: String,
@@ -133,7 +134,8 @@ struct DouyuData {
     room_name: String,
     owner_uid: String,
     owner_avatar: String,
-    #[serde(skip_deserializing)] black: Vec<usize>, // Not sure about this one,
+    #[serde(skip_deserializing)]
+    black: Vec<usize>, // Not sure about this one,
     vertical_src: String,
     room_dm_delay: usize,
     owner_weight: String,
@@ -143,8 +145,10 @@ struct DouyuData {
     cur_credit: String,
     gift_ver: String,
     low_credit: String,
-    #[serde(skip_deserializing)] gift: Vec<DouyuGift>,
-    #[serde(skip_deserializing)] rtmp_multi_bitrate: String, //DouyuMultiBR, TODO: fix this it is broken at the moment
+    #[serde(skip_deserializing)]
+    gift: Vec<DouyuGift>,
+    #[serde(skip_deserializing)]
+    rtmp_multi_bitrate: String, //DouyuMultiBR, TODO: fix this it is broken at the moment
     cdns: Vec<String>,
     online: usize,
     credit_illegal: String,
@@ -176,7 +180,6 @@ impl Streamable for Douyu {
         let head = "Mozilla/5.0 (iPad; CPU OS 8_1_3 like Mac OS X) \
                     AppleWebKit/600.1.4 (KHTML, like Gecko) \
                     Version/8.0 Mobile/12B466 Safari/600.1.4";
-        
 
         let room_id = match cap[1].parse::<u32>() {
             Ok(rid) => rid,
@@ -197,9 +200,7 @@ impl Streamable for Douyu {
 
         let suffix = format!(
             "room/{}?aid=wp&cdn={}&client_sys=wp&time={}",
-            &room_id,
-            "ws",
-            ts
+            &room_id, "ws", ts
         );
 
         let api_secret = b"zNzMV1y4EMxOHS6I5WKm";
@@ -222,10 +223,8 @@ impl Streamable for Douyu {
                 };
                 debug!("{:#?}", dy);
                 Ok(Box::new(dy))
-            },
-            Err(why) => {
-                Err(why)
             }
+            Err(why) => Err(why),
         }
     }
 
@@ -243,10 +242,14 @@ impl Streamable for Douyu {
 
     fn get_stream(&self) -> Result<StreamType, StreamError> {
         Ok(StreamType::Chuncked(
-            self.client.rclient.get(&format!("{}/{}",
-                                            &self.data.data.rtmp_url,
-                                            &self.data.data.rtmp_live)
-            ).build()?))
+            self.client
+                .rclient
+                .get(&format!(
+                    "{}/{}",
+                    &self.data.data.rtmp_url, &self.data.data.rtmp_live
+                ))
+                .build()?,
+        ))
     }
 
     fn get_ext(&self) -> String {

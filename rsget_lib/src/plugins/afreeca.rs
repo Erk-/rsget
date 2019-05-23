@@ -1,9 +1,9 @@
 use crate::Streamable;
 use regex::Regex;
 
-use crate::utils::error::StreamError;
-use crate::utils::error::RsgetError;
 use crate::utils::downloaders::DownloadClient;
+use crate::utils::error::RsgetError;
+use crate::utils::error::StreamError;
 
 use chrono::prelude::*;
 
@@ -18,7 +18,7 @@ use std::str;
 struct AfreecaGetInfo {
     bid: String,
     mode: String,
-    player_type: String
+    player_type: String,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -37,7 +37,7 @@ struct AfreecaHlsKey {
     RESULT: usize,
     AID: String,
 }
-    
+
 #[allow(non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct AfreecaChannelInfoData {
@@ -75,7 +75,7 @@ struct AfreecaChannelInfoData {
     MDPT: String,
     BTIME: i64,
     PCON: i64,
-    #[serde(skip_deserializing,skip_serializing)]
+    #[serde(skip_deserializing, skip_serializing)]
     PCON_TIME: String,
     FTK: String,
 }
@@ -83,11 +83,11 @@ struct AfreecaChannelInfoData {
 #[allow(non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct AfreecaChannelInfo<T> {
-    CHANNEL: T
+    CHANNEL: T,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-struct AfreecaStream{
+struct AfreecaStream {
     result: String,
     view_url: String,
     stream_status: String,
@@ -104,7 +104,12 @@ pub struct Afreeca {
 }
 
 // Helper functions
-fn get_hls_key(dc: DownloadClient, url: String, room_id: String, bno: String) -> Result<String, StreamError> {
+fn get_hls_key(
+    dc: DownloadClient,
+    url: String,
+    room_id: String,
+    bno: String,
+) -> Result<String, StreamError> {
     // http://play.afreecatv.com/rrvv17/207524505
     let rc: RClient = dc.rclient;
     //CHANNEL_API_URL = "http://live.afreecatv.com:8057/afreeca/player_live_api.php"
@@ -115,17 +120,19 @@ fn get_hls_key(dc: DownloadClient, url: String, room_id: String, bno: String) ->
         quality: "original".to_string(),
         _type: "pwd".to_string(),
     };
-    let mut res = rc.post("http://live.afreecatv.com:8057/afreeca/player_live_api.php")
+    let mut res = rc
+        .post("http://live.afreecatv.com:8057/afreeca/player_live_api.php")
         .header(REFERER, url)
         .form(&data)
         .send()?;
     let json: AfreecaChannelInfo<AfreecaHlsKey> = res.json()?;
     if json.CHANNEL.RESULT != 1 {
-        return Err(StreamError::Rsget(RsgetError::new("[Afreeca] HLS key sent back error")));
+        return Err(StreamError::Rsget(RsgetError::new(
+            "[Afreeca] HLS key sent back error",
+        )));
     }
     Ok(json.CHANNEL.AID)
 }
-
 
 impl Streamable for Afreeca {
     fn new(url: String) -> Result<Box<Afreeca>, StreamError> {
@@ -140,7 +147,7 @@ impl Streamable for Afreeca {
                 bid: room_id,
                 mode: String::from("landing"),
                 player_type: String::from("html5"),
-            };                
+            };
             let mut res = dc
                 .rclient
                 .post("http://live.afreecatv.com:8057/afreeca/player_live_api.php")
@@ -153,21 +160,26 @@ impl Streamable for Afreeca {
                 Ok(s) => s,
                 Err(e) => {
                     debug!("[Afreeca] Json failed with:\n{}", e);
-                    return Err(StreamError::Rsget(RsgetError::new("[Afreeca] Stream not online")));
-                },
+                    return Err(StreamError::Rsget(RsgetError::new(
+                        "[Afreeca] Stream not online",
+                    )));
+                }
             };
             json
         };
         debug!("Getting room_id");
-        let hls_key = get_hls_key(dc.clone(),
-                                  url.clone(),
-                                  String::from(&cap[1]),
-                                   ci.CHANNEL.BNO.clone())?;
-        let json_url = format!("{}/broad_stream_assign.html?return_type={}&broad_key={}",
-                               ci.CHANNEL.RMD.clone(),
-                               ci.CHANNEL.CDN.clone(),
-                               format!("{}-flash-original-hls",
-                                       ci.CHANNEL.BNO.clone()));
+        let hls_key = get_hls_key(
+            dc.clone(),
+            url.clone(),
+            String::from(&cap[1]),
+            ci.CHANNEL.BNO.clone(),
+        )?;
+        let json_url = format!(
+            "{}/broad_stream_assign.html?return_type={}&broad_key={}",
+            ci.CHANNEL.RMD.clone(),
+            ci.CHANNEL.CDN.clone(),
+            format!("{}-flash-original-hls", ci.CHANNEL.BNO.clone())
+        );
         debug!("Getting stream_info!");
         let stream_info: AfreecaStream = dc.rclient.get(&json_url).send()?.json()?;
         let retval = Afreeca {
@@ -197,7 +209,7 @@ impl Streamable for Afreeca {
             _ => {
                 debug!("Result had value: {}", self.afreeca_info.CHANNEL.RESULT);
                 true
-            },
+            }
         }
     }
 
@@ -206,7 +218,13 @@ impl Streamable for Afreeca {
         trace!("CDN: {}", &cdn);
         debug!("view_url: {}", self.stream_info.view_url);
         let url = format!("{}?aid={}", self.stream_info.view_url, self.hls_key);
-        Ok(StreamType::HLS(self.client.rclient.get(&url).header(REFERER, self.url.clone()).build()?))
+        Ok(StreamType::HLS(
+            self.client
+                .rclient
+                .get(&url)
+                .header(REFERER, self.url.clone())
+                .build()?,
+        ))
     }
 
     fn get_ext(&self) -> String {

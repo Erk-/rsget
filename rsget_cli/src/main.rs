@@ -4,20 +4,18 @@ extern crate log;
 extern crate rsget_lib;
 extern crate structopt;
 
-
-use std::process::Command;
+use std::boxed::Box;
 use std::fs::File;
 use std::path::Path;
-use std::boxed::Box;
- 
+use std::process::Command;
+
+use flexi_logger::{opt_format, Logger};
 use rsget_lib::Streamable;
-use flexi_logger::{Logger,opt_format};
 use structopt::StructOpt;
 
-use rsget_lib::utils::error::StreamError;
 use rsget_lib::utils::error::RsgetError;
+use rsget_lib::utils::error::StreamError;
 use rsget_lib::utils::stream_type_to_url;
-
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "rsget")]
@@ -41,7 +39,6 @@ fn main() {
     let _ = try_main().map_err(|why| {
         println!("Error running: {:?}", why);
     });
-
 }
 
 fn try_main() -> Result<(), StreamError> {
@@ -49,14 +46,14 @@ fn try_main() -> Result<(), StreamError> {
     let opt = Opt::from_args();
     let url = opt.url;
     let stream: Box<Streamable> = rsget_lib::utils::sites::get_site(&url)?;
-    
+
     if !stream.is_online() {
-        return Err(StreamError::Rsget(RsgetError::new("Stream is offline")))
+        return Err(StreamError::Rsget(RsgetError::new("Stream is offline")));
     }
 
     if opt.info {
         println!("{:#?}", stream.get_stream()?);
-        return Ok(())
+        return Ok(());
     }
 
     if opt.play {
@@ -69,11 +66,7 @@ fn try_main() -> Result<(), StreamError> {
     }
 
     let path = opt.path;
-    let file_name = String::from(
-        opt
-            .filename
-            .unwrap_or(stream.get_default_name()),
-    );
+    let file_name = String::from(opt.filename.unwrap_or(stream.get_default_name()));
     let full_path = format!("{}{}", path, strip_characters(&file_name, "<>:\"/\\|?*\0"));
     let path = Path::new(&full_path);
     let file = Box::new(File::create(path)?);

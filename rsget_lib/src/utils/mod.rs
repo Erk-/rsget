@@ -1,6 +1,6 @@
 pub mod downloaders;
-pub mod sites;
 pub mod error;
+pub mod sites;
 //pub mod stream;
 
 use stream_lib::StreamType;

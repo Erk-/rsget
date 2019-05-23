@@ -6,14 +6,14 @@ extern crate log;
 #[macro_use]
 extern crate serde_derive;
 
-use crate::utils::error::StreamError;
 use crate::utils::error::RsgetError;
+use crate::utils::error::StreamError;
 
-use std::io::Write;
 use std::boxed::Box;
+use std::io::Write;
 
-use stream_lib::StreamType;
 use stream_lib::Stream;
+use stream_lib::StreamType;
 
 use reqwest::Client as ReqwestClient;
 
@@ -38,8 +38,7 @@ pub trait Streamable {
         Box::leak(Box::new(ReqwestClient::new()))
     }
     /// Downloads the stream to a file
-    fn download(&self, writer: Box<dyn Write>) -> Result<u64, StreamError>
-    {
+    fn download(&self, writer: Box<dyn Write>) -> Result<u64, StreamError> {
         if !self.is_online() {
             Err(StreamError::Rsget(RsgetError::new("Stream offline")))
         } else {
@@ -59,5 +58,5 @@ pub trait Streamable {
 // where S: Streamable
 // { }
 
-pub mod utils;
 pub mod plugins;
+pub mod utils;

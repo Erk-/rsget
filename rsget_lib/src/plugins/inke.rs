@@ -83,28 +83,24 @@ pub struct Inke {
 impl Streamable for Inke {
     fn new(url: String) -> Result<Box<Inke>, StreamError> {
         let dc = DownloadClient::new()?;
-        let re_inke: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?inke\.cn/live\.html\?uid=([0-9]+)").unwrap();
+        let re_inke: Regex =
+            Regex::new(r"^(?:https?://)?(?:www\.)?inke\.cn/live\.html\?uid=([0-9]+)").unwrap();
         let cap = re_inke.captures(&url).unwrap();
-        let json_url = format!(
-            "http://baseapi.busi.inke.cn/live/LiveInfo?uid={}",
-            &cap[1]
-        );
+        let json_url = format!("http://baseapi.busi.inke.cn/live/LiveInfo?uid={}", &cap[1]);
         let json_req = dc.make_request(&json_url, None)?;
         let jres = dc.download_and_de::<InkeStruct>(json_req);
         match jres {
             Ok(jre) => {
                 let ik = Inke {
-                url: String::from(url.as_str()),
-                room_id: String::from(&cap[1]),
-                inke_info: jre,
-                client: dc,
+                    url: String::from(url.as_str()),
+                    room_id: String::from(&cap[1]),
+                    inke_info: jre,
+                    client: dc,
                 };
                 debug!("{:#?}", ik);
                 Ok(Box::new(ik))
-            },
-            Err(why) => {
-                Err(why)
             }
+            Err(why) => Err(why),
         }
     }
 
@@ -119,11 +115,14 @@ impl Streamable for Inke {
     fn is_online(&self) -> bool {
         self.inke_info.error_code == 0
     }
-    
+
     fn get_stream(&self) -> Result<StreamType, StreamError> {
-        Ok(StreamType::Chuncked(self.client.rclient.get(
-            &self.inke_info.data.live_addr[0].stream_addr
-        ).build()?))
+        Ok(StreamType::Chuncked(
+            self.client
+                .rclient
+                .get(&self.inke_info.data.live_addr[0].stream_addr)
+                .build()?,
+        ))
     }
 
     fn get_ext(&self) -> String {

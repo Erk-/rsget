@@ -1,8 +1,8 @@
 use crate::Streamable;
 use regex::Regex;
 
-use crate::utils::error::StreamError;
 use crate::utils::error::RsgetError;
+use crate::utils::error::StreamError;
 
 use crate::utils::downloaders::DownloadClient;
 
@@ -40,22 +40,24 @@ impl Streamable for Douyin {
         let res: Result<String, StreamError> = dc.download_to_string(site_req);
         match res {
             Ok(some) => {
-                let url_re: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?iesdouyin\.com/share/video/([a-zA-Z0-9]+)/.*")?;
+                let url_re: Regex = Regex::new(
+                    r"^(?:https?://)?(?:www\.)?iesdouyin\.com/share/video/([a-zA-Z0-9]+)/.*",
+                )?;
                 let video_re = Regex::new(r#"playAddr:\s*"(.+)""#)?;
                 let description_re = Regex::new(r#"<p class="desc">([^<]*)</p>"#)?;
                 let author_re = Regex::new(r#"<p class="name nowrap">@([^<]*)</p>"#)?;
-                let id_cap = url_re
-                    .captures(&url)
-                    .ok_or_else(|| StreamError::Rsget(RsgetError::new("Regex did not find any video id")))?;
-                let video_cap = video_re
-                    .captures(&some)
-                    .ok_or_else(|| StreamError::Rsget(RsgetError::new("Regex did not find any hostinfo")))?;
-                let description_cap = description_re
-                    .captures(&some)
-                    .ok_or_else(|| StreamError::Rsget(RsgetError::new("Regex did not find any description")))?;
-                let author_cap = author_re
-                    .captures(&some)
-                    .ok_or_else(|| StreamError::Rsget(RsgetError::new("Regex did not find any author")))?;
+                let id_cap = url_re.captures(&url).ok_or_else(|| {
+                    StreamError::Rsget(RsgetError::new("Regex did not find any video id"))
+                })?;
+                let video_cap = video_re.captures(&some).ok_or_else(|| {
+                    StreamError::Rsget(RsgetError::new("Regex did not find any hostinfo"))
+                })?;
+                let description_cap = description_re.captures(&some).ok_or_else(|| {
+                    StreamError::Rsget(RsgetError::new("Regex did not find any description"))
+                })?;
+                let author_cap = author_re.captures(&some).ok_or_else(|| {
+                    StreamError::Rsget(RsgetError::new("Regex did not find any author"))
+                })?;
 
                 let ret_val = Douyin {
                     client: dc,
@@ -67,12 +69,9 @@ impl Streamable for Douyin {
                 };
                 info!("{:#?}", &ret_val);
                 Ok(Box::new(ret_val))
-            },
-            Err(why) => {
-                Err(why)
-            },
+            }
+            Err(why) => Err(why),
         }
-
     }
 
     fn get_title(&self) -> Option<String> {
@@ -88,7 +87,9 @@ impl Streamable for Douyin {
     }
 
     fn get_stream(&self) -> Result<StreamType, StreamError> {
-        Ok(StreamType::Chuncked(self.client.rclient.get(&self.douyin_url).build()?))
+        Ok(StreamType::Chuncked(
+            self.client.rclient.get(&self.douyin_url).build()?,
+        ))
     }
 
     fn get_ext(&self) -> String {

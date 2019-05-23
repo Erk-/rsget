@@ -6,8 +6,8 @@ use stream_lib::StreamType;
 
 use crate::utils::downloaders::DownloadClient;
 
-use crate::utils::error::StreamError;
 use crate::utils::error::RsgetError;
+use crate::utils::error::StreamError;
 
 use chrono::prelude::*;
 
@@ -180,15 +180,14 @@ pub struct Huya {
     host_info: HuyaInfo,
 }
 
-
 impl Streamable for Huya {
     fn new(url: String) -> Result<Box<Huya>, StreamError> {
         let dc = DownloadClient::new()?;
-        
+
         let room_id_re = Regex::new(r"/([a-zA-Z0-9]+)$")?;
         let cap = match room_id_re.captures(&url) {
             Some(capture) => capture,
-            None => return Err(StreamError::Rsget(RsgetError::new("URL capture failed")))
+            None => return Err(StreamError::Rsget(RsgetError::new("URL capture failed"))),
         };
         let site_url = format!("http://huya.com/{}", &cap[1]);
         let site_req = dc.make_request(&site_url, None)?;
@@ -197,10 +196,9 @@ impl Streamable for Huya {
             Ok(some) => {
                 let hostinfo_re =
                     Regex::new(r"hyPlayerConfig = ([^<]*);\s*window\.TT_LIVE_TIMING")?;
-                let hi_cap = hostinfo_re
-                    .captures(&some)
-                    .ok_or_else(|| StreamError::Rsget(
-                        RsgetError::new("Regex did not find any hostinfo")))?;
+                let hi_cap = hostinfo_re.captures(&some).ok_or_else(|| {
+                    StreamError::Rsget(RsgetError::new("Regex did not find any hostinfo"))
+                })?;
                 let hi: HuyaInfo = match serde_json::from_str(&hi_cap[1]) {
                     Ok(info) => info,
                     Err(why) => return Err(StreamError::Json(why)),
@@ -213,19 +211,27 @@ impl Streamable for Huya {
                 };
                 debug!("{:#?}", &xy);
                 Ok(Box::new(xy))
-            },
-            Err(why) => {
-                Err(why)
-            },
+            }
+            Err(why) => Err(why),
         }
     }
 
     fn get_title(&self) -> Option<String> {
-        Some(self.host_info.stream.clone()?.data[0].game_live_info.introduction.clone())
+        Some(
+            self.host_info.stream.clone()?.data[0]
+                .game_live_info
+                .introduction
+                .clone(),
+        )
     }
 
     fn get_author(&self) -> Option<String> {
-        Some(self.host_info.stream.clone()?.data[0].game_live_info.nick.clone())
+        Some(
+            self.host_info.stream.clone()?.data[0]
+                .game_live_info
+                .nick
+                .clone(),
+        )
     }
 
     fn is_online(&self) -> bool {
@@ -234,26 +240,61 @@ impl Streamable for Huya {
 
     /// Hls stream
     fn get_stream(&self) -> Result<StreamType, StreamError> {
-        let stream_url =
-            format!("{}/{}.{}?{}",
-                    &self.host_info.stream.clone().unwrap().data.get(0)
-                          .ok_or(RsgetError::new("Stream offline"))?
-                         .game_stream_info_list.get(0)
-                         .ok_or(RsgetError::new("Stream offline"))?.s_hls_url,
-                    &self.host_info.stream.clone().unwrap().data.get(0)
-                         .ok_or(RsgetError::new("Stream offline"))?
-                         .game_stream_info_list.get(0)
-                         .ok_or(RsgetError::new("Stream offline"))?.s_stream_name,
-                    &self.host_info.stream.clone().unwrap().data.get(0)
-                         .ok_or(RsgetError::new("Stream offline"))?
-                         .game_stream_info_list.get(0)
-                         .ok_or(RsgetError::new("Stream offline"))?.s_hls_url_suffix,
-                    &self.host_info.stream.clone().unwrap().data.get(0)
-                         .ok_or(RsgetError::new("Stream offline"))?
-                         .game_stream_info_list.get(0)
-                         .ok_or(RsgetError::new("Stream offline"))?.s_hls_anti_code);
+        let stream_url = format!(
+            "{}/{}.{}?{}",
+            &self
+                .host_info
+                .stream
+                .clone()
+                .unwrap()
+                .data
+                .get(0)
+                .ok_or(RsgetError::new("Stream offline"))?
+                .game_stream_info_list
+                .get(0)
+                .ok_or(RsgetError::new("Stream offline"))?
+                .s_hls_url,
+            &self
+                .host_info
+                .stream
+                .clone()
+                .unwrap()
+                .data
+                .get(0)
+                .ok_or(RsgetError::new("Stream offline"))?
+                .game_stream_info_list
+                .get(0)
+                .ok_or(RsgetError::new("Stream offline"))?
+                .s_stream_name,
+            &self
+                .host_info
+                .stream
+                .clone()
+                .unwrap()
+                .data
+                .get(0)
+                .ok_or(RsgetError::new("Stream offline"))?
+                .game_stream_info_list
+                .get(0)
+                .ok_or(RsgetError::new("Stream offline"))?
+                .s_hls_url_suffix,
+            &self
+                .host_info
+                .stream
+                .clone()
+                .unwrap()
+                .data
+                .get(0)
+                .ok_or(RsgetError::new("Stream offline"))?
+                .game_stream_info_list
+                .get(0)
+                .ok_or(RsgetError::new("Stream offline"))?
+                .s_hls_anti_code
+        );
         println!("URL: {}", stream_url);
-        Ok(StreamType::HLS(self.client.rclient.get(&stream_url).build()?))
+        Ok(StreamType::HLS(
+            self.client.rclient.get(&stream_url).build()?,
+        ))
     }
 
     fn get_ext(&self) -> String {

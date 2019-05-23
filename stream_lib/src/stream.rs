@@ -55,7 +55,6 @@ enum HlsQueue {
     StreamOver,
 }
 
-
 impl Stream {
     /// Creates a new stream handler.
     pub fn new(request: StreamType) -> Self {
