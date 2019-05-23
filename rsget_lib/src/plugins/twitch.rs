@@ -39,7 +39,6 @@ impl Streamable for Twitch {
             None => return Err(StreamError::Rsget(RsgetError::new("Cannot capture usernane"))),
         };
 
-        // It  Error running: Reqwest(Error { kind: Url(RelativeUrlWithoutBase), url: None })
         let client_id = match env::var("TWITCH_TOKEN") {
             Ok(val) => val,
             Err(_) => String::from(TWITCH_CLIENT_ID),
