@@ -39,8 +39,6 @@ enum _StreamType {
     Chuncked,
     HLS,
     NamedPlaylist(String),
-    #[doc(hidden)]
-    __Nonexhaustive,
 }
 
 #[derive(Debug)]
@@ -50,6 +48,13 @@ pub struct Stream {
     #[allow(dead_code)]
     spinner: bool,
 }
+
+#[derive(Clone)]
+enum HlsQueue {
+    Url(Url),
+    StreamOver,
+}
+
 
 impl Stream {
     /// Creates a new stream handler.
@@ -84,7 +89,6 @@ impl Stream {
                 let name = name.to_owned();
                 Ok(self.named_playlist(client, writer, name)?)
             }
-            _ => unimplemented!(),
         }
     }
 
@@ -120,13 +124,7 @@ impl Stream {
     where
         W: Write,
     {
-        #[derive(Clone)]
-        enum Hls {
-            Url(Url),
-            StreamOver,
-        }
-
-        let to_work = Arc::new(Mutex::new(VecDeque::<Hls>::new())); // User in Inner
+        let to_work = Arc::new(Mutex::new(VecDeque::<HlsQueue>::new())); // User in Inner
         let other_work = to_work.clone(); // Used in Outer
         let links: Arc<RwLock<HashSet<String>>> = Arc::new(RwLock::new(HashSet::new())); // Used in Inner
         let _outer_links = links.clone(); // Used in Outer (Not currently in use)
@@ -151,7 +149,7 @@ impl Stream {
                     // for `HLS_MAX_RETRIES` times the segment duration given
                     // in the m3u8 playlist file.
                     let work_queue = &mut to_work.lock();
-                    work_queue.push_back(Hls::StreamOver);
+                    work_queue.push_back(HlsQueue::StreamOver);
                     break;
                 }
 
@@ -236,7 +234,7 @@ impl Stream {
                         if !(e.contains("preloading")) {
                             info!("[HLS] Adds {}!", url_formatted);
                             // Add the segment to the queue.
-                            work_queue.push_back(Hls::Url(url_formatted));
+                            work_queue.push_back(HlsQueue::Url(url_formatted));
                         }
                     }
                 }
@@ -267,14 +265,14 @@ impl Stream {
         loop {
             let to_download = other_work.lock().pop_front();
             match to_download {
-                Some(Hls::Url(u)) => {
+                Some(HlsQueue::Url(u)) => {
                     let req = client.get(u).headers(headers.clone()).build()?;
                     let size = download_to_file(client, req, &mut buf_writer)?;
                     #[cfg(feature = "spinner")]
                     spinner.inc(size);
                     total_size += size;
                 }
-                Some(Hls::StreamOver) => break,
+                Some(HlsQueue::StreamOver) => break,
                 None => {
                     trace!("[HLS] None to download!");
                     thread::sleep(time::Duration::from_secs(5));
@@ -294,13 +292,7 @@ impl Stream {
     where
         W: Write,
     {
-        #[derive(Clone)]
-        enum Hls {
-            Url(Url),
-            StreamOver,
-        }
-
-        let to_work = Arc::new(Mutex::new(VecDeque::<Hls>::new())); // User in Inner
+        let to_work = Arc::new(Mutex::new(VecDeque::<HlsQueue>::new())); // User in Inner
         let other_work = to_work.clone(); // Used in Outer
         let links: Arc<RwLock<HashSet<String>>> = Arc::new(RwLock::new(HashSet::new())); // Used in Inner
         let _outer_links = links.clone(); // Used in Outer (Not currently in use)
@@ -324,7 +316,7 @@ impl Stream {
                     // for `HLS_MAX_RETRIES` times the segment duration given
                     // in the m3u8 playlist file.
                     let work_queue = &mut to_work.lock();
-                    work_queue.push_back(Hls::StreamOver);
+                    work_queue.push_back(HlsQueue::StreamOver);
                     break;
                 }
 
@@ -463,7 +455,7 @@ impl Stream {
                         if !(e.contains("preloading")) {
                             info!("[HLS] Adds {}!", url_formatted);
                             // Add the segment to the queue.
-                            work_queue.push_back(Hls::Url(url_formatted));
+                            work_queue.push_back(HlsQueue::Url(url_formatted));
                         }
                     }
                     warn!("[HLS] Sleeps for {:?}", target_duration);
@@ -494,7 +486,7 @@ impl Stream {
         loop {
             let to_download = other_work.lock().pop_front();
             match to_download {
-                Some(Hls::Url(u)) => {
+                Some(HlsQueue::Url(u)) => {
                     info!("[MASTER] Downloads: {}", u);
                     let req = client.get(u).headers(headers.clone()).build()?;
                     let size = download_to_file(client, req, &mut buf_writer)?;
@@ -502,7 +494,7 @@ impl Stream {
                     spinner.inc(size);
                     total_size += size;
                 }
-                Some(Hls::StreamOver) => break,
+                Some(HlsQueue::StreamOver) => break,
                 None => {
                     trace!("[HLS] None to download!");
                     thread::sleep(Duration::from_secs(5));
