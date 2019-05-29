@@ -9,7 +9,7 @@ use regex::Regex;
 
 use reqwest;
 
-pub fn get_site(input: &str) -> Result<Box<dyn Streamable>, StreamError> {
+pub fn get_site(input: &str) -> Result<Box<dyn Streamable + Send>, StreamError> {
     match _get_site(input) {
         Ok(s) => Ok(s),
         Err(StreamError::Rsget(_)) => {
@@ -21,7 +21,7 @@ pub fn get_site(input: &str) -> Result<Box<dyn Streamable>, StreamError> {
     }
 }
 
-fn _get_site(input: &str) -> Result<Box<dyn Streamable>, StreamError> {
+fn _get_site(input: &str) -> Result<Box<dyn Streamable + Send>, StreamError> {
     let re_douyu: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?douyu\.com/[a-zA-Z0-9]+/?")?;
     let re_afreeca: Regex = Regex::new(
         r"^(?:https?://)?(?:www\.)?(?:play\.)?afreecatv.com/[a-zA-Z0-9]+/?(?:/[0-9]+)?",

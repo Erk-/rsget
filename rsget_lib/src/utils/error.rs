@@ -23,27 +23,33 @@ use regex::Error as RegexError;
 use stream_lib::Error as StreamLibError;
 
 #[derive(Debug)]
-pub struct RsgetError {
-    details: String,
+pub enum RsgetError {
+    Offline,
+    Other(String),
 }
 
 impl RsgetError {
     pub fn new(msg: &str) -> RsgetError {
-        RsgetError {
-            details: String::from(msg),
-        }
+        RsgetError::Other(String::from(msg))
     }
 }
 
 impl Display for RsgetError {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        write!(f, "{}", self.details)
+        let printable = match self {
+            RsgetError::Offline => "Stream offline",
+            RsgetError::Other(s) => &s,
+        };
+        write!(f, "{}", printable)
     }
 }
 
 impl StdError for RsgetError {
     fn description(&self) -> &str {
-        &self.details
+        match self {
+            RsgetError::Offline => "Stream offline",
+            RsgetError::Other(s) => &s,
+        }
     }
 }
 

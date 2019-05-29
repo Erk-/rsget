@@ -21,7 +21,7 @@ pub trait Streamable {
     /// Creates a new streamable
     fn new(url: String) -> Result<Box<Self>, StreamError>
     where
-        Self: Sized;
+        Self: Sized + Sync;
     /// Returns the title of the stream if possible
     fn get_title(&self) -> Option<String>;
     /// Returns the author of the stream if possible
@@ -47,12 +47,6 @@ pub trait Streamable {
         }
     }
 }
-
-// impl From<ReqwestClient> for &ReqwestClient {
-//     fn from(rc: ReqwestClient) -> Self {
-//         &rc
-//     }
-// }
 
 // impl<S> Streamable for Box<S>
 // where S: Streamable
