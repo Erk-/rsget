@@ -68,9 +68,7 @@ fn try_main() -> Result<(), StreamError> {
 
     if opt.network_play {
         use std::thread;
-        let child = thread::spawn(move || {
-            stream_network(stream)
-        });
+        let child = thread::spawn(move || stream_network(stream));
         if opt.play {
             Command::new("mpv")
                 .arg("--no-ytdl")
@@ -96,7 +94,8 @@ fn try_main() -> Result<(), StreamError> {
 }
 
 fn stream_network<S>(stream: Box<S>) -> Result<u64, StreamError>
-where S: Streamable + Send + ?Sized
+where
+    S: Streamable + Send + ?Sized,
 {
     use std::net::TcpListener;
     let listener = TcpListener::bind("127.0.0.1:61337")?;
