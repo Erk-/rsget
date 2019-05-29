@@ -160,9 +160,7 @@ impl Streamable for Afreeca {
                 Ok(s) => s,
                 Err(e) => {
                     debug!("[Afreeca] Json failed with:\n{}", e);
-                    return Err(StreamError::Rsget(RsgetError::new(
-                        "[Afreeca] Stream not online",
-                    )));
+                    return Err(StreamError::Rsget(RsgetError::Offline));
                 }
             };
             json

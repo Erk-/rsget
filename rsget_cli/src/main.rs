@@ -93,6 +93,7 @@ fn try_main() -> Result<(), StreamError> {
     }
 }
 
+#[allow(clippy::boxed_local)]
 fn stream_network<S>(stream: Box<S>) -> Result<u64, StreamError>
 where
     S: Streamable + Send + ?Sized,

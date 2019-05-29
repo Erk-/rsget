@@ -249,10 +249,10 @@ impl Streamable for Huya {
                 .unwrap()
                 .data
                 .get(0)
-                .ok_or_else(|| RsgetError::new("Stream offline"))?
+                .ok_or(RsgetError::Offline)?
                 .game_stream_info_list
                 .get(0)
-                .ok_or_else(|| RsgetError::new("Stream offline"))?
+                .ok_or(RsgetError::Offline)?
                 .s_hls_url,
             &self
                 .host_info
@@ -261,10 +261,10 @@ impl Streamable for Huya {
                 .unwrap()
                 .data
                 .get(0)
-                .ok_or_else(|| RsgetError::new("Stream offline"))?
+                .ok_or(RsgetError::Offline)?
                 .game_stream_info_list
                 .get(0)
-                .ok_or_else(|| RsgetError::new("Stream offline"))?
+                .ok_or(RsgetError::Offline)?
                 .s_stream_name,
             &self
                 .host_info
@@ -273,10 +273,10 @@ impl Streamable for Huya {
                 .unwrap()
                 .data
                 .get(0)
-                .ok_or_else(|| RsgetError::new("Stream offline"))?
+                .ok_or(RsgetError::Offline)?
                 .game_stream_info_list
                 .get(0)
-                .ok_or_else(|| RsgetError::new("Stream offline"))?
+                .ok_or(RsgetError::Offline)?
                 .s_hls_url_suffix,
             &self
                 .host_info
@@ -285,10 +285,10 @@ impl Streamable for Huya {
                 .unwrap()
                 .data
                 .get(0)
-                .ok_or_else(|| RsgetError::new("Stream offline"))?
+                .ok_or(RsgetError::Offline)?
                 .game_stream_info_list
                 .get(0)
-                .ok_or_else(|| RsgetError::new("Stream offline"))?
+                .ok_or(RsgetError::Offline)?
                 .s_hls_anti_code
         );
         println!("URL: {}", stream_url);

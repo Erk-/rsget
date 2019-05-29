@@ -40,7 +40,7 @@ pub trait Streamable {
     /// Downloads the stream to a file
     fn download(&self, writer: Box<dyn Write>) -> Result<u64, StreamError> {
         if !self.is_online() {
-            Err(StreamError::Rsget(RsgetError::new("Stream offline")))
+            Err(StreamError::Rsget(RsgetError::Offline))
         } else {
             let stream = Stream::new(self.get_stream()?);
             Ok(stream.write_file(self.get_reqwest_client(), writer)?)
