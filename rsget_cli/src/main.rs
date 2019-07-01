@@ -15,6 +15,8 @@ use structopt::StructOpt;
 
 use rsget_lib::utils::error::StreamError;
 use rsget_lib::utils::stream_type_to_url;
+use rsget_lib::utils::error::RsgetError;
+
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "rsget")]
@@ -46,11 +48,11 @@ fn try_main() -> Result<(), StreamError> {
     //pretty_env_logger::init();
     let opt = Opt::from_args();
     let url = opt.url;
-    let stream: Box<Streamable + Send> = rsget_lib::utils::sites::get_site(&url)?;
+    let stream: Box<dyn Streamable + Send> = rsget_lib::utils::sites::get_site(&url)?;
 
-    // if !stream.is_online() {
-    //     return Err(StreamError::Rsget(RsgetError::Offline));
-    // }
+    if !stream.is_online() {
+         return Err(StreamError::Rsget(RsgetError::Offline));
+    }
 
     if opt.info {
         println!("{:#?}", stream.get_stream()?);
