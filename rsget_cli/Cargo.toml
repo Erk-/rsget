@@ -1,6 +1,6 @@
 [package]
 name = "rsget"
-version = "0.1.4"
+version = "0.1.5"
 authors = ["Valdemar Erk <valdemar@erk.io>"]
 description = "Tool to get information about and download livestreams"
 license = "ISC"
@@ -10,7 +10,7 @@ homepage = "https://github.com/Erk-/rsget"
 repository = "https://github.com/Erk-/rsget/tree/master/rsget_cli"
 
 [dependencies]
-rsget_lib = { version = "0.2.0", path = "../rsget_lib" }
+rsget_lib = { version = "0.3", path = "../rsget_lib" }
 log = "^0.4"
 flexi_logger = "^0.9"
 structopt = "^0.2.15"
