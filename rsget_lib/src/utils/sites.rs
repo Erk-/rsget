@@ -1,6 +1,6 @@
 use crate::plugins::{
     afreeca::Afreeca, dlive::DLive, douyin::Douyin, douyu::Douyu, huya::Huya, inke::Inke,
-    tiktok::TikTok, twitch::Twitch,
+    mixer::Mixer, tiktok::TikTok, twitch::Twitch,
 };
 use crate::utils::error::RsgetError;
 use crate::utils::error::StreamError;
@@ -32,7 +32,8 @@ fn _get_site(input: &str) -> Result<Box<dyn Streamable + Send>, StreamError> {
         Regex::new(r"^(?:https?://)?(?:www\.)?(?:m\.)?tiktok\.com/v/(?:[a-zA-Z0-9]+)(?:\.html)?")?;
     let re_huya: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?huya\.com/[a-zA-Z0-9]+")?;
     let re_dlive: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?dlive\.tv/[a-zA-Z0-9]+")?;
-    let re_twitch: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?twitch\.tv/([a-zA-Z0-9]+)")?;
+    let re_mixer: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?mixer\.com/([a-zA-Z0-9_]+)")?;
+    let re_twitch: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?twitch\.tv/([a-zA-Z0-9_]+)")?;
     match input {
         url if re_douyu.is_match(url) => Ok(Douyu::new(String::from(url))?),
         url if re_afreeca.is_match(url) => Ok(Afreeca::new(String::from(url))?),
@@ -42,6 +43,7 @@ fn _get_site(input: &str) -> Result<Box<dyn Streamable + Send>, StreamError> {
         url if re_huya.is_match(url) => Ok(Huya::new(String::from(url))?),
         url if re_dlive.is_match(url) => Ok(DLive::new(String::from(url))?),
         url if re_twitch.is_match(url) => Ok(Twitch::new(String::from(url))?),
+        url if re_mixer.is_match(url) => Ok(Mixer::new(String::from(url))?),
         _ => Err(StreamError::Rsget(RsgetError::new("Site not supported."))),
     }
 }
