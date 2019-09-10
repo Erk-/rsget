@@ -7,3 +7,4 @@ pub mod inke;
 pub mod mixer;
 pub mod tiktok;
 pub mod twitch;
+pub mod vlive;
