@@ -1,7 +1,6 @@
-use crate::Streamable;
+use crate::{Streamable, Status};
 use regex::Regex;
 
-use crate::utils::downloaders::DownloadClient;
 use crate::utils::error::RsgetError;
 use crate::utils::error::StreamError;
 
@@ -11,6 +10,8 @@ use reqwest::header::REFERER;
 use reqwest::Client as RClient;
 
 use stream_lib::StreamType;
+
+use async_trait::async_trait;
 
 use std::str;
 
@@ -100,18 +101,17 @@ pub struct Afreeca {
     afreeca_info: AfreecaChannelInfo<AfreecaChannelInfoData>,
     hls_key: String,
     stream_info: AfreecaStream,
-    client: DownloadClient,
+    client: reqwest::Client,
 }
 
 // Helper functions
-fn get_hls_key(
-    dc: DownloadClient,
+async fn get_hls_key(
+    client: reqwest::Client,
     url: String,
     room_id: String,
     bno: String,
 ) -> Result<String, StreamError> {
     // http://play.afreecatv.com/rrvv17/207524505
-    let rc: RClient = dc.rclient;
     //CHANNEL_API_URL = "http://live.afreecatv.com:8057/afreeca/player_live_api.php"
     let data = AfreecaGetHlsKey {
         bid: room_id,
@@ -120,12 +120,12 @@ fn get_hls_key(
         quality: "original".to_string(),
         _type: "pwd".to_string(),
     };
-    let mut res = rc
+    let mut res = client
         .post("http://live.afreecatv.com:8057/afreeca/player_live_api.php")
         .header(REFERER, url)
         .form(&data)
-        .send()?;
-    let json: AfreecaChannelInfo<AfreecaHlsKey> = res.json()?;
+        .send().await?;
+    let json: AfreecaChannelInfo<AfreecaHlsKey> = res.json().await?;
     if json.CHANNEL.RESULT != 1 {
         return Err(StreamError::Rsget(RsgetError::new(
             "[Afreeca] HLS key sent back error",
@@ -134,11 +134,12 @@ fn get_hls_key(
     Ok(json.CHANNEL.AID)
 }
 
+#[async_trait]
 impl Streamable for Afreeca {
-    fn new(url: String) -> Result<Box<Afreeca>, StreamError> {
+    async fn new(url: String) -> Result<Box<Afreeca>, StreamError> {
         type ChannelInfo = AfreecaChannelInfo<AfreecaChannelInfoData>;
-        let dc = DownloadClient::new()?;
-        let room_id_re = Regex::new(r"(?:http://[^/]+)?/([a-zA-Z0-9]+)(?:/[0-9]+)?").unwrap();
+        let client = reqwest::Client::new();
+        let room_id_re = Regex::new(r"(?:http://[^/]+)?/([a-zA-Z0-9]+)(?:/[0-9]+)?")?;
         let cap = room_id_re.captures(&url).unwrap();
         let room_id = String::from(&cap[1]);
         debug!("room_id: {}", room_id);
@@ -148,13 +149,12 @@ impl Streamable for Afreeca {
                 mode: String::from("landing"),
                 player_type: String::from("html5"),
             };
-            let mut res = dc
-                .rclient
+            let mut res = client
                 .post("http://live.afreecatv.com:8057/afreeca/player_live_api.php")
                 .form(&data)
-                .send()?;
+                .send().await?;
             debug!("Gettin channel_info");
-            let json_str = res.text()?;
+            let json_str = res.text().await?;
             debug!("{}", json_str);
             let json: ChannelInfo = match serde_json::from_str(&json_str) {
                 Ok(s) => s,
@@ -167,11 +167,11 @@ impl Streamable for Afreeca {
         };
         debug!("Getting room_id");
         let hls_key = get_hls_key(
-            dc.clone(),
+            client.clone(),
             url.clone(),
             String::from(&cap[1]),
             ci.CHANNEL.BNO.clone(),
-        )?;
+        ).await?;
         let json_url = format!(
             "{}/broad_stream_assign.html?return_type={}&broad_key={}",
             ci.CHANNEL.RMD.clone(),
@@ -179,59 +179,61 @@ impl Streamable for Afreeca {
             format!("{}-flash-original-hls", ci.CHANNEL.BNO.clone())
         );
         debug!("Getting stream_info!");
-        let stream_info: AfreecaStream = dc.rclient.get(&json_url).send()?.json()?;
+        let stream_info: AfreecaStream = client.get(&json_url).send().await?.json().await?;
         let retval = Afreeca {
             url: String::from(url.as_str()),
             room_id: String::from(&cap[1]),
             afreeca_info: ci,
             hls_key,
             stream_info,
-            client: dc,
+            client: client,
         };
         debug!("{:#?}", retval);
         Ok(Box::new(retval))
     }
 
-    fn get_title(&self) -> Option<String> {
-        Some(self.afreeca_info.CHANNEL.TITLE.clone())
+    async fn get_title(&self) -> Result<String, StreamError> {
+        Ok(self.afreeca_info.CHANNEL.TITLE.clone())
     }
 
-    fn get_author(&self) -> Option<String> {
-        Some(self.afreeca_info.CHANNEL.BJNICK.clone())
+    async fn get_author(&self) -> Result<String, StreamError> {
+        Ok(self.afreeca_info.CHANNEL.BJNICK.clone())
     }
 
-    fn is_online(&self) -> bool {
+    async fn is_online(&self) -> Result<Status, StreamError> {
         match self.afreeca_info.CHANNEL.RESULT {
-            0 => false,
-            1 => true,
+            0 => Ok(Status::Offline),
+            1 => Ok(Status::Online),
             _ => {
                 debug!("Result had value: {}", self.afreeca_info.CHANNEL.RESULT);
-                true
+                Ok(Status::Unknown)
             }
         }
     }
 
-    fn get_stream(&self) -> Result<StreamType, StreamError> {
+    async fn get_stream(&self) -> Result<StreamType, StreamError> {
         let cdn = self.afreeca_info.CHANNEL.CDN.clone();
         trace!("CDN: {}", &cdn);
         debug!("view_url: {}", self.stream_info.view_url);
         let url = format!("{}?aid={}", self.stream_info.view_url, self.hls_key);
+        unimplemented!();
+        /*
         Ok(StreamType::HLS(
             self.client
-                .rclient
                 .get(&url)
                 .header(REFERER, self.url.clone())
                 .build()?,
         ))
+        */
     }
 
-    fn get_ext(&self) -> String {
-        String::from("mp4")
+    async fn get_ext(&self) -> Result<String, StreamError> {
+        Ok(String::from("mp4"))
     }
 
-    fn get_default_name(&self) -> String {
+    async fn get_default_name(&self) -> Result<String, StreamError> {
         let local: DateTime<Local> = Local::now();
-        format!(
+        Ok(format!(
             "{}-{:04}-{:02}-{:02}-{:02}-{:02}-{:02}-{}-{}.{}",
             self.room_id,
             local.year(),
@@ -240,12 +242,10 @@ impl Streamable for Afreeca {
             local.hour(),
             local.minute(),
             local.second(),
-            self.get_author().unwrap(),
-            self.get_title().unwrap(),
-            self.get_ext()
-        )
+            self.get_author().await.unwrap(),
+            self.get_title().await.unwrap(),
+            self.get_ext().await.unwrap(),
+        ))
     }
-    fn get_reqwest_client(&self) -> &reqwest::Client {
-        &self.client.rclient
-    }
+
 }

@@ -1,17 +1,13 @@
-//extern crate pretty_env_logger;
-extern crate flexi_logger;
-extern crate log;
-extern crate rsget_lib;
-extern crate structopt;
-
 use std::boxed::Box;
 use std::fs::File;
 use std::path::Path;
 use std::process::Command;
 
 use flexi_logger::{opt_format, Logger};
-use rsget_lib::Streamable;
+use rsget_lib::{Streamable, Status};
 use structopt::StructOpt;
+use tokio::prelude::*;
+use log::{warn, info};
 
 use rsget_lib::utils::error::StreamError;
 use rsget_lib::utils::stream_type_to_url;
@@ -33,36 +29,35 @@ struct Opt {
     network_play: bool,
     url: String,
 }
-
-fn main() {
+#[tokio::main]
+async fn main() -> Result<(), StreamError> {
     Logger::with_env()
         .format(opt_format)
         .start()
         .unwrap_or_else(|e| panic!("Logger initialization failed with {}", e));
-    let _ = try_main().map_err(|why| {
-        println!("Error running: {:?}", why);
-    });
-}
 
-fn try_main() -> Result<(), StreamError> {
-    //pretty_env_logger::init();
     let opt = Opt::from_args();
     let url = opt.url;
-    let stream: Box<dyn Streamable + Send> = rsget_lib::utils::sites::get_site(&url)?;
+    let stream: Box<dyn Streamable + Send> = rsget_lib::utils::sites::get_site(&url).await?;
 
-    if !stream.is_online() {
-         return Err(StreamError::Rsget(RsgetError::Offline));
+    match stream.is_online().await? {
+        Status::Offline => return Err(StreamError::Rsget(RsgetError::Offline)),
+        Status::Online => (),
+        Status::Unknown => {
+            warn!("Not sure if stream is online, but will try");
+            ()
+        },
     }
 
     if opt.info {
-        println!("{:#?}", stream.get_stream()?);
+        println!("{:#?}", stream.get_stream().await?);
         return Ok(());
     }
 
     if opt.play && !opt.network_play {
         let status = Command::new("mpv")
             .arg("--no-ytdl")
-            .arg(stream_type_to_url(stream.get_stream()?))
+            .arg(stream_type_to_url(stream.get_stream().await?))
             .status()
             .expect("Mpv failed to start");
         std::process::exit(status.code().unwrap())
@@ -85,18 +80,18 @@ fn try_main() -> Result<(), StreamError> {
         Ok(())
     } else {
         let path = opt.path;
-        let file_name = opt.filename.unwrap_or_else(|| stream.get_default_name());
+        let file_name = opt.filename.unwrap_or(stream.get_default_name().await?);
         let full_path = format!("{}{}", path, strip_characters(&file_name, "<>:\"/\\|?*\0"));
         let path = Path::new(&full_path);
         let file = Box::new(File::create(path)?);
-        let size = stream.download(file)?;
+        let size = stream.download(file).await?;
         println!("Downloaded: {} MB", size as f64 / 1000.0 / 1000.0);
         Ok(())
     }
 }
 
 #[allow(clippy::boxed_local)]
-fn stream_network<S>(stream: Box<S>) -> Result<u64, StreamError>
+async fn stream_network<S>(stream: Box<S>) -> Result<u64, StreamError>
 where
     S: Streamable + Send + ?Sized,
 {
@@ -107,7 +102,7 @@ where
         Err(e) => return Err(e.into()),
     };
     println!("Starts download!");
-    let size = stream.download(socket)?;
+    let size = stream.download(socket).await?;
     Ok(size)
 }
 

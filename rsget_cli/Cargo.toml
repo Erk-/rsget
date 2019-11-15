@@ -12,8 +12,9 @@ repository = "https://github.com/Erk-/rsget/tree/master/rsget_cli"
 [dependencies]
 rsget_lib = { version = "0.3", path = "../rsget_lib" }
 log = "^0.4"
-flexi_logger = "^0.9"
-structopt = "^0.2.15"
+flexi_logger = "^0.14"
+structopt = "0.3"
+tokio = "0.2.0-alpha.6"
 
 [[bin]]
 name = "rsget"
