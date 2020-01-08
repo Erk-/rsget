@@ -6,9 +6,6 @@ use std::{
     time::{self, Duration},
 };
 
-#[cfg(feature = "spinner")]
-use indicatif::{ProgressBar, ProgressStyle};
-
 use reqwest::{Client as ReqwestClient, Request, Url};
 
 use hls_m3u8::{MasterPlaylist, MediaPlaylistOptions};
@@ -34,26 +31,12 @@ pub enum StreamType {
     NamedPlaylist(Request, String),
 }
 
-#[derive(Debug, Clone)]
-enum _StreamType {
-    Chuncked,
-    HLS,
-    NamedPlaylist(String),
-}
-
 #[derive(Debug)]
 pub struct Stream {
-    request: Request,
-    stream_type: _StreamType,
-    #[allow(dead_code)]
-    spinner: bool,
+    stream_type: StreamType,
 }
 
-#[derive(Clone)]
-enum HlsQueue {
-    Url(Url),
-    StreamOver,
-}
+
 
 impl Stream {
     /// Creates a new stream handler.

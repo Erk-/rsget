@@ -1,7 +1,7 @@
 [workspace]
 members = [
-    "rsget_lib",
-    "rsget_cli",
+    #"rsget_lib",
+    #"rsget_cli",
     "stream_lib",
 ]
 
