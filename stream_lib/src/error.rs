@@ -45,19 +45,8 @@ impl From<TokioIoError> for Error {
 
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        f.write_str(self.description())
+        f.write_str(&self.to_string())
     }
 }
 
-impl StdError for Error {
-    fn description(&self) -> &str {
-        use self::Error::*;
-
-        match *self {
-            Hls(ref inner) => inner.description(),
-            Reqwest(ref inner) => inner.description(),
-            Url(ref inner) => inner.description(),
-            TIO(ref inner) => inner.description(),
-        }
-    }
-}
+impl StdError for Error { }

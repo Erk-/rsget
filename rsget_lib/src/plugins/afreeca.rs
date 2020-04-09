@@ -54,7 +54,7 @@ struct AfreecaChannelInfoData {
     BJGRADE: i64,
     ISFAV: String,
     CATE: String,
-    ADCATE: String,
+    //ADCATE: String,
     GRADE: String,
     BTYPE: String,
     CHATNO: String,
@@ -201,6 +201,8 @@ impl Streamable for Afreeca {
     }
 
     async fn is_online(&self) -> Result<Status, StreamError> {
+        Ok(Status::Online)
+        /*
         match self.afreeca_info.CHANNEL.RESULT {
             0 => Ok(Status::Offline),
             1 => Ok(Status::Online),
@@ -209,6 +211,7 @@ impl Streamable for Afreeca {
                 Ok(Status::Unknown)
             }
         }
+        */
     }
 
     async fn get_stream(&self) -> Result<StreamType, StreamError> {
@@ -216,15 +219,13 @@ impl Streamable for Afreeca {
         trace!("CDN: {}", &cdn);
         debug!("view_url: {}", self.stream_info.view_url);
         let url = format!("{}?aid={}", self.stream_info.view_url, self.hls_key);
-        unimplemented!();
-        /*
+
         Ok(StreamType::HLS(
             self.client
                 .get(&url)
                 .header(REFERER, self.url.clone())
                 .build()?,
         ))
-        */
     }
 
     async fn get_ext(&self) -> Result<String, StreamError> {

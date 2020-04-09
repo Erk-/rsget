@@ -6,6 +6,7 @@ pub const HLS_MAX_RETRIES: usize = 12;
 
 use reqwest::{Client as ReqwestClient, Request, Url};
 
+use hls_m3u8::MasterPlaylist;
 use hls_m3u8::MediaPlaylistOptions;
 
 use tokio::io::AsyncWriteExt;
@@ -19,23 +20,23 @@ use std::time::Duration;
 
 use crate::error::Error;
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 enum HlsQueue {
     Url(Url),
     StreamOver,
 }
 
-pub struct HlsDownloader {
+pub struct NamedHlsDownloader {
     http: ReqwestClient,
     rx: UnboundedReceiver<HlsQueue>,
-    watch: HlsWatch,
+    watch: NamedHlsWatch,
     headers: reqwest::header::HeaderMap,
 }
 
-impl HlsDownloader {
-    pub fn new(request: Request, http: ReqwestClient) -> Self {
+impl NamedHlsDownloader {
+    pub fn new(request: Request, http: ReqwestClient, name: String) -> Self {
         let headers = request.headers().clone();
-        let (watch, rx) = HlsWatch::new(request, http.clone());
+        let (watch, rx) = NamedHlsWatch::new(request, http.clone(), name);
         Self {
             http,
             rx,
@@ -48,42 +49,38 @@ impl HlsDownloader {
     where
         AW: AsyncWrite + Unpin,
     {
-        info!("STARTING DOWNLOAD!");
         let mut total_size = 0;
         let mut rx = self.rx;
         let watch = self.watch;
         let mut buf_writer = BufWriter::with_capacity(WRITE_SIZE, writer);
         // TODO: Maybe clean this up after closing the function.
-        tokio::task::spawn(watch.run());
-        while let Some(hls) = dbg!(rx.recv().await) {
+        tokio::task::spawn_blocking(|| watch.run());
+        while let Some(hls) = rx.recv().await {
             match hls {
                 HlsQueue::Url(u) => {
                     let req = self.http.get(u).headers(self.headers.clone()).build()?;
                     let size = download_to_file(&self.http, req, &mut buf_writer).await?;
                     total_size += size;
                 }
-                HlsQueue::StreamOver => {
-                    warn!("Stream ended");
-                    break
-                },
+                HlsQueue::StreamOver => break,
             }
         }
-
         buf_writer.flush().await?;
         Ok(total_size)
     }
 }
 
-struct HlsWatch {
+struct NamedHlsWatch {
     tx: UnboundedSender<HlsQueue>,
     request: Request,
     http: ReqwestClient,
     links: HashSet<String>,
     master_url: Url,
+    name: String
 }
 
-impl HlsWatch {
-    fn new(request: Request, http: ReqwestClient) -> (Self, UnboundedReceiver<HlsQueue>) {
+impl NamedHlsWatch {
+    fn new(request: Request, http: ReqwestClient, name: String) -> (Self, UnboundedReceiver<HlsQueue>) {
         let (tx, rx) = unbounded_channel();
         let master_url = request
             .url()
@@ -91,23 +88,22 @@ impl HlsWatch {
             .join(".")
             .expect("Could not join url with '.'.");
         (
-            HlsWatch {
+            Self {
                 tx,
                 request,
                 http,
                 links: HashSet::new(),
                 master_url,
+                name,
             },
             rx,
         )
     }
 
     async fn run(mut self) -> Result<(), Error> {
-        info!("STARTING WATCH!");
         let mut counter = 0;
 
         loop {
-            dbg!(&counter);
             if counter > HLS_MAX_RETRIES {
                 // There have either been errors or no new segments
                 // for `HLS_MAX_RETRIES` times the segment duration given
@@ -140,7 +136,57 @@ impl HlsWatch {
                 }
             };
 
-            let res = match self.http.execute(req).await {
+            let master_res = match self.http.execute(req).await {
+                Ok(r) => r,
+                Err(e) => {
+                    warn!("[HLS] Playlist download failed!\n{}", e);
+                    counter += 1;
+                    continue;
+                }
+            };
+
+            let master_string = match master_res.text().await {
+                Ok(t) => t,
+                Err(e) => {
+                    warn!("[HLS] Playlist text failed!\n{}", e);
+                    counter += 1;
+                    continue;
+                }
+            };
+
+            let master_playlist = master_string.parse::<MasterPlaylist>().unwrap();
+
+            let segment_pos = master_playlist
+                .media_tags()
+                .iter()
+                .position(|e| e.name().as_ref() == self.name)
+                .unwrap_or(0);
+
+            #[allow(clippy::redundant_closure)]
+            let master_iter: Vec<String> = master_playlist
+                .stream_inf_tags()
+                .iter()
+                .map(|e| e.uri())
+                .map(|e| String::from(e.trim()))
+                .collect();
+
+            let segment = master_iter[segment_pos].clone();
+
+            let mp_hls = match self.http
+                .get(&segment)
+                .headers(self.request.headers().clone())
+                .build()
+            {
+                Ok(p) => p,
+                Err(e) => {
+                    warn!("[HLS] URI!\n{}", e);
+                    trace!("[HLS]\n{}", segment);
+                    counter += 1;
+                    continue;
+                }
+            };
+
+            let res = match self.http.execute(mp_hls).await {
                 Ok(r) => r,
                 Err(e) => {
                     warn!("[HLS] Playlist download failed!\n{}", e);

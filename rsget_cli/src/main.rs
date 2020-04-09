@@ -1,5 +1,5 @@
 use std::boxed::Box;
-use std::fs::File;
+use tokio::fs::File;
 use std::path::Path;
 use std::process::Command;
 
@@ -63,9 +63,9 @@ async fn main() -> Result<(), StreamError> {
         std::process::exit(status.code().unwrap())
     }
 
+    /*
     if opt.network_play {
-        use std::thread;
-        let child = thread::spawn(move || stream_network(stream));
+        let child = tokio::spawn(stream_network(stream));
         if opt.play {
             Command::new("mpv")
                 .arg("--no-ytdl")
@@ -76,35 +76,44 @@ async fn main() -> Result<(), StreamError> {
         } else {
             println!("Connect player to <tcp://127.0.0.1:61337>");
         }
-        let _ = child.join();
+        let _ = child.await;
         Ok(())
     } else {
-        let path = opt.path;
-        let file_name = opt.filename.unwrap_or(stream.get_default_name().await?);
-        let full_path = format!("{}{}", path, strip_characters(&file_name, "<>:\"/\\|?*\0"));
-        let path = Path::new(&full_path);
-        let file = Box::new(File::create(path)?);
-        let size = stream.download(file).await?;
-        println!("Downloaded: {} MB", size as f64 / 1000.0 / 1000.0);
-        Ok(())
-    }
+    */
+    let path = opt.path;
+    let file_name = opt.filename.unwrap_or(stream.get_default_name().await?);
+    let full_path = format!("{}{}", path, strip_characters(&file_name, "<>:\"/\\|?*\0"));
+    let path = Path::new(&full_path);
+    let file = Box::new(File::create(path).await?);
+    let st = stream.get_stream().await?;
+    let dl = stream_lib::Stream::new(st);
+    let http = reqwest::Client::new();
+    let size = dl.write_file(&http, file).await?;
+    println!("Downloaded: {} MB", size as f64 / 1000.0 / 1000.0);
+    Ok(())
+    //}
 }
 
+/*
 #[allow(clippy::boxed_local)]
 async fn stream_network<S>(stream: Box<S>) -> Result<u64, StreamError>
 where
     S: Streamable + Send + ?Sized,
 {
-    use std::net::TcpListener;
-    let listener = TcpListener::bind("127.0.0.1:61337")?;
-    let socket = match listener.accept() {
+    use tokio::net::TcpListener;
+    let mut listener = TcpListener::bind("127.0.0.1:61337").await?;
+    let socket = match listener.accept().await {
         Ok((socket, _addr)) => Box::new(socket),
         Err(e) => return Err(e.into()),
     };
     println!("Starts download!");
-    let size = stream.download(socket).await?;
+    let st = stream.get_stream().await?;
+    let dl = stream_lib::Stream::new(st);
+    let http = reqwest::Client::new();
+    let size = dl.write_file(&http, socket).await?;
     Ok(size)
 }
+*/
 
 fn strip_characters(original: &str, to_strip: &str) -> String {
     original
