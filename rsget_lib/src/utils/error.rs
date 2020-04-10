@@ -22,6 +22,8 @@ use regex::Error as RegexError;
 
 use stream_lib::Error as StreamLibError;
 
+pub type StreamResult<T> = Result<T, StreamError>;
+
 #[derive(Debug)]
 pub enum RsgetError {
     Offline,

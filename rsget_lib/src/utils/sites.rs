@@ -7,10 +7,11 @@ use crate::plugins::{
 use crate::plugins::{afreeca::Afreeca, dlive::DLive};
 use crate::utils::error::RsgetError;
 use crate::utils::error::StreamError;
+use crate::utils::error::StreamResult;
 use crate::Streamable;
 use regex::Regex;
 
-pub async fn get_site(input: &str) -> Result<Box<dyn Streamable + Send>, StreamError> {
+pub async fn get_site(input: &str) -> StreamResult<Box<dyn Streamable + Send>> {
     match _get_site(input).await {
         Ok(s) => Ok(s),
         Err(StreamError::Rsget(_)) => {
@@ -22,7 +23,7 @@ pub async fn get_site(input: &str) -> Result<Box<dyn Streamable + Send>, StreamE
     }
 }
 
-async fn _get_site(input: &str) -> Result<Box<dyn Streamable + Send>, StreamError> {
+async fn _get_site(input: &str) -> StreamResult<Box<dyn Streamable + Send>> {
     //let re_douyu: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?douyu\.com/[a-zA-Z0-9]+/?")?;
     let re_afreeca: Regex = Regex::new(
         r"^(?:https?://)?(?:www\.)?(?:play\.)?afreecatv.com/[a-zA-Z0-9]+/?(?:/[0-9]+)?",
