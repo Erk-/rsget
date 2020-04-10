@@ -139,7 +139,9 @@ impl Streamable for Afreeca {
         type ChannelInfo = AfreecaChannelInfo<AfreecaChannelInfoData>;
         let client = reqwest::Client::new();
         let room_id_re = Regex::new(r"(?:http://[^/]+)?/([a-zA-Z0-9]+)(?:/[0-9]+)?")?;
-        let cap = room_id_re.captures(&url).unwrap();
+        let cap = room_id_re.captures(&url).ok_or_else(|| {
+            StreamError::Rsget(RsgetError::new("[Afreeca] Cannot capture room id"))
+        })?;
         let room_id = String::from(&cap[1]);
         debug!("room_id: {}", room_id);
         let ci = {
@@ -156,13 +158,10 @@ impl Streamable for Afreeca {
             debug!("Gettin channel_info");
             let json_str = res.text().await?;
             debug!("{}", json_str);
-            let json: ChannelInfo = match serde_json::from_str(&json_str) {
-                Ok(s) => s,
-                Err(e) => {
-                    debug!("[Afreeca] Json failed with:\n{}", e);
-                    return Err(StreamError::Rsget(RsgetError::Offline));
-                }
-            };
+            let json: ChannelInfo = serde_json::from_str(&json_str).map_err(|e| {
+                debug!("[Afreeca] Json failed with:\n{}", e);
+                StreamError::Rsget(RsgetError::Offline)
+            })?;
             json
         };
         debug!("Getting room_id");
