@@ -11,6 +11,7 @@ use stream_lib::StreamType;
 
 use crate::utils::error::RsgetError;
 use crate::utils::error::StreamError;
+use crate::utils::error::StreamResult;
 use crate::{Status, Streamable};
 
 use async_trait::async_trait;
@@ -61,7 +62,7 @@ pub struct Twitch {
 
 #[async_trait]
 impl Streamable for Twitch {
-    async fn new(url: String) -> Result<Box<Twitch>, StreamError> {
+    async fn new(url: String) -> StreamResult<Box<Twitch>> {
         let client = reqwest::Client::new();
         let username_re = Regex::new(r"^(?:https?://)?(?:www\.)?twitch\.tv/([a-zA-Z0-9]+)")?;
         let cap = username_re.captures(&url).ok_or_else(|| {
@@ -82,7 +83,7 @@ impl Streamable for Twitch {
 
         Ok(Box::new(twitch))
     }
-    async fn get_title(&self) -> Result<String, StreamError> {
+    async fn get_title(&self) -> StreamResult<String> {
         let stream_url = format!(
             "https://api.twitch.tv/helix/streams?user_login={}",
             self.username
@@ -103,17 +104,17 @@ impl Streamable for Twitch {
             ))),
         }
     }
-    async fn get_author(&self) -> Result<String, StreamError> {
+    async fn get_author(&self) -> StreamResult<String> {
         Ok(self.username.clone())
     }
-    async fn is_online(&self) -> Result<Status, StreamError> {
+    async fn is_online(&self) -> StreamResult<Status> {
         if self.get_title().await.is_ok() {
             Ok(Status::Online)
         } else {
             Ok(Status::Offline)
         }
     }
-    async fn get_stream(&self) -> Result<StreamType, StreamError> {
+    async fn get_stream(&self) -> StreamResult<StreamType> {
         let auth_endpoint = format!(
             "https://api.twitch.tv/api/channels/{}/access_token?client_id={}",
             self.username, TWITCH_CLIENT_ID_PRIVATE
@@ -150,10 +151,11 @@ impl Streamable for Twitch {
             String::from(qu_name.name().trim()),
         ))
     }
-    async fn get_ext(&self) -> Result<String, StreamError> {
+    async fn get_ext(&self) -> StreamResult<String> {
         Ok(String::from("mp4"))
     }
-    async fn get_default_name(&self) -> Result<String, StreamError> {
+
+    async fn get_default_name(&self) -> StreamResult<String> {
         let local: DateTime<Local> = Local::now();
         Ok(format!(
             "{}-{:04}-{:02}-{:02}-{:02}-{:02}.{}",

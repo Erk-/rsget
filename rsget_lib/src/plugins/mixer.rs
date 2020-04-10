@@ -3,7 +3,7 @@ use regex::Regex;
 use chrono::prelude::*;
 
 use crate::utils::error::{RsgetError, StreamError, StreamResult};
-use crate::{Status, Streamable, StreamType};
+use crate::{Status, StreamType, Streamable};
 
 use async_trait::async_trait;
 
@@ -23,13 +23,13 @@ pub struct Mixer {
 
 #[async_trait]
 impl Streamable for Mixer {
-   async fn new(url: String) -> StreamResult<Box<Mixer>> {
+    async fn new(url: String) -> StreamResult<Box<Mixer>> {
         let client = reqwest::Client::new();
 
         let room_id_re = Regex::new(r"^(?:https?://)?(?:www\.)?mixer\.com/([a-zA-Z0-9_]+)")?;
-        let cap = room_id_re.captures(&url).ok_or_else(||
-            StreamError::Rsget(RsgetError::new("[Mixer] No capture found"))
-        )?;
+        let cap = room_id_re
+            .captures(&url)
+            .ok_or_else(|| StreamError::Rsget(RsgetError::new("[Mixer] No capture found")))?;
         let site_url = format!("https://mixer.com/api/v1/channels/{}", &cap[1]);
         let res: MixerData = client.get(&site_url).send().await?.json().await?;
         Ok(Box::new(Mixer {
@@ -56,11 +56,10 @@ impl Streamable for Mixer {
     async fn get_stream(&self) -> StreamResult<StreamType> {
         let url = format!(
             "https://mixer.com/api/v1/channels/{}/manifest.m3u8",
-            &self.data.id);
+            &self.data.id
+        );
         Ok(StreamType::NamedPlaylist(
-            self.client
-                .get(&url)
-                .build()?,
+            self.client.get(&url).build()?,
             String::from("source"),
         ))
     }
