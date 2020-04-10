@@ -1,16 +1,11 @@
-use crate::Streamable;
 use regex::Regex;
 
 use chrono::prelude::*;
 
-use stream_lib::StreamType;
+use crate::utils::error::{RsgetError, StreamError, StreamResult};
+use crate::{Status, Streamable, StreamType};
 
-use crate::utils::downloaders::DownloadClient;
-
-use crate::utils::error::RsgetError;
-use crate::utils::error::StreamError;
-
-
+use async_trait::async_trait;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct MixerData {
@@ -20,76 +15,71 @@ struct MixerData {
 
 #[derive(Debug, Clone)]
 pub struct Mixer {
-    client: DownloadClient,
+    client: reqwest::Client,
     url: String,
     username: String,
     data: MixerData,
 }
 
+#[async_trait]
 impl Streamable for Mixer {
-    fn new(url: String) -> Result<Box<Mixer>, StreamError> {
-        let dc = DownloadClient::new()?;
+   async fn new(url: String) -> StreamResult<Box<Mixer>> {
+        let client = reqwest::Client::new();
 
         let room_id_re = Regex::new(r"^(?:https?://)?(?:www\.)?mixer\.com/([a-zA-Z0-9_]+)")?;
-        let cap = match room_id_re.captures(&url) {
-            Some(capture) => capture,
-            None => return Err(StreamError::Rsget(RsgetError::new("No capture found"))),
-        };
+        let cap = room_id_re.captures(&url).ok_or_else(||
+            StreamError::Rsget(RsgetError::new("[Mixer] No capture found"))
+        )?;
         let site_url = format!("https://mixer.com/api/v1/channels/{}", &cap[1]);
-        let site_req = dc.make_request(&site_url, None)?;
-        let res: MixerData = dc.download_and_de(site_req)?;
+        let res: MixerData = client.get(&site_url).send().await?.json().await?;
         Ok(Box::new(Mixer {
-            client: dc,
+            client,
             url: url.clone(),
             username: cap[1].to_string(),
             data: res,
         }))
     }
 
-    fn get_title(&self) -> Option<String> {
-        Some(self.data.name.clone())
+    async fn get_title(&self) -> StreamResult<String> {
+        Ok(self.data.name.clone())
     }
 
-    fn get_author(&self) -> Option<String> {
-        Some(self.username.clone())
+    async fn get_author(&self) -> StreamResult<String> {
+        Ok(self.username.clone())
     }
 
-    fn is_online(&self) -> bool {
+    async fn is_online(&self) -> StreamResult<Status> {
         // Unreachable as Mixer::new will fail for offline channels.
-        true
+        Ok(Status::Online)
     }
 
-    fn get_stream(&self) -> Result<StreamType, StreamError> {
+    async fn get_stream(&self) -> StreamResult<StreamType> {
+        let url = format!(
+            "https://mixer.com/api/v1/channels/{}/manifest.m3u8",
+            &self.data.id);
         Ok(StreamType::NamedPlaylist(
             self.client
-                .rclient
-                .get(&format!(
-                    "https://mixer.com/api/v1/channels/{}/manifest.m3u8",
-                    &self.data.id))
+                .get(&url)
                 .build()?,
             String::from("source"),
         ))
     }
 
-    fn get_ext(&self) -> String {
-        String::from("mp4")
+    async fn get_ext(&self) -> StreamResult<String> {
+        Ok(String::from("mp4"))
     }
 
-    fn get_default_name(&self) -> String {
+    async fn get_default_name(&self) -> StreamResult<String> {
         let local: DateTime<Local> = Local::now();
-        format!(
+        Ok(format!(
             "{}-{:04}-{:02}-{:02}-{:02}-{:02}.{}",
-            self.get_author().unwrap(),
+            self.get_author().await?,
             local.year(),
             local.month(),
             local.day(),
             local.hour(),
             local.minute(),
-            self.get_ext()
-        )
-    }
-
-    fn get_reqwest_client(&self) -> &reqwest::Client {
-        &self.client.rclient
+            self.get_ext().await?
+        ))
     }
 }
