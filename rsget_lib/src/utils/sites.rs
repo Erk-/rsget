@@ -4,13 +4,11 @@ use crate::plugins::{
     mixer::Mixer, tiktok::TikTok, twitch::Twitch, vlive::Vlive,
 };
 */
-use crate::plugins::afreeca::Afreeca;
+use crate::plugins::{afreeca::Afreeca, dlive::DLive};
 use crate::utils::error::RsgetError;
 use crate::utils::error::StreamError;
 use crate::Streamable;
 use regex::Regex;
-
-use reqwest;
 
 pub async fn get_site(input: &str) -> Result<Box<dyn Streamable + Send>, StreamError> {
     match _get_site(input).await {
@@ -29,23 +27,23 @@ async fn _get_site(input: &str) -> Result<Box<dyn Streamable + Send>, StreamErro
     let re_afreeca: Regex = Regex::new(
         r"^(?:https?://)?(?:www\.)?(?:play\.)?afreecatv.com/[a-zA-Z0-9]+/?(?:/[0-9]+)?",
     )?;
+    let re_dlive: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?dlive\.tv/[a-zA-Z0-9]+")?;
     /*let re_inke: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?inke\.cn/live\.html\?uid=[0-9]+")?;
     let re_douyin: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?iesdouyin\.com/.*")?;
     let re_tiktok: Regex =
         Regex::new(r"^(?:https?://)?(?:www\.)?(?:m\.)?tiktok\.com/v/(?:[a-zA-Z0-9]+)(?:\.html)?")?;
     let re_huya: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?huya\.com/[a-zA-Z0-9]+")?;
-    let re_dlive: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?dlive\.tv/[a-zA-Z0-9]+")?;
     let re_mixer: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?mixer\.com/([a-zA-Z0-9_]+)")?;
     let re_twitch: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?twitch\.tv/([a-zA-Z0-9_]+)")?;
     let re_vlive: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?vlive\.tv/video/(\d+)")?;*/
     match input {
         //url if re_douyu.is_match(url) => Ok(Douyu::new(String::from(url))?),
         url if re_afreeca.is_match(url) => Ok(Afreeca::new(String::from(url)).await?),
+        url if re_dlive.is_match(url) => Ok(DLive::new(String::from(url)).await?),
         /*url if re_inke.is_match(url) => Ok(Inke::new(String::from(url))?),
         url if re_douyin.is_match(url) => Ok(Douyin::new(String::from(url))?),
         url if re_tiktok.is_match(url) => Ok(TikTok::new(String::from(url))?),
         url if re_huya.is_match(url) => Ok(Huya::new(String::from(url))?),
-        url if re_dlive.is_match(url) => Ok(DLive::new(String::from(url))?),
         url if re_twitch.is_match(url) => Ok(Twitch::new(String::from(url))?),
         url if re_mixer.is_match(url) => Ok(Mixer::new(String::from(url))?),
         url if re_vlive.is_match(url) => Ok(Vlive::new(String::from(url))?),*/
