@@ -64,8 +64,8 @@ impl HlsDownloader {
                 }
                 HlsQueue::StreamOver => {
                     warn!("Stream ended");
-                    break
-                },
+                    break;
+                }
             }
         }
 
@@ -112,7 +112,7 @@ impl HlsWatch {
                 // There have either been errors or no new segments
                 // for `HLS_MAX_RETRIES` times the segment duration given
                 // in the m3u8 playlist file.
-                if let Err(_) = self.tx.send(HlsQueue::StreamOver) {
+                if self.tx.send(HlsQueue::StreamOver).is_err() {
                     return Err(Error::TIO(std::io::Error::last_os_error()));
                 };
                 break;
@@ -199,7 +199,7 @@ impl HlsWatch {
                     if !(e.contains("preloading")) {
                         info!("[HLS] Adds {}!", url_formatted);
                         // Add the segment to the queue.
-                        if let Err(_) = self.tx.send(HlsQueue::Url(url_formatted)) {
+                        if self.tx.send(HlsQueue::Url(url_formatted)).is_err() {
                             return Err(Error::TIO(std::io::Error::last_os_error()));
                         };
                     }

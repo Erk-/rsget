@@ -10,8 +10,6 @@ use crate::utils::error::StreamError;
 use crate::Streamable;
 use regex::Regex;
 
-use reqwest;
-
 pub async fn get_site(input: &str) -> Result<Box<dyn Streamable + Send>, StreamError> {
     match _get_site(input).await {
         Ok(s) => Ok(s),

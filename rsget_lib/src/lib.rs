@@ -6,16 +6,11 @@ extern crate log;
 #[macro_use]
 extern crate serde_derive;
 
-use crate::utils::error::RsgetError;
 use crate::utils::error::StreamError;
 
 use std::boxed::Box;
-use std::io::Write;
 
-use stream_lib::Stream;
 use stream_lib::StreamType;
-
-use reqwest::Client as ReqwestClient;
 
 use async_trait::async_trait;
 

@@ -5,9 +5,9 @@
 extern crate log;
 
 mod error;
-pub mod stream;
 pub mod hls;
 pub mod named_hls;
+pub mod stream;
 
 pub use crate::error::Error;
 pub use crate::hls::HlsDownloader;
