@@ -22,6 +22,8 @@ use regex::Error as RegexError;
 
 use stream_lib::Error as StreamLibError;
 
+pub type StreamResult<T> = Result<T, StreamError>;
+
 #[derive(Debug)]
 pub enum RsgetError {
     Offline,
@@ -87,27 +89,22 @@ pub enum StreamError {
 
 impl Display for StreamError {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        f.write_str(self.description())
-    }
-}
-
-impl StdError for StreamError {
-    fn description(&self) -> &str {
-        match *self {
-            StreamError::Fmt(ref inner) => inner.description(),
-            StreamError::Json(ref inner) => inner.description(),
-            StreamError::Rsget(ref inner) => inner.description(),
-            StreamError::Io(ref inner) => inner.description(),
-            StreamError::Uri(ref inner) => inner.description(),
-            StreamError::ToStr(ref inner) => inner.description(),
-            StreamError::Http(ref inner) => inner.description(),
-            StreamError::Hls(ref inner) => inner.description(),
-            StreamError::Utf8(ref inner) => inner.description(),
-            StreamError::UrlEnc(ref inner) => inner.description(),
-            StreamError::Reqwest(ref inner) => inner.description(),
-            StreamError::Regex(ref inner) => inner.description(),
-            StreamError::Stream(ref inner) => inner.description(),
-        }
+        let error_str = match *self {
+            StreamError::Fmt(ref inner) => inner.to_string(),
+            StreamError::Json(ref inner) => inner.to_string(),
+            StreamError::Rsget(ref inner) => inner.to_string(),
+            StreamError::Io(ref inner) => inner.to_string(),
+            StreamError::Uri(ref inner) => inner.to_string(),
+            StreamError::ToStr(ref inner) => inner.to_string(),
+            StreamError::Http(ref inner) => inner.to_string(),
+            StreamError::Hls(ref inner) => inner.to_string(),
+            StreamError::Utf8(ref inner) => inner.to_string(),
+            StreamError::UrlEnc(ref inner) => inner.to_string(),
+            StreamError::Reqwest(ref inner) => inner.to_string(),
+            StreamError::Regex(ref inner) => inner.to_string(),
+            StreamError::Stream(ref inner) => inner.to_string(),
+        };
+        f.write_str(&error_str)
     }
 }
 

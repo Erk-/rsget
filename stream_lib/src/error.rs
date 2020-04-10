@@ -3,8 +3,8 @@ use reqwest::Error as ReqwestError;
 use std::{
     error::Error as StdError,
     fmt::{Display, Formatter, Result as FmtResult},
-    io::Error as IoError,
 };
+use tokio::io::Error as TokioIoError;
 use url::ParseError;
 
 #[derive(Debug)]
@@ -13,10 +13,10 @@ pub enum Error {
     Hls(HlsError),
     /// Http error.
     Reqwest(ReqwestError),
-    /// Io error.
-    Io(IoError),
     /// Url error.
     Url(ParseError),
+    /// Tokio IO error
+    TIO(TokioIoError),
 }
 
 impl From<HlsError> for Error {
@@ -31,33 +31,22 @@ impl From<ReqwestError> for Error {
     }
 }
 
-impl From<IoError> for Error {
-    fn from(err: IoError) -> Self {
-        Error::Io(err)
-    }
-}
-
 impl From<ParseError> for Error {
     fn from(err: ParseError) -> Self {
         Error::Url(err)
     }
 }
 
+impl From<TokioIoError> for Error {
+    fn from(err: TokioIoError) -> Self {
+        Error::TIO(err)
+    }
+}
+
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        f.write_str(self.description())
+        f.write_str(&self.to_string())
     }
 }
 
-impl StdError for Error {
-    fn description(&self) -> &str {
-        use self::Error::*;
-
-        match *self {
-            Hls(ref inner) => inner.description(),
-            Reqwest(ref inner) => inner.description(),
-            Io(ref inner) => inner.description(),
-            Url(ref inner) => inner.description(),
-        }
-    }
-}
+impl StdError for Error {}
