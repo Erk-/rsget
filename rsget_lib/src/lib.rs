@@ -6,7 +6,6 @@ extern crate log;
 #[macro_use]
 extern crate serde_derive;
 
-use crate::utils::error::StreamError;
 use crate::utils::error::StreamResult;
 
 use std::boxed::Box;

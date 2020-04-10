@@ -64,14 +64,9 @@ impl Streamable for Twitch {
     async fn new(url: String) -> Result<Box<Twitch>, StreamError> {
         let client = reqwest::Client::new();
         let username_re = Regex::new(r"^(?:https?://)?(?:www\.)?twitch\.tv/([a-zA-Z0-9]+)")?;
-        let cap = match username_re.captures(&url) {
-            Some(capture) => capture,
-            None => {
-                return Err(StreamError::Rsget(RsgetError::new(
-                    "Cannot capture usernane",
-                )))
-            }
-        };
+        let cap = username_re.captures(&url).ok_or_else(|| {
+            StreamError::Rsget(RsgetError::new("[Twitch] Cannot capture username"))
+        })?;
 
         let client_id = match env::var("TWITCH_TOKEN") {
             Ok(val) => val,
@@ -100,27 +95,13 @@ impl Streamable for Twitch {
             .await?
             .json()
             .await?;
-        // let stream_res = self.client.download_to_string(stream_req).unwrap();
-        // let inter_json: Value = serde_json::from_str(stream_res.as_str()).unwrap();
 
-        // if inter_json["data"].as_array().is_none()
-        //     || inter_json["data"].as_array().unwrap().is_empty()
-        // {
-        //     return None;
-        // }
-        // Ok(String::from(
-        //     inter_json["data"][0]["title"].as_str().unwrap(),
-        // ))
         match payload.data.get(0) {
             Some(data) => Ok(data.title.clone()),
-            None => {
-                return Err(StreamError::Rsget(RsgetError::new(
-                    "[Twitch] User is offline",
-                )));
-            }
+            None => Err(StreamError::Rsget(RsgetError::new(
+                "[Twitch] User is offline",
+            ))),
         }
-        // Ok("test".into())
-        // Ok(payload.data[0].)
     }
     async fn get_author(&self) -> Result<String, StreamError> {
         Ok(self.username.clone())
