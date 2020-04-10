@@ -1,18 +1,16 @@
 use std::boxed::Box;
-use tokio::fs::File;
 use std::path::Path;
 use std::process::Command;
+use tokio::fs::File;
 
 use flexi_logger::{opt_format, Logger};
-use rsget_lib::{Streamable, Status};
+use log::warn;
+use rsget_lib::{Status, Streamable};
 use structopt::StructOpt;
-use tokio::prelude::*;
-use log::{warn, info};
 
+use rsget_lib::utils::error::RsgetError;
 use rsget_lib::utils::error::StreamError;
 use rsget_lib::utils::stream_type_to_url;
-use rsget_lib::utils::error::RsgetError;
-
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "rsget")]
@@ -45,8 +43,7 @@ async fn main() -> Result<(), StreamError> {
         Status::Online => (),
         Status::Unknown => {
             warn!("Not sure if stream is online, but will try");
-            ()
-        },
+        }
     }
 
     if opt.info {

@@ -4,8 +4,8 @@ use std::{
     error::Error as StdError,
     fmt::{Display, Formatter, Result as FmtResult},
 };
-use url::ParseError;
 use tokio::io::Error as TokioIoError;
+use url::ParseError;
 
 #[derive(Debug)]
 pub enum Error {
@@ -16,7 +16,7 @@ pub enum Error {
     /// Url error.
     Url(ParseError),
     /// Tokio IO error
-    TIO(TokioIoError)
+    TIO(TokioIoError),
 }
 
 impl From<HlsError> for Error {
@@ -49,4 +49,4 @@ impl Display for Error {
     }
 }
 
-impl StdError for Error { }
+impl StdError for Error {}

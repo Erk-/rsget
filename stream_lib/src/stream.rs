@@ -22,19 +22,15 @@ pub struct Stream {
     stream_type: StreamType,
 }
 
-
-
 impl Stream {
     /// Creates a new stream handler.
     pub fn new(stream_type: StreamType) -> Self {
-        Self {
-            stream_type
-        }
+        Self { stream_type }
     }
     /// Writes the stream to a writer.
     pub async fn write_file<AW>(self, client: &ReqwestClient, writer: AW) -> Result<u64, Error>
     where
-    AW: AsyncWrite + Unpin,
+        AW: AsyncWrite + Unpin,
     {
         match self.stream_type {
             StreamType::Chuncked(_) => self.chunked(client, writer).await,
@@ -45,7 +41,7 @@ impl Stream {
 
     async fn chunked<AW>(self, client: &ReqwestClient, mut writer: AW) -> Result<u64, Error>
     where
-    AW: AsyncWrite + Unpin,
+        AW: AsyncWrite + Unpin,
     {
         let req = self.get_request();
         let mut stream = client.execute(req).await?.bytes_stream();
@@ -53,7 +49,7 @@ impl Stream {
         while let Some(item) = stream.next().await {
             size += tokio::io::copy(&mut item?.as_ref(), &mut writer).await?;
         }
-    
+
         info!("[MASTER] Downloaded: {}", size);
         Ok(size)
     }
@@ -61,7 +57,7 @@ impl Stream {
     // This currently clones the client to get a client to run the inner calls as well.
     async fn hls<AW>(self, client: &ReqwestClient, writer: AW) -> Result<u64, Error>
     where
-    AW: AsyncWrite + Unpin,
+        AW: AsyncWrite + Unpin,
     {
         if let StreamType::HLS(req) = self.stream_type {
             let downloader = crate::hls::HlsDownloader::new(req, client.clone());
@@ -72,13 +68,9 @@ impl Stream {
     }
 
     // This currently clones the client to get a client to run the inner calls as well.
-    async fn named_playlist<AW>(
-        self,
-        client: &ReqwestClient,
-        writer: AW,
-    ) -> Result<u64, Error>
+    async fn named_playlist<AW>(self, client: &ReqwestClient, writer: AW) -> Result<u64, Error>
     where
-    AW: AsyncWrite + Unpin,
+        AW: AsyncWrite + Unpin,
     {
         if let StreamType::NamedPlaylist(req, name) = self.stream_type {
             let downloader = crate::named_hls::NamedHlsDownloader::new(req, client.clone(), name);
@@ -88,7 +80,7 @@ impl Stream {
         }
     }
 
-    fn get_request(self) -> Request {        
+    fn get_request(self) -> Request {
         match self.stream_type {
             StreamType::Chuncked(req) => req,
             StreamType::HLS(req) => req,
