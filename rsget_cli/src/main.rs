@@ -4,12 +4,12 @@ use std::process::Command;
 use tokio::fs::File;
 
 use flexi_logger::{opt_format, Logger};
-use log::warn;
+use log::{info, warn};
 use rsget_lib::{Status, Streamable};
 use structopt::StructOpt;
+use tokio::prelude::*;
 
-use rsget_lib::utils::error::RsgetError;
-use rsget_lib::utils::error::StreamError;
+use rsget_lib::utils::error::{RsgetError, StreamResult, StreamError};
 use rsget_lib::utils::stream_type_to_url;
 
 #[derive(Debug, StructOpt)]
@@ -28,7 +28,7 @@ struct Opt {
     url: String,
 }
 #[tokio::main]
-async fn main() -> Result<(), StreamError> {
+async fn main() -> StreamResult<()> {
     Logger::with_env()
         .format(opt_format)
         .start()
@@ -43,6 +43,7 @@ async fn main() -> Result<(), StreamError> {
         Status::Online => (),
         Status::Unknown => {
             warn!("Not sure if stream is online, but will try");
+            ()
         }
     }
 

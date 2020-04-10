@@ -1,8 +1,7 @@
 use crate::{Status, Streamable};
 use regex::Regex;
 
-use crate::utils::error::RsgetError;
-use crate::utils::error::StreamError;
+use crate::utils::error::{RsgetError, StreamError, StreamResult};
 
 use chrono::prelude::*;
 
@@ -109,7 +108,7 @@ async fn get_hls_key(
     url: String,
     room_id: String,
     bno: String,
-) -> Result<String, StreamError> {
+) -> StreamResult<String> {
     // http://play.afreecatv.com/rrvv17/207524505
     //CHANNEL_API_URL = "http://live.afreecatv.com:8057/afreeca/player_live_api.php"
     let data = AfreecaGetHlsKey {
@@ -136,7 +135,7 @@ async fn get_hls_key(
 
 #[async_trait]
 impl Streamable for Afreeca {
-    async fn new(url: String) -> Result<Box<Afreeca>, StreamError> {
+    async fn new(url: String) -> StreamResult<Box<Afreeca>> {
         type ChannelInfo = AfreecaChannelInfo<AfreecaChannelInfoData>;
         let client = reqwest::Client::new();
         let room_id_re = Regex::new(r"(?:http://[^/]+)?/([a-zA-Z0-9]+)(?:/[0-9]+)?")?;
@@ -194,15 +193,15 @@ impl Streamable for Afreeca {
         Ok(Box::new(retval))
     }
 
-    async fn get_title(&self) -> Result<String, StreamError> {
+    async fn get_title(&self) -> StreamResult<String> {
         Ok(self.afreeca_info.CHANNEL.TITLE.clone())
     }
 
-    async fn get_author(&self) -> Result<String, StreamError> {
+    async fn get_author(&self) -> StreamResult<String> {
         Ok(self.afreeca_info.CHANNEL.BJNICK.clone())
     }
 
-    async fn is_online(&self) -> Result<Status, StreamError> {
+    async fn is_online(&self) -> StreamResult<Status> {
         Ok(Status::Online)
         /*
         match self.afreeca_info.CHANNEL.RESULT {
@@ -216,7 +215,7 @@ impl Streamable for Afreeca {
         */
     }
 
-    async fn get_stream(&self) -> Result<StreamType, StreamError> {
+    async fn get_stream(&self) -> StreamResult<StreamType> {
         let cdn = self.afreeca_info.CHANNEL.CDN.clone();
         trace!("CDN: {}", &cdn);
         debug!("view_url: {}", self.stream_info.view_url);
@@ -230,11 +229,11 @@ impl Streamable for Afreeca {
         ))
     }
 
-    async fn get_ext(&self) -> Result<String, StreamError> {
+    async fn get_ext(&self) -> StreamResult<String> {
         Ok(String::from("mp4"))
     }
 
-    async fn get_default_name(&self) -> Result<String, StreamError> {
+    async fn get_default_name(&self) -> StreamResult<String> {
         let local: DateTime<Local> = Local::now();
         Ok(format!(
             "{}-{:04}-{:02}-{:02}-{:02}-{:02}-{:02}-{}-{}.{}",
