@@ -1,4 +1,4 @@
-use crate::{Streamable, Status};
+use crate::{Status, Streamable};
 use regex::Regex;
 
 use crate::utils::error::RsgetError;
@@ -7,7 +7,6 @@ use crate::utils::error::StreamError;
 use chrono::prelude::*;
 
 use reqwest::header::REFERER;
-use reqwest::Client as RClient;
 
 use stream_lib::StreamType;
 
@@ -120,11 +119,12 @@ async fn get_hls_key(
         quality: "original".to_string(),
         _type: "pwd".to_string(),
     };
-    let mut res = client
+    let res = client
         .post("http://live.afreecatv.com:8057/afreeca/player_live_api.php")
         .header(REFERER, url)
         .form(&data)
-        .send().await?;
+        .send()
+        .await?;
     let json: AfreecaChannelInfo<AfreecaHlsKey> = res.json().await?;
     if json.CHANNEL.RESULT != 1 {
         return Err(StreamError::Rsget(RsgetError::new(
@@ -149,10 +149,11 @@ impl Streamable for Afreeca {
                 mode: String::from("landing"),
                 player_type: String::from("html5"),
             };
-            let mut res = client
+            let res = client
                 .post("http://live.afreecatv.com:8057/afreeca/player_live_api.php")
                 .form(&data)
-                .send().await?;
+                .send()
+                .await?;
             debug!("Gettin channel_info");
             let json_str = res.text().await?;
             debug!("{}", json_str);
@@ -171,7 +172,8 @@ impl Streamable for Afreeca {
             url.clone(),
             String::from(&cap[1]),
             ci.CHANNEL.BNO.clone(),
-        ).await?;
+        )
+        .await?;
         let json_url = format!(
             "{}/broad_stream_assign.html?return_type={}&broad_key={}",
             ci.CHANNEL.RMD.clone(),
@@ -186,7 +188,7 @@ impl Streamable for Afreeca {
             afreeca_info: ci,
             hls_key,
             stream_info,
-            client: client,
+            client,
         };
         debug!("{:#?}", retval);
         Ok(Box::new(retval))
@@ -248,5 +250,4 @@ impl Streamable for Afreeca {
             self.get_ext().await.unwrap(),
         ))
     }
-
 }

@@ -76,11 +76,15 @@ struct NamedHlsWatch {
     http: ReqwestClient,
     links: HashSet<String>,
     master_url: Url,
-    name: String
+    name: String,
 }
 
 impl NamedHlsWatch {
-    fn new(request: Request, http: ReqwestClient, name: String) -> (Self, UnboundedReceiver<HlsQueue>) {
+    fn new(
+        request: Request,
+        http: ReqwestClient,
+        name: String,
+    ) -> (Self, UnboundedReceiver<HlsQueue>) {
         let (tx, rx) = unbounded_channel();
         let master_url = request
             .url()
@@ -108,7 +112,7 @@ impl NamedHlsWatch {
                 // There have either been errors or no new segments
                 // for `HLS_MAX_RETRIES` times the segment duration given
                 // in the m3u8 playlist file.
-                if let Err(_) = self.tx.send(HlsQueue::StreamOver) {
+                if self.tx.send(HlsQueue::StreamOver).is_err() {
                     return Err(Error::TIO(std::io::Error::last_os_error()));
                 };
                 break;
@@ -172,7 +176,8 @@ impl NamedHlsWatch {
 
             let segment = master_iter[segment_pos].clone();
 
-            let mp_hls = match self.http
+            let mp_hls = match self
+                .http
                 .get(&segment)
                 .headers(self.request.headers().clone())
                 .build()
@@ -245,7 +250,7 @@ impl NamedHlsWatch {
                     if !(e.contains("preloading")) {
                         info!("[HLS] Adds {}!", url_formatted);
                         // Add the segment to the queue.
-                        if let Err(_) = self.tx.send(HlsQueue::Url(url_formatted)) {
+                        if self.tx.send(HlsQueue::Url(url_formatted)).is_err() {
                             return Err(Error::TIO(std::io::Error::last_os_error()));
                         };
                     }
