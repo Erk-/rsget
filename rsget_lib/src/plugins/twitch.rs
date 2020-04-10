@@ -2,19 +2,48 @@ use std::env;
 
 use chrono::prelude::*;
 use hls_m3u8::MasterPlaylist;
-use rand::{thread_rng, Rng};
+use rand::{rngs::SmallRng, Rng, SeedableRng};
 use regex::Regex;
-use serde_json;
-use serde_json::Value;
+
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use stream_lib::StreamType;
 
-use crate::utils::downloaders::DownloadClient;
 use crate::utils::error::RsgetError;
 use crate::utils::error::StreamError;
-use crate::Streamable;
+use crate::{Status, Streamable};
+
+use async_trait::async_trait;
 
 const TWITCH_CLIENT_ID: &str = "fmdejdpeuc71dz6i5q24kpz8kiiynv";
+// The reason we need to use this is explained here: https://github.com/streamlink/streamlink/issues/2680#issuecomment-557605851
+const TWITCH_CLIENT_ID_PRIVATE: &str = "kimne78kx3ncx6brgo4mv6wki5h1ko";
+
+#[derive(Serialize, Deserialize)]
+pub struct StreamPayload {
+    pub data: Vec<StreamData>,
+    pub pagination: Pagination,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct StreamData {
+    pub id: String,
+    pub user_id: String,
+    pub user_name: String,
+    pub game_id: String,
+    #[serde(rename = "type")]
+    pub datum_type: String,
+    pub title: String,
+    pub viewer_count: i64,
+    pub started_at: String,
+    pub language: String,
+    pub thumbnail_url: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Pagination {
+    pub cursor: String,
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AccessToken {
@@ -24,15 +53,16 @@ pub struct AccessToken {
 
 #[derive(Debug, Clone)]
 pub struct Twitch {
-    client: DownloadClient,
+    client: reqwest::Client,
     username: String,
     url: String,
     client_id: String,
 }
 
+#[async_trait]
 impl Streamable for Twitch {
-    fn new(url: String) -> Result<Box<Twitch>, StreamError> {
-        let dc = DownloadClient::new()?;
+    async fn new(url: String) -> Result<Box<Twitch>, StreamError> {
+        let client = reqwest::Client::new();
         let username_re = Regex::new(r"^(?:https?://)?(?:www\.)?twitch\.tv/([a-zA-Z0-9]+)")?;
         let cap = match username_re.captures(&url) {
             Some(capture) => capture,
@@ -48,83 +78,111 @@ impl Streamable for Twitch {
             Err(_) => String::from(TWITCH_CLIENT_ID),
         };
 
-        Ok(Box::new(Twitch {
-            client: dc,
+        let twitch = Twitch {
+            client,
             username: String::from(&cap[1]),
             url: url.clone(),
             client_id,
-        }))
+        };
+
+        Ok(Box::new(twitch))
     }
-    fn get_title(&self) -> Option<String> {
+    async fn get_title(&self) -> Result<String, StreamError> {
         let stream_url = format!(
             "https://api.twitch.tv/helix/streams?user_login={}",
             self.username
         );
-        let stream_req = self
+        let payload: StreamPayload = self
             .client
-            .make_request(
-                stream_url.as_str(),
-                Some(("Client-ID", self.client_id.as_str())),
-            )
-            .unwrap();
-        let stream_res = self.client.download_to_string(stream_req).unwrap();
-        let inter_json: Value = serde_json::from_str(stream_res.as_str()).unwrap();
+            .get(&stream_url)
+            .header("Client-ID", &self.client_id)
+            .send()
+            .await?
+            .json()
+            .await?;
+        // let stream_res = self.client.download_to_string(stream_req).unwrap();
+        // let inter_json: Value = serde_json::from_str(stream_res.as_str()).unwrap();
 
-        if inter_json["data"].as_array().is_none()
-            || inter_json["data"].as_array().unwrap().is_empty()
-        {
-            return None;
+        // if inter_json["data"].as_array().is_none()
+        //     || inter_json["data"].as_array().unwrap().is_empty()
+        // {
+        //     return None;
+        // }
+        // Ok(String::from(
+        //     inter_json["data"][0]["title"].as_str().unwrap(),
+        // ))
+        match payload.data.get(0) {
+            Some(data) => Ok(data.title.clone()),
+            None => {
+                return Err(StreamError::Rsget(RsgetError::new(
+                    "[Twitch] User is offline",
+                )));
+            }
         }
-        Some(String::from(
-            inter_json["data"][0]["title"].as_str().unwrap(),
-        ))
+        // Ok("test".into())
+        // Ok(payload.data[0].)
     }
-    fn get_author(&self) -> Option<String> {
-        Some(self.username.clone())
+    async fn get_author(&self) -> Result<String, StreamError> {
+        Ok(self.username.clone())
     }
-    fn is_online(&self) -> bool {
-        self.get_title().is_some()
+    async fn is_online(&self) -> Result<Status, StreamError> {
+        if self.get_title().await.is_ok() {
+            Ok(Status::Online)
+        } else {
+            Ok(Status::Offline)
+        }
     }
-    fn get_stream(&self) -> Result<StreamType, StreamError> {
+    async fn get_stream(&self) -> Result<StreamType, StreamError> {
         let auth_endpoint = format!(
             "https://api.twitch.tv/api/channels/{}/access_token?client_id={}",
-            self.username, self.client_id
+            self.username, TWITCH_CLIENT_ID_PRIVATE
         );
-        let auth_req = self.client.make_request(auth_endpoint.as_str(), None)?;
-        let auth_res = self.client.download_to_string(auth_req)?;
+        let auth_res = self
+            .client
+            .get(auth_endpoint.as_str())
+            .send()
+            .await?
+            .text()
+            .await?;
         let acs: AccessToken = serde_json::from_str(auth_res.as_str())?;
 
-        let mut rng = thread_rng();
+        let time = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+        let mut rng = SmallRng::seed_from_u64(time);
         let playlist_url = format!("https://usher.ttvnw.net/api/channel/hls/{}.m3u8?player=twitchweb&token={}&sig={}&allow_audio_only=true&allow_source=true&type=any&p={}",
-                                   self.username, acs.token, acs.sig, rng.gen_range(1, 999_999));
+                                    self.username, acs.token, acs.sig, rng.gen_range(1, 999_999));
 
-        let playlist_req = self.client.make_request(playlist_url.as_str(), None)?;
-        let playlist_res = self.client.download_to_string(playlist_req)?;
+        let playlist_res = self
+            .client
+            .get(playlist_url.as_str())
+            .send()
+            .await?
+            .text()
+            .await?;
         let playlist = playlist_res.parse::<MasterPlaylist>()?;
         let qu_name = playlist.media_tags().iter().next().unwrap();
 
         Ok(StreamType::NamedPlaylist(
-            self.client.rclient.get(playlist_url.as_str()).build()?,
+            self.client.get(&playlist_url).build()?,
             String::from(qu_name.name().trim()),
         ))
     }
-    fn get_ext(&self) -> String {
-        String::from("mp4")
+    async fn get_ext(&self) -> Result<String, StreamError> {
+        Ok(String::from("mp4"))
     }
-    fn get_default_name(&self) -> String {
+    async fn get_default_name(&self) -> Result<String, StreamError> {
         let local: DateTime<Local> = Local::now();
-        format!(
+        Ok(format!(
             "{}-{:04}-{:02}-{:02}-{:02}-{:02}.{}",
-            self.get_author().unwrap(),
+            self.get_author().await?,
             local.year(),
             local.month(),
             local.day(),
             local.hour(),
             local.minute(),
-            self.get_ext()
-        )
-    }
-    fn get_reqwest_client(&self) -> &reqwest::Client {
-        &self.client.rclient
+            self.get_ext().await?
+        ))
     }
 }

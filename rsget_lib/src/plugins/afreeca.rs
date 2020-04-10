@@ -6,7 +6,6 @@ use crate::utils::error::{RsgetError, StreamError, StreamResult};
 use chrono::prelude::*;
 
 use reqwest::header::REFERER;
-use reqwest::Client as RClient;
 
 use stream_lib::StreamType;
 
@@ -119,7 +118,7 @@ async fn get_hls_key(
         quality: "original".to_string(),
         _type: "pwd".to_string(),
     };
-    let mut res = client
+    let res = client
         .post("http://live.afreecatv.com:8057/afreeca/player_live_api.php")
         .header(REFERER, url)
         .form(&data)
@@ -149,7 +148,7 @@ impl Streamable for Afreeca {
                 mode: String::from("landing"),
                 player_type: String::from("html5"),
             };
-            let mut res = client
+            let res = client
                 .post("http://live.afreecatv.com:8057/afreeca/player_live_api.php")
                 .form(&data)
                 .send()
@@ -188,7 +187,7 @@ impl Streamable for Afreeca {
             afreeca_info: ci,
             hls_key,
             stream_info,
-            client: client,
+            client,
         };
         debug!("{:#?}", retval);
         Ok(Box::new(retval))
