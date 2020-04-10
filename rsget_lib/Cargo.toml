@@ -26,7 +26,7 @@ url = "2"
 hls_m3u8 = "^0.2.1"
 reqwest = { version = "0.10.0-alpha.1", features = ["json"] }
 #parking_lot = "0.7.1"
-rand = "0.7.2"
+rand = { version ="0.7.3", features = ["small_rng"] }
 #stream_lib = { version = "0.3.0", path = "../stream_lib", features = ["spinner"] }
 async-trait = "0.1.17"
 
