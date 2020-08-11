@@ -6,11 +6,11 @@ pub const HLS_MAX_RETRIES: usize = 12;
 
 use reqwest::{Client as ReqwestClient, Request, Url};
 
-use hls_m3u8::MediaPlaylistOptions;
-
 use tokio::io::AsyncWriteExt;
 use tokio::io::{AsyncWrite, BufWriter};
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
+
+use hls_m3u8::MediaPlaylist;
 
 use futures_util::StreamExt;
 
@@ -230,13 +230,14 @@ impl HlsWatch {
                 }
             };
 
+            let mut m3u8_parser = MediaPlaylist::builder();
+
             // Allow excess segment duration because a lot of video sites have
             // not very high quality m3u8 playlists, where the video segments,
             // may be longer than what the file specifies as max.
-            let m3u8 = match MediaPlaylistOptions::new()
-                .allowable_excess_segment_duration(Duration::from_secs(10))
-                .parse(&m3u8_string)
-            {
+            m3u8_parser.allowable_excess_duration(Duration::from_secs(10));
+
+            let m3u8 = match m3u8_parser.parse(&m3u8_string) {
                 Ok(p) => p,
                 Err(e) => {
                     warn!("[HLS] Parsing failed!\n{}", e);
@@ -247,10 +248,13 @@ impl HlsWatch {
             };
 
             // Get the target duration of a segment
-            let target_duration = m3u8.target_duration_tag().duration();
+            let target_duration = m3u8.target_duration;
 
             // Makes a iterator with the url parts from the playlist
-            let m3u8_iterator = m3u8.segments().iter().map(|e| String::from(e.uri().trim()));
+            let m3u8_iterator = m3u8
+                .segments
+                .iter()
+                .map(|(_, e)| String::from(e.uri().trim()));
 
             for e in m3u8_iterator {
                 trace!("[HLS] Tries to inserts: {}", e);

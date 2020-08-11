@@ -144,7 +144,7 @@ impl Streamable for Twitch {
             .text()
             .await?;
         let playlist = playlist_res.parse::<MasterPlaylist>()?;
-        let qu_name = playlist.media_tags().iter().next().unwrap();
+        let qu_name = playlist.media.get(0).unwrap();
 
         Ok(StreamType::NamedPlaylist(
             self.client.get(&playlist_url).build()?,
