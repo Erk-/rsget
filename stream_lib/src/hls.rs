@@ -14,7 +14,8 @@ use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 
 use futures_util::StreamExt;
 
-use std::collections::HashSet;
+use patricia_tree::PatriciaSet;
+
 #[cfg(feature = "spinner")]
 use std::sync::Arc;
 use std::time::Duration;
@@ -149,7 +150,7 @@ struct HlsWatch {
     tx: UnboundedSender<HlsQueue>,
     request: Request,
     http: ReqwestClient,
-    links: HashSet<String>,
+    links: PatriciaSet,
     master_url: Url,
 }
 
@@ -166,7 +167,7 @@ impl HlsWatch {
                 tx,
                 request,
                 http,
-                links: HashSet::new(),
+                links: PatriciaSet::new(),
                 master_url,
             },
             rx,
