@@ -25,7 +25,7 @@ use std::sync::Arc;
 
 use crate::error::Error;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 enum HlsQueue {
     Url(Url),
     StreamOver,
@@ -96,7 +96,7 @@ impl NamedHlsDownloader {
             .template("{bar:40.green/yellow} {bytes:>7}/{total_bytes:7}");
 
         // TODO: Maybe clean this up after closing the function.
-        tokio::task::spawn_blocking(|| watch.run());
+        tokio::task::spawn(watch.run());
         while let Some(hls) = rx.recv().await {
             match hls {
                 HlsQueue::Url(u) => {
@@ -260,6 +260,11 @@ impl NamedHlsWatch {
             let uri = match media {
                 VariantStream::ExtXIFrame { uri: u, .. } => u,
                 VariantStream::ExtXStreamInf { uri: u, .. } => u,
+            };
+
+            match Url::parse(&uri) {
+                Ok(u) => self.master_url = u.join(".").expect("Could not join with '.'"),
+                Err(_) => (),
             };
 
             let mp_hls = match self
