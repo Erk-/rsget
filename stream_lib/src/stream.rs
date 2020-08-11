@@ -43,15 +43,25 @@ impl Stream {
     where
         AW: AsyncWrite + Unpin,
     {
+        #[cfg(feature = "spinner")]
+        let spinsty = indicatif::ProgressStyle::default_spinner().template("{spinner.blue} Total download: {bytes:30.yellow}");
+        #[cfg(feature = "spinner")]
+        let spinner = indicatif::ProgressBar::new_spinner();
+        #[cfg(feature = "spinner")]
+        spinner.set_style(spinsty);
+
         let req = self.get_request();
         let mut stream = client.execute(req).await?.bytes_stream();
-        let mut size = 0;
+        let mut tsize = 0;
         while let Some(item) = stream.next().await {
-            size += tokio::io::copy(&mut item?.as_ref(), &mut writer).await?;
+            let size = tokio::io::copy(&mut item?.as_ref(), &mut writer).await?;
+            #[cfg(feature = "spinner")]
+            spinner.inc(size);
+            tsize += size;
         }
 
-        info!("[MASTER] Downloaded: {}", size);
-        Ok(size)
+        info!("[MASTER] Downloaded: {}", tsize);
+        Ok(tsize)
     }
 
     // This currently clones the client to get a client to run the inner calls as well.

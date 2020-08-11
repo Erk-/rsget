@@ -19,7 +19,7 @@ tokio = { version = "0.2", features = ["full"] }
 
 [dependencies.indicatif]
 optional = true
-version = "0.13"
+version = "0.15"
 
 [features]
 default = []

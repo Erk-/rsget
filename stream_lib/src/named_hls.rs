@@ -18,6 +18,9 @@ use futures_util::StreamExt;
 use std::collections::HashSet;
 use std::time::Duration;
 
+#[cfg(feature = "spinner")]
+use std::sync::Arc;
+
 use crate::error::Error;
 
 #[derive(Clone)]
@@ -31,17 +34,23 @@ pub struct NamedHlsDownloader {
     rx: UnboundedReceiver<HlsQueue>,
     watch: NamedHlsWatch,
     headers: reqwest::header::HeaderMap,
+    #[cfg(feature = "spinner")]
+    progress: Arc<indicatif::MultiProgress>,
 }
 
 impl NamedHlsDownloader {
     pub fn new(request: Request, http: ReqwestClient, name: String) -> Self {
         let headers = request.headers().clone();
         let (watch, rx) = NamedHlsWatch::new(request, http.clone(), name);
+        #[cfg(feature = "spinner")]
+        let progress = Arc::new(indicatif::MultiProgress::new());
         Self {
             http,
             rx,
             watch,
             headers,
+            #[cfg(feature = "spinner")]
+            progress,
         }
     }
 
@@ -53,13 +62,60 @@ impl NamedHlsDownloader {
         let mut rx = self.rx;
         let watch = self.watch;
         let mut buf_writer = BufWriter::with_capacity(WRITE_SIZE, writer);
+
+        #[cfg(feature = "spinner")]
+        {
+            // HACK: This is needed until https://github.com/mitsuhiko/indicatif/issues/125 gets resolved.
+            let mp_l = self.progress.clone();
+            tokio::task::spawn_blocking(move || loop { mp_l.join().unwrap(); std::thread::sleep(std::time::Duration::from_millis(500)) });
+        }
+
+        #[cfg(feature = "spinner")]
+        let spinsty = indicatif::ProgressStyle::default_spinner().template("{spinner.blue} {pos:30.yellow} segments {elapsed_precise}");
+        #[cfg(feature = "spinner")]
+        let spinner = self.progress.add(indicatif::ProgressBar::new(0));
+        #[cfg(feature = "spinner")]
+        spinner.set_style(spinsty);
+
+        #[cfg(feature = "spinner")]
+        let spinst2 = indicatif::ProgressStyle::default_spinner().template("{.blue}Total download: {bytes:30.yellow}");
+        #[cfg(feature = "spinner")]
+        let spinner2 = self.progress.add(indicatif::ProgressBar::new(0));
+        #[cfg(feature = "spinner")]
+        spinner2.set_style(spinst2);
+
+        #[cfg(feature = "spinner")]
+        let sty = indicatif::ProgressStyle::default_bar().template("{bar:40.green/yellow} {bytes:>7}/{total_bytes:7}");
+        
         // TODO: Maybe clean this up after closing the function.
         tokio::task::spawn_blocking(|| watch.run());
         while let Some(hls) = rx.recv().await {
             match hls {
                 HlsQueue::Url(u) => {
+                    #[cfg(feature = "spinner")]
+                    spinner.inc(1);
+                    #[cfg(feature = "spinner")]
+                    let head = self.http.head(u.clone()).send().await?;
+                    #[cfg(feature = "spinner")]
+                    let csize = if head.status().is_success() {
+                        head.headers()
+                            .get(reqwest::header::CONTENT_LENGTH)
+                            .and_then(|l| l.to_str().ok())
+                            .and_then(|l| l.parse().ok())
+                            .unwrap_or(0)
+                    } else { 0 };
+
+                    #[cfg(feature = "spinner")]
+                    let pb = self.progress.add(indicatif::ProgressBar::new(csize));
+                    #[cfg(feature = "spinner")]
+                    pb.set_style(sty.clone());
+                    
                     let req = self.http.get(u).headers(self.headers.clone()).build()?;
-                    let size = download_to_file(&self.http, req, &mut buf_writer).await?;
+                    let size = download_to_file(&self.http, req, &mut buf_writer, #[cfg(feature = "spinner")] pb).await?;
+
+                    #[cfg(feature = "spinner")]
+                    spinner2.inc(size);
+                    
                     total_size += size;
                 }
                 HlsQueue::StreamOver => break,
@@ -271,16 +327,21 @@ async fn download_to_file<AW>(
     client: &ReqwestClient,
     request: Request,
     writer: &mut BufWriter<AW>,
+    #[cfg(feature = "spinner")]
+    pb: indicatif::ProgressBar,
 ) -> Result<u64, Error>
 where
     AW: AsyncWrite + Unpin,
 {
     let mut stream = client.execute(request).await?.bytes_stream();
-    let mut size = 0;
+    let mut tsize = 0;
     while let Some(item) = stream.next().await {
-        size += tokio::io::copy(&mut item?.as_ref(), writer).await?;
+        let size = tokio::io::copy(&mut item?.as_ref(), writer).await?;
+        #[cfg(feature = "spinner")]
+        pb.inc(size);
+        tsize += size;
     }
 
-    info!("[MASTER] Downloaded: {}", size);
-    Ok(size)
+    info!("[MASTER] Downloaded: {}", tsize);
+    Ok(tsize)
 }
