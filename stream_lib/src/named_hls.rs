@@ -67,26 +67,32 @@ impl NamedHlsDownloader {
         {
             // HACK: This is needed until https://github.com/mitsuhiko/indicatif/issues/125 gets resolved.
             let mp_l = self.progress.clone();
-            tokio::task::spawn_blocking(move || loop { mp_l.join().unwrap(); std::thread::sleep(std::time::Duration::from_millis(500)) });
+            tokio::task::spawn_blocking(move || loop {
+                mp_l.join().unwrap();
+                std::thread::sleep(std::time::Duration::from_millis(500))
+            });
         }
 
         #[cfg(feature = "spinner")]
-        let spinsty = indicatif::ProgressStyle::default_spinner().template("{spinner.blue} {pos:30.yellow} segments {elapsed_precise}");
+        let spinsty = indicatif::ProgressStyle::default_spinner()
+            .template("{spinner.blue} {pos:30.yellow} segments {elapsed_precise}");
         #[cfg(feature = "spinner")]
         let spinner = self.progress.add(indicatif::ProgressBar::new(0));
         #[cfg(feature = "spinner")]
         spinner.set_style(spinsty);
 
         #[cfg(feature = "spinner")]
-        let spinst2 = indicatif::ProgressStyle::default_spinner().template("{.blue}Total download: {bytes:30.yellow}");
+        let spinst2 = indicatif::ProgressStyle::default_spinner()
+            .template("{.blue}Total download: {bytes:30.yellow}");
         #[cfg(feature = "spinner")]
         let spinner2 = self.progress.add(indicatif::ProgressBar::new(0));
         #[cfg(feature = "spinner")]
         spinner2.set_style(spinst2);
 
         #[cfg(feature = "spinner")]
-        let sty = indicatif::ProgressStyle::default_bar().template("{bar:40.green/yellow} {bytes:>7}/{total_bytes:7}");
-        
+        let sty = indicatif::ProgressStyle::default_bar()
+            .template("{bar:40.green/yellow} {bytes:>7}/{total_bytes:7}");
+
         // TODO: Maybe clean this up after closing the function.
         tokio::task::spawn_blocking(|| watch.run());
         while let Some(hls) = rx.recv().await {
@@ -103,19 +109,28 @@ impl NamedHlsDownloader {
                             .and_then(|l| l.to_str().ok())
                             .and_then(|l| l.parse().ok())
                             .unwrap_or(0)
-                    } else { 0 };
+                    } else {
+                        0
+                    };
 
                     #[cfg(feature = "spinner")]
                     let pb = self.progress.add(indicatif::ProgressBar::new(csize));
                     #[cfg(feature = "spinner")]
                     pb.set_style(sty.clone());
-                    
+
                     let req = self.http.get(u).headers(self.headers.clone()).build()?;
-                    let size = download_to_file(&self.http, req, &mut buf_writer, #[cfg(feature = "spinner")] pb).await?;
+                    let size = download_to_file(
+                        &self.http,
+                        req,
+                        &mut buf_writer,
+                        #[cfg(feature = "spinner")]
+                        pb,
+                    )
+                    .await?;
 
                     #[cfg(feature = "spinner")]
                     spinner2.inc(size);
-                    
+
                     total_size += size;
                 }
                 HlsQueue::StreamOver => break,
@@ -327,8 +342,7 @@ async fn download_to_file<AW>(
     client: &ReqwestClient,
     request: Request,
     writer: &mut BufWriter<AW>,
-    #[cfg(feature = "spinner")]
-    pb: indicatif::ProgressBar,
+    #[cfg(feature = "spinner")] pb: indicatif::ProgressBar,
 ) -> Result<u64, Error>
 where
     AW: AsyncWrite + Unpin,

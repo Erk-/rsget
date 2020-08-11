@@ -44,7 +44,8 @@ impl Stream {
         AW: AsyncWrite + Unpin,
     {
         #[cfg(feature = "spinner")]
-        let spinsty = indicatif::ProgressStyle::default_spinner().template("{spinner.blue} Total download: {bytes:30.yellow}");
+        let spinsty = indicatif::ProgressStyle::default_spinner()
+            .template("{spinner.blue} Total download: {bytes:30.yellow}");
         #[cfg(feature = "spinner")]
         let spinner = indicatif::ProgressBar::new_spinner();
         #[cfg(feature = "spinner")]
