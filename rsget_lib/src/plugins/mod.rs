@@ -1,4 +1,5 @@
 pub mod afreeca;
+pub mod bilibili;
 pub mod dlive;
 pub mod twitch;
 
