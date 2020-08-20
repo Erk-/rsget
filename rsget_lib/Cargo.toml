@@ -28,6 +28,7 @@ reqwest = { version = "0.10.0-alpha.1", features = ["json"] }
 #parking_lot = "0.7.1"
 rand = { version ="0.7.3", features = ["small_rng"] }
 async-trait = "0.1.17"
+webbrowser = "0.5.5"
 
 [dependencies.stream_lib]
 default-features = false

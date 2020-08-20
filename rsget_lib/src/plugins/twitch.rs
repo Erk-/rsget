@@ -20,13 +20,13 @@ const TWITCH_CLIENT_ID: &str = "fmdejdpeuc71dz6i5q24kpz8kiiynv";
 // The reason we need to use this is explained here: https://github.com/streamlink/streamlink/issues/2680#issuecomment-557605851
 const TWITCH_CLIENT_ID_PRIVATE: &str = "kimne78kx3ncx6brgo4mv6wki5h1ko";
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct StreamPayload {
     pub data: Vec<StreamData>,
     pub pagination: Pagination,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct StreamData {
     pub id: String,
     pub user_id: String,
@@ -41,9 +41,9 @@ pub struct StreamData {
     pub thumbnail_url: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Pagination {
-    pub cursor: String,
+    pub cursor: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -58,6 +58,7 @@ pub struct Twitch {
     username: String,
     url: String,
     client_id: String,
+    access_token: Option<String>,
 }
 
 #[async_trait]
@@ -69,9 +70,14 @@ impl Streamable for Twitch {
             StreamError::Rsget(RsgetError::new("[Twitch] Cannot capture username"))
         })?;
 
-        let client_id = match env::var("TWITCH_TOKEN") {
+        let client_id = match env::var("RSGET_TWITCH_CLIENT_ID") {
             Ok(val) => val,
             Err(_) => String::from(TWITCH_CLIENT_ID),
+        };
+
+        let access_token = match env::var("RSGET_TWITCH_ACCESS_TOKEN") {
+            Ok(val) => Some(val),
+            Err(_) => None,
         };
 
         let twitch = Twitch {
@@ -79,29 +85,50 @@ impl Streamable for Twitch {
             username: String::from(&cap[1]),
             url: url.clone(),
             client_id,
+            access_token,
         };
 
         Ok(Box::new(twitch))
     }
     async fn get_title(&self) -> StreamResult<String> {
-        let stream_url = format!(
-            "https://api.twitch.tv/helix/streams?user_login={}",
-            self.username
-        );
-        let payload: StreamPayload = self
-            .client
-            .get(&stream_url)
-            .header("Client-ID", &self.client_id)
-            .send()
-            .await?
-            .json()
-            .await?;
+        if let Some(token) = &self.access_token {
+            let stream_url = format!(
+                "https://api.twitch.tv/helix/streams?user_login={}",
+                self.username
+            );
+            let payload: StreamPayload = self
+                .client
+                .get(&stream_url)
+                .header("Client-ID", &self.client_id)
+                .bearer_auth(token)
+                .send()
+                .await?
+                .json()
+                .await
+                .map_err(|e| {
+                    println!("{}", e);
+                    e
+                })?;
 
-        match payload.data.get(0) {
-            Some(data) => Ok(data.title.clone()),
-            None => Err(StreamError::Rsget(RsgetError::new(
-                "[Twitch] User is offline",
-            ))),
+            match payload.data.get(0) {
+                Some(data) => Ok(data.title.clone()),
+                None => Err(StreamError::Rsget(RsgetError::new(
+                    "[Twitch] User is offline",
+                ))),
+            }
+        } else {
+            println!("Access token is not set please complete this flow and set the environment variable RSGET_TWITCH_ACCESS_TOKEN with the value of the access_token after the redirect and rerun");
+            let oauth_url = format!(
+                "https://id.twitch.tv/oauth2/authorize?client_id={}&redirect_uri={}&response_type=token+id_token&scope=openid",
+                self.client_id,
+                "http://localhost",
+            );
+
+            webbrowser::open(&oauth_url).unwrap();
+
+            Err(StreamError::Rsget(RsgetError::new(
+                "[Twitch] No access token is set",
+            )))
         }
     }
     async fn get_author(&self) -> StreamResult<String> {
@@ -144,11 +171,11 @@ impl Streamable for Twitch {
             .text()
             .await?;
         let playlist = playlist_res.parse::<MasterPlaylist>()?;
-        let qu_name = playlist.media.get(0).unwrap();
+        let qu_name = playlist.media.get(0).unwrap().name();
 
         Ok(StreamType::NamedPlaylist(
             self.client.get(&playlist_url).build()?,
-            String::from(qu_name.name().trim()),
+            String::from(qu_name),
         ))
     }
     async fn get_ext(&self) -> StreamResult<String> {
