@@ -67,15 +67,15 @@ impl HlsDownloader {
         {
             // HACK: This is needed until https://github.com/mitsuhiko/indicatif/issues/125 gets resolved.
             let mp_l = self.progress.clone();
-            tokio::task::spawn_blocking(move || loop {
+            tokio::task::spawn_blocking(move || {
+                std::thread::sleep(std::time::Duration::from_millis(500));
                 mp_l.join().unwrap();
-                std::thread::sleep(std::time::Duration::from_millis(500))
             });
         }
 
         #[cfg(feature = "spinner")]
         let spinsty = indicatif::ProgressStyle::default_spinner()
-            .template("{spinner.blue} {pos:30.yellow} segments {elapsed_precise}");
+            .template("{spinner} {pos:30.yellow} segments {elapsed_precise}");
         #[cfg(feature = "spinner")]
         let spinner = self.progress.add(indicatif::ProgressBar::new(0));
         #[cfg(feature = "spinner")]
@@ -101,7 +101,12 @@ impl HlsDownloader {
                     #[cfg(feature = "spinner")]
                     spinner.inc(1);
                     #[cfg(feature = "spinner")]
-                    let head = self.http.head(u.clone()).send().await?;
+                    let head = self
+                        .http
+                        .head(u.clone())
+                        .timeout(std::time::Duration::from_secs(10))
+                        .send()
+                        .await?;
                     #[cfg(feature = "spinner")]
                     let csize = if head.status().is_success() {
                         head.headers()
@@ -119,7 +124,12 @@ impl HlsDownloader {
                     pb.set_style(sty.clone());
 
                     // These two statements are not part of the spinner.
-                    let req = self.http.get(u).headers(self.headers.clone()).build()?;
+                    let req = self
+                        .http
+                        .get(u)
+                        .headers(self.headers.clone())
+                        .timeout(std::time::Duration::from_secs(10))
+                        .build()?;
                     let size = download_to_file(
                         &self.http,
                         req,
@@ -136,6 +146,7 @@ impl HlsDownloader {
                 }
                 HlsQueue::StreamOver => {
                     warn!("Stream ended");
+
                     break;
                 }
             }
@@ -179,7 +190,6 @@ impl HlsWatch {
         let mut counter = 0;
 
         loop {
-            &counter;
             if counter > HLS_MAX_RETRIES {
                 // There have either been errors or no new segments
                 // for `HLS_MAX_RETRIES` times the segment duration given
@@ -192,7 +202,10 @@ impl HlsWatch {
 
             // Use the same headers as the original request
             let req = match self.request.try_clone() {
-                Some(r) => r,
+                Some(mut r) => {
+                    *r.timeout_mut() = Some(std::time::Duration::from_secs(10));
+                    r
+                }
                 // If the body is not able to be cloned it will only clone the headers.
                 None => {
                     warn!("[HLS] body not able to be cloned only clones headers.");
@@ -200,6 +213,7 @@ impl HlsWatch {
                         .http
                         .get(self.request.url().clone())
                         .headers(self.request.headers().clone())
+                        .timeout(std::time::Duration::from_secs(10))
                         .build()
                     {
                         Ok(br) => br,
@@ -297,13 +311,16 @@ impl HlsWatch {
 #[inline]
 async fn download_to_file<AW>(
     client: &ReqwestClient,
-    request: Request,
+    mut request: Request,
     writer: &mut BufWriter<AW>,
     #[cfg(feature = "spinner")] pb: indicatif::ProgressBar,
 ) -> Result<u64, Error>
 where
     AW: AsyncWrite + Unpin,
 {
+    if request.timeout().is_none() {
+        *request.timeout_mut() = Some(std::time::Duration::from_secs(10));
+    }
     let mut stream = client.execute(request).await?.bytes_stream();
     let mut tsize = 0;
     while let Some(item) = stream.next().await {

@@ -69,9 +69,9 @@ impl NamedHlsDownloader {
         {
             // HACK: This is needed until https://github.com/mitsuhiko/indicatif/issues/125 gets resolved.
             let mp_l = self.progress.clone();
-            tokio::task::spawn_blocking(move || loop {
+            tokio::task::spawn_blocking(move || {
+                std::thread::sleep(std::time::Duration::from_millis(500));
                 mp_l.join().unwrap();
-                std::thread::sleep(std::time::Duration::from_millis(500))
             });
         }
 
@@ -103,7 +103,12 @@ impl NamedHlsDownloader {
                     #[cfg(feature = "spinner")]
                     spinner.inc(1);
                     #[cfg(feature = "spinner")]
-                    let head = self.http.head(u.clone()).send().await?;
+                    let head = self
+                        .http
+                        .head(u.clone())
+                        .timeout(std::time::Duration::from_secs(10))
+                        .send()
+                        .await?;
                     #[cfg(feature = "spinner")]
                     let csize = if head.status().is_success() {
                         head.headers()
@@ -120,7 +125,12 @@ impl NamedHlsDownloader {
                     #[cfg(feature = "spinner")]
                     pb.set_style(sty.clone());
 
-                    let req = self.http.get(u).headers(self.headers.clone()).build()?;
+                    let req = self
+                        .http
+                        .get(u)
+                        .headers(self.headers.clone())
+                        .timeout(std::time::Duration::from_secs(10))
+                        .build()?;
                     let size = download_to_file(
                         &self.http,
                         req,
@@ -135,7 +145,11 @@ impl NamedHlsDownloader {
 
                     total_size += size;
                 }
-                HlsQueue::StreamOver => break,
+                HlsQueue::StreamOver => {
+                    warn!("Stream ended");
+
+                    break;
+                }
             }
         }
         buf_writer.flush().await?;
@@ -193,7 +207,10 @@ impl NamedHlsWatch {
 
             // Use the same headers as the original request
             let req = match self.request.try_clone() {
-                Some(r) => r,
+                Some(mut r) => {
+                    *r.timeout_mut() = Some(std::time::Duration::from_secs(10));
+                    r
+                }
                 // If the body is not able to be cloned it will only clone the headers.
                 None => {
                     warn!("[HLS] body not able to be cloned only clones headers.");
@@ -201,6 +218,7 @@ impl NamedHlsWatch {
                         .http
                         .get(self.request.url().clone())
                         .headers(self.request.headers().clone())
+                        .timeout(std::time::Duration::from_secs(10))
                         .build()
                     {
                         Ok(br) => br,
@@ -216,7 +234,7 @@ impl NamedHlsWatch {
             let master_res = match self.http.execute(req).await {
                 Ok(r) => r,
                 Err(e) => {
-                    warn!("[HLS] Playlist download failed!\n{}", e);
+                    warn!("[HLS] Master playlist download failed!\n{}", e);
                     counter += 1;
                     continue;
                 }
@@ -271,6 +289,7 @@ impl NamedHlsWatch {
                 .http
                 .get(uri)
                 .headers(self.request.headers().clone())
+                .timeout(std::time::Duration::from_secs(10))
                 .build()
             {
                 Ok(p) => p,
@@ -285,7 +304,7 @@ impl NamedHlsWatch {
             let res = match self.http.execute(mp_hls).await {
                 Ok(r) => r,
                 Err(e) => {
-                    warn!("[HLS] Playlist download failed!\n{}", e);
+                    warn!("[HLS] Minor playlist download failed!\n{}", e);
                     counter += 1;
                     continue;
                 }
@@ -364,13 +383,16 @@ impl NamedHlsWatch {
 #[inline]
 async fn download_to_file<AW>(
     client: &ReqwestClient,
-    request: Request,
+    mut request: Request,
     writer: &mut BufWriter<AW>,
     #[cfg(feature = "spinner")] pb: indicatif::ProgressBar,
 ) -> Result<u64, Error>
 where
     AW: AsyncWrite + Unpin,
 {
+    if request.timeout().is_none() {
+        *request.timeout_mut() = Some(std::time::Duration::from_secs(10));
+    }
     let mut stream = client.execute(request).await?.bytes_stream();
     let mut tsize = 0;
     while let Some(item) = stream.next().await {
