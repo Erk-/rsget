@@ -21,7 +21,7 @@ use patricia_tree::PatriciaSet;
 use std::time::Duration;
 
 #[cfg(feature = "spinner")]
-use std::sync::Arc;
+use std::{convert::TryFrom, sync::Arc};
 
 use crate::error::Error;
 
@@ -249,7 +249,14 @@ impl NamedHlsWatch {
                 }
             };
 
-            let master_playlist = master_string.parse::<MasterPlaylist>().unwrap();
+            let master_playlist = match MasterPlaylist::try_from(master_string.as_str()) {
+                Ok(mp) => mp,
+                Err(e) => {
+                    warn!("[HLS] Master playlist parsing failed: {}", e);
+                    counter += 1;
+                    continue;
+                }
+            };
 
             let ext_media = match master_playlist
                 .media
@@ -287,7 +294,7 @@ impl NamedHlsWatch {
 
             let mp_hls = match self
                 .http
-                .get(uri)
+                .get(uri.as_ref())
                 .headers(self.request.headers().clone())
                 .timeout(std::time::Duration::from_secs(10))
                 .build()

@@ -5,7 +5,10 @@ use hls_m3u8::MasterPlaylist;
 use rand::{rngs::SmallRng, Rng, SeedableRng};
 use regex::Regex;
 
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::{
+    convert::TryFrom,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use stream_lib::StreamType;
 
@@ -170,12 +173,12 @@ impl Streamable for Twitch {
             .await?
             .text()
             .await?;
-        let playlist = playlist_res.parse::<MasterPlaylist>()?;
+        let playlist = MasterPlaylist::try_from(playlist_res.as_str())?;
         let qu_name = playlist.media.get(0).unwrap().name();
 
         Ok(StreamType::NamedPlaylist(
             self.client.get(&playlist_url).build()?,
-            String::from(qu_name),
+            String::from(qu_name.as_ref()),
         ))
     }
     async fn get_ext(&self) -> StreamResult<String> {
