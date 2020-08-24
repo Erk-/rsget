@@ -1,7 +1,13 @@
-pub mod afreeca;
-pub mod bilibili;
-pub mod dlive;
-pub mod twitch;
+mod afreeca;
+mod bilibili;
+mod dlive;
+mod twitch;
+
+pub use afreeca::Afreeca;
+pub use bilibili::Bilibili;
+pub use dlive::DLive;
+pub use twitch::Twitch;
+
 
 /*
 pub mod douyin;
