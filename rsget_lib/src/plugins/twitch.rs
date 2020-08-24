@@ -5,7 +5,10 @@ use hls_m3u8::MasterPlaylist;
 use rand::{rngs::SmallRng, Rng, SeedableRng};
 use regex::Regex;
 
-use std::{convert::TryFrom, time::{SystemTime, UNIX_EPOCH}};
+use std::{
+    convert::TryFrom,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use stream_lib::StreamType;
 
