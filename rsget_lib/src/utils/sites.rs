@@ -4,7 +4,7 @@ use crate::plugins::{
     mixer::Mixer, tiktok::TikTok, twitch::Twitch, vlive::Vlive,
 };
 */
-use crate::plugins::{afreeca::Afreeca, dlive::DLive, twitch::Twitch, bilibili::Bilibili};
+use crate::plugins::{afreeca::Afreeca, bilibili::Bilibili, dlive::DLive, twitch::Twitch};
 use crate::utils::error::RsgetError;
 use crate::utils::error::StreamError;
 use crate::utils::error::StreamResult;

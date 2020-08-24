@@ -87,7 +87,7 @@ impl Streamable for Bilibili {
             .await?
             .data
             .durl;
-        
+
         Ok(Box::new(Bilibili {
             client: client,
             url: url,
@@ -114,7 +114,10 @@ impl Streamable for Bilibili {
 
     async fn get_stream(&self) -> StreamResult<StreamType> {
         Ok(StreamType::Chuncked(
-            self.client.get(&self.durl_list[0].url).header("User-Agent", USER_AGENT).build()?,
+            self.client
+                .get(&self.durl_list[0].url)
+                .header("User-Agent", USER_AGENT)
+                .build()?,
         ))
     }
 

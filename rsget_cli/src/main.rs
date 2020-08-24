@@ -26,8 +26,16 @@ struct Opt {
     network_play: bool,
     url: String,
 }
-#[tokio::main]
-async fn main() -> StreamResult<()> {
+
+use tokio::runtime::Runtime;
+fn main() -> StreamResult<()> {
+    let mut runtime = Runtime::new()?;
+    runtime.block_on(async move { async_main().await })?;
+    runtime.shutdown_timeout(std::time::Duration::from_millis(100));
+    Ok(())
+}
+
+async fn async_main() -> StreamResult<()> {
     Logger::with_env()
         .format(opt_format)
         .start()
