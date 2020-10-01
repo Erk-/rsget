@@ -1,12 +1,10 @@
-use crate::Streamable;
+use async_trait::async_trait;
 use regex::Regex;
 
-use crate::utils::error::RsgetError;
-use crate::utils::error::StreamError;
-
-use crate::utils::downloaders::DownloadClient;
-
 use stream_lib::StreamType;
+
+use crate::utils::error::{RsgetError, StreamError, StreamResult};
+use crate::{Status, Streamable};
 
 /*
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -27,17 +25,18 @@ pub struct DouyinRoot {
 pub struct Douyin {
     pub url: String,
     pub video_id: String,
-    pub douyin_url: String, //DouyinRoot,
+    pub douyin_url: String,
+    //DouyinRoot,
     pub description: String,
     pub author: String,
-    client: DownloadClient,
+    client: reqwest::Client,
 }
 
+#[async_trait]
 impl Streamable for Douyin {
-    fn new(url: String) -> Result<Box<Douyin>, StreamError> {
-        let dc = DownloadClient::new()?;
-        let site_req = dc.make_request(&url, None)?;
-        let res: Result<String, StreamError> = dc.download_to_string(site_req);
+    async fn new(url: String) -> StreamResult<Box<Douyin>> {
+        let client = reqwest::Client::new();
+        let res = client.get(&url).send().await?.text().await;
         match res {
             Ok(some) => {
                 let url_re: Regex = Regex::new(
@@ -60,7 +59,7 @@ impl Streamable for Douyin {
                 })?;
 
                 let ret_val = Douyin {
-                    client: dc,
+                    client,
                     url: url.clone(),
                     video_id: String::from(&id_cap[1]),
                     douyin_url: String::from(&video_cap[1]),
@@ -70,42 +69,39 @@ impl Streamable for Douyin {
                 info!("{:#?}", &ret_val);
                 Ok(Box::new(ret_val))
             }
-            Err(why) => Err(why),
+            Err(why) => Err(why.into()),
         }
     }
 
-    fn get_title(&self) -> Option<String> {
-        Some(self.description.clone())
+    async fn get_title(&self) -> StreamResult<String> {
+        Ok(self.description.clone())
     }
 
-    fn get_author(&self) -> Option<String> {
-        Some(self.author.clone())
+    async fn get_author(&self) -> StreamResult<String> {
+        Ok(self.author.clone())
     }
 
-    fn is_online(&self) -> bool {
-        true
+    async fn is_online(&self) -> StreamResult<Status> {
+        Ok(Status::Online)
     }
 
-    fn get_stream(&self) -> Result<StreamType, StreamError> {
+    async fn get_stream(&self) -> StreamResult<StreamType> {
         Ok(StreamType::Chuncked(
-            self.client.rclient.get(&self.douyin_url).build()?,
+            self.client.get(&self.douyin_url).build()?,
         ))
     }
 
-    fn get_ext(&self) -> String {
-        String::from("mp4")
+    async fn get_ext(&self) -> StreamResult<String> {
+        Ok(String::from("mp4"))
     }
 
-    fn get_default_name(&self) -> String {
-        format!(
+    async fn get_default_name(&self) -> StreamResult<String> {
+        Ok(format!(
             "{}-{}-{}.{}",
             self.video_id,
-            self.get_title().unwrap(),
-            self.get_author().unwrap(),
-            self.get_ext()
-        )
-    }
-    fn get_reqwest_client(&self) -> &reqwest::Client {
-        &self.client.rclient
+            self.get_title().await?,
+            self.get_author().await?,
+            self.get_ext().await?
+        ))
     }
 }
