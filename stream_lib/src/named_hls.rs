@@ -287,10 +287,9 @@ impl NamedHlsWatch {
                 VariantStream::ExtXStreamInf { uri: u, .. } => u,
             };
 
-            match Url::parse(&uri) {
-                Ok(u) => self.master_url = u.join(".").expect("Could not join with '.'"),
-                Err(_) => (),
-            };
+            if let Ok(u) = Url::parse(&uri) {
+                self.master_url = u.join(".").expect("Could not join with '.'");
+            }
 
             let mp_hls = match self
                 .http
