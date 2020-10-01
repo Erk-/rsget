@@ -89,9 +89,9 @@ impl Streamable for Bilibili {
             .durl;
 
         Ok(Box::new(Bilibili {
-            client: client,
-            url: url,
-            room_init: room_init,
+            client,
+            url,
+            room_init,
             durl_list: durls,
         }))
     }
