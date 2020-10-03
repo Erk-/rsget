@@ -1,16 +1,18 @@
-use crate::Streamable;
+use crate::{Status, Streamable};
 use regex::Regex;
+
+use async_trait::async_trait;
 
 use stream_lib::StreamType;
 
-use crate::utils::downloaders::DownloadClient;
+use crate::utils::error::StreamResult;
 
 use crate::utils::error::RsgetError;
 use crate::utils::error::StreamError;
 
 #[derive(Debug, Clone)]
 pub struct Vlive {
-    client: DownloadClient,
+    http: reqwest::Client,
     url: String,
     title: String,
     author: String,
@@ -41,12 +43,13 @@ pub struct Vlive {
     stream_url: Option<String>,
 }
 
+#[async_trait]
 impl Streamable for Vlive {
-    fn new(url: String) -> Result<Box<Vlive>, StreamError> {
-        let dc = DownloadClient::new()?;
+    async fn new(url: String) -> StreamResult<Box<Vlive>> {
+        let http = reqwest::Client::new();
 
-        let page_req = dc.make_request(&url, None)?;
-        let page = dc.download_to_string(page_req)?;
+        let page_req = http.get(&url).send().await?;
+        let page = page_req.text().await?;
 
         // The session key and video ID (not the short video seq id at the end of url) are parsed from js
         let vid_id_re = Regex::new(r#"vlive\.video\.init\((\s*"(.*?)",\s*?){6}"#)?;
@@ -66,7 +69,7 @@ impl Streamable for Vlive {
             .ok_or(StreamError::Rsget(RsgetError::new("No capture found")))?[1]
             .to_string();
 
-        let page_req = dc.make_request(&format!("https://global.apis.naver.com/rmcnmv/rmcnmv/vod_play_videoInfo.json?key={}&videoId={}", key, id), None)?;
+        let page_req = http.get(&format!("https://global.apis.naver.com/rmcnmv/rmcnmv/vod_play_videoInfo.json?key={}&videoId={}", key, id)).send().await?;
 
         // all these structs are quite excessive for what we actually need but i want to be ready for the "Quality Update"
         // Currently this backend just chooses the video with the highest file size, aka most likely to be highest quality
@@ -122,7 +125,7 @@ impl Streamable for Vlive {
             value: String,
         }
 
-        let info = dc.download_and_de::<VideoInfo>(page_req)?;
+        let info = page_req.json::<VideoInfo>().await?;
         let stream_url = info
             .streams
             .get(0)
@@ -133,7 +136,7 @@ impl Streamable for Vlive {
         let video_url = videos.last().map(|video| video.source.clone());
 
         Ok(Box::new(Vlive {
-            client: dc,
+            http,
             url,
             title: info.meta.subject,
             author: chan,
@@ -142,19 +145,19 @@ impl Streamable for Vlive {
         }))
     }
 
-    fn get_title(&self) -> Option<String> {
-        Some(self.title.clone())
+    async fn get_title(&self) -> StreamResult<String> {
+        Ok(self.title.clone())
     }
 
-    fn get_author(&self) -> Option<String> {
-        Some(self.author.clone())
+    async fn get_author(&self) -> StreamResult<String> {
+        Ok(self.author.clone())
     }
 
-    fn is_online(&self) -> bool {
-        self.video_url.is_some()
+    async fn is_online(&self) -> StreamResult<Status> {
+        Ok(Status::Online)
     }
 
-    fn get_stream(&self) -> Result<StreamType, StreamError> {
+    async fn get_stream(&self) -> StreamResult<StreamType> {
         // READ TODO At the beginning
         // let url = self.stream_url.clone().ok_or(StreamError::Rsget(RsgetError::new("No streams available")))?;
         // Ok(StreamType::HLS(self.client.make_request(&url, None)?))
@@ -163,18 +166,14 @@ impl Streamable for Vlive {
             .video_url
             .clone()
             .ok_or(StreamError::Rsget(RsgetError::new("No videos available")))?;
-        Ok(StreamType::Chuncked(self.client.make_request(&url, None)?))
+        Ok(StreamType::Chuncked(self.http.get(&url).build()?))
     }
 
-    fn get_ext(&self) -> String {
-        "mp4".into()
+    async fn get_ext(&self) -> StreamResult<String> {
+        Ok("mp4".into())
     }
 
-    fn get_default_name(&self) -> String {
-        format!("{}-{}.{}", self.author, self.title, self.get_ext())
-    }
-
-    fn get_reqwest_client(&self) -> &reqwest::Client {
-        &self.client.rclient
+    async fn get_default_name(&self) -> StreamResult<String> {
+        Ok(format!("{}-{}.{}", self.author, self.title, self.get_ext().await?))
     }
 }
