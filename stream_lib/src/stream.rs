@@ -11,6 +11,9 @@ use crate::error::Error;
 pub enum StreamType {
     /// A stream that is just a chunked http response.
     Chuncked(Request),
+    /// Full download, this is to be used when the file
+    /// has a known length when the download starts.
+    Full(Request),
     /// A m3u8 playlist, which may be a stream.
     HLS(Request),
     /// A m3u8 master playlist and a string which is the name of the stream to download.
@@ -34,6 +37,7 @@ impl Stream {
     {
         match self.stream_type {
             StreamType::Chuncked(_) => self.chunked(client, writer).await,
+            StreamType::Full(_) => self.full(client, writer).await,
             StreamType::HLS(_) => self.hls(client, writer).await,
             StreamType::NamedPlaylist(_, _) => self.named_playlist(client, writer).await,
         }
@@ -58,6 +62,50 @@ impl Stream {
             let size = tokio::io::copy(&mut item?.as_ref(), &mut writer).await?;
             #[cfg(feature = "spinner")]
             spinner.inc(size);
+            tsize += size;
+        }
+
+        info!("[MASTER] Downloaded: {}", tsize);
+        Ok(tsize)
+    }
+
+    async fn full<AW>(self, client: &ReqwestClient, mut writer: AW) -> Result<u64, Error>
+    where
+        AW: AsyncWrite + Unpin,
+    {
+        let req = self.get_request();
+
+        #[cfg(feature = "spinner")]
+        let head = client
+            .head(req.url().clone())
+            .timeout(std::time::Duration::from_secs(10))
+            .send()
+            .await?;
+        #[cfg(feature = "spinner")]
+        let csize = if head.status().is_success() {
+            head.headers()
+                .get(reqwest::header::CONTENT_LENGTH)
+                .and_then(|l| l.to_str().ok())
+                .and_then(|l| l.parse().ok())
+                .unwrap_or(0)
+        } else {
+            0
+        };
+
+        #[cfg(feature = "spinner")]
+        let sty = indicatif::ProgressStyle::default_bar()
+            .template("{bar:40.green/yellow} {bytes:>7}/{total_bytes:7}");
+        #[cfg(feature = "spinner")]
+        let bar = indicatif::ProgressBar::new(csize);
+        #[cfg(feature = "spinner")]
+        bar.set_style(sty);
+
+        let mut stream = client.execute(req).await?.bytes_stream();
+        let mut tsize = 0;
+        while let Some(item) = stream.next().await {
+            let size = tokio::io::copy(&mut item?.as_ref(), &mut writer).await?;
+            #[cfg(feature = "spinner")]
+            bar.inc(size);
             tsize += size;
         }
 
@@ -94,6 +142,7 @@ impl Stream {
     fn get_request(self) -> Request {
         match self.stream_type {
             StreamType::Chuncked(req) => req,
+            StreamType::Full(req) => req,
             StreamType::HLS(req) => req,
             StreamType::NamedPlaylist(req, _) => req,
         }

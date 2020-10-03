@@ -166,7 +166,7 @@ impl Streamable for Vlive {
             .video_url
             .clone()
             .ok_or(StreamError::Rsget(RsgetError::new("No videos available")))?;
-        Ok(StreamType::Chuncked(self.http.get(&url).build()?))
+        Ok(StreamType::Full(self.http.get(&url).build()?))
     }
 
     async fn get_ext(&self) -> StreamResult<String> {
@@ -174,6 +174,11 @@ impl Streamable for Vlive {
     }
 
     async fn get_default_name(&self) -> StreamResult<String> {
-        Ok(format!("{}-{}.{}", self.author, self.title, self.get_ext().await?))
+        Ok(format!(
+            "{}-{}.{}",
+            self.author,
+            self.title,
+            self.get_ext().await?
+        ))
     }
 }
