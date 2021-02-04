@@ -164,7 +164,7 @@ impl Streamable for Twitch {
             .as_secs();
         let mut rng = SmallRng::seed_from_u64(time);
         let playlist_url = format!("https://usher.ttvnw.net/api/channel/hls/{}.m3u8?player=twitchweb&token={}&sig={}&allow_audio_only=true&allow_source=true&type=any&p={}",
-                                    self.username, acs.token, acs.sig, rng.gen_range(1, 999_999));
+                                    self.username, acs.token, acs.sig, rng.gen_range(1..=999_999));
 
         let playlist_res = self
             .client

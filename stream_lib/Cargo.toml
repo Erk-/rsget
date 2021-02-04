@@ -11,12 +11,12 @@ repository = "https://github.com/Erk-/rsget/tree/master/stream_lib"
 
 [dependencies]
 hls_m3u8 = "0.4"
-reqwest = { version = "0.10.0", features = ["stream"] }
+reqwest = { version = "0.11.0", features = ["stream"] }
 log = "^0.4"
 url = "2"
-futures-util = "0.3.1"
-tokio = { version = "0.2", features = ["full"] }
-patricia_tree = "0.2.0"
+futures-util = "0.3"
+tokio = { version = "1", features = ["full"] }
+patricia_tree = "0.3.0"
 
 [dependencies.indicatif]
 optional = true

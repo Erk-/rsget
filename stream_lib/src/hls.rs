@@ -300,7 +300,7 @@ impl HlsWatch {
             }
             warn!("[HLS] Sleeps for {:#?}", target_duration);
             // Sleeps for the target duration.
-            tokio::time::delay_for(target_duration).await;
+            tokio::time::sleep(target_duration).await;
             counter += 1;
         }
 

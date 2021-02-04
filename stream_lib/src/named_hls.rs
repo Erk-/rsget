@@ -18,10 +18,11 @@ use futures_util::StreamExt;
 
 use patricia_tree::PatriciaSet;
 
+use std::convert::TryFrom;
 use std::time::Duration;
 
 #[cfg(feature = "spinner")]
-use std::{convert::TryFrom, sync::Arc};
+use std::sync::Arc;
 
 use crate::error::Error;
 
@@ -378,7 +379,7 @@ impl NamedHlsWatch {
             }
             warn!("[HLS] Sleeps for {:#?}", target_duration);
             // Sleeps for the target duration.
-            tokio::time::delay_for(target_duration).await;
+            tokio::time::sleep(target_duration).await;
             counter += 1;
         }
 
