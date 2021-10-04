@@ -20,7 +20,7 @@ patricia_tree = "0.3.0"
 
 [dependencies.indicatif]
 optional = true
-version = "0.15"
+version = "0.16"
 
 [features]
 default = []

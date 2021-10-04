@@ -40,7 +40,7 @@ impl Display for RsgetError {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         let printable = match self {
             RsgetError::Offline => "Stream offline",
-            RsgetError::Other(s) => &s,
+            RsgetError::Other(s) => s,
         };
         write!(f, "{}", printable)
     }
@@ -50,7 +50,7 @@ impl StdError for RsgetError {
     fn description(&self) -> &str {
         match self {
             RsgetError::Offline => "Stream offline",
-            RsgetError::Other(s) => &s,
+            RsgetError::Other(s) => s,
         }
     }
 }
