@@ -36,7 +36,8 @@ fn main() -> StreamResult<()> {
 }
 
 async fn async_main() -> StreamResult<()> {
-    Logger::with_env()
+    Logger::try_with_env()
+        .expect("Could not create logger")
         .format(opt_format)
         .start()
         .unwrap_or_else(|e| panic!("Logger initialization failed with {}", e));

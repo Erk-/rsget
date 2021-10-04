@@ -58,15 +58,15 @@ impl Streamable for Vlive {
 
         let id = vid_id_re
             .captures(&page)
-            .ok_or(StreamError::Rsget(RsgetError::new("No capture found")))?[2]
+            .ok_or_else(|| StreamError::Rsget(RsgetError::new("No capture found")))?[2]
             .to_string();
         let key = vid_key_re
             .captures(&page)
-            .ok_or(StreamError::Rsget(RsgetError::new("No capture found")))?[2]
+            .ok_or_else(|| StreamError::Rsget(RsgetError::new("No capture found")))?[2]
             .to_string();
         let chan = vid_chan_re
             .captures(&page)
-            .ok_or(StreamError::Rsget(RsgetError::new("No capture found")))?[1]
+            .ok_or_else(|| StreamError::Rsget(RsgetError::new("No capture found")))?[1]
             .to_string();
 
         let page_req = http.get(&format!("https://global.apis.naver.com/rmcnmv/rmcnmv/vod_play_videoInfo.json?key={}&videoId={}", key, id)).send().await?;
@@ -165,7 +165,7 @@ impl Streamable for Vlive {
         let url = self
             .video_url
             .clone()
-            .ok_or(StreamError::Rsget(RsgetError::new("No videos available")))?;
+            .ok_or_else(|| StreamError::Rsget(RsgetError::new("No videos available")))?;
         Ok(StreamType::Full(self.http.get(&url).build()?))
     }
 

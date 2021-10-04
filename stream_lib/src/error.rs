@@ -45,7 +45,7 @@ impl From<TokioIoError> for Error {
 
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        f.write_str(&self.to_string())
+        write!(f, "{}", &self)
     }
 }
 
