@@ -24,8 +24,12 @@ struct AfreecaGetInfo {
 struct AfreecaGetHlsKey {
     bid: String,
     bno: String,
+    from_api: String,
+    mode: String,
+    player_type: String,
     pwd: String,
     quality: String,
+    stream_type: String,
     #[serde(rename = "type")]
     _type: String,
 }
@@ -40,42 +44,10 @@ struct AfreecaHlsKey {
 #[allow(non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct AfreecaChannelInfoData {
-    //geo_cc: String,
-    //geo_rc: String,
-    //acpt_lang: String,
-    //svc_lang: String,
-    //RESULT: i64,
-    //PBNO: String,
-    BNO: String,
-    //BJID: String,
+    RESULT: i64,
     BJNICK: String,
-    //BJGRADE: i64,
-    //ISFAV: String,
-    //CATE: String,
-    ////ADCATE: String,
-    //GRADE: String,
-    //BTYPE: String,
-    //CHATNO: String,
-    //BPWD: String,
     TITLE: String,
-    //BPS: String,
-    //RESOLUTION: String,
-    //CTIP: String,
-    //CTPT: String,
-    //CHIP: String,
-    //CHPT: String,
-    //GWIP: String,
-    //GWPT: String,
-    //STYPE: String,
-    //STPT: String,
-    CDN: String,
     RMD: String,
-    //ORG: String,
-    //MDPT: String,
-    //BTIME: i64,
-    //PCON: i64,
-    //PCON_TIME: String,
-    //FTK: String,
 }
 
 #[allow(non_snake_case)]
@@ -99,6 +71,7 @@ pub struct Afreeca {
     hls_key: String,
     stream_info: AfreecaStream,
     client: reqwest::Client,
+    bno: String,
 }
 
 // Helper functions
@@ -108,17 +81,19 @@ async fn get_hls_key(
     room_id: String,
     bno: String,
 ) -> StreamResult<String> {
-    // http://play.afreecatv.com/rrvv17/207524505
-    //CHANNEL_API_URL = "http://live.afreecatv.com:8057/afreeca/player_live_api.php"
     let data = AfreecaGetHlsKey {
         bid: room_id,
         bno,
+        from_api: "0".to_string(),
+        mode: "landing".to_string(),
+        player_type: "html5".to_string(),
         pwd: "".to_string(),
         quality: "original".to_string(),
+        stream_type: "common".to_string(),
         _type: "pwd".to_string(),
     };
     let res = client
-        .post("http://live.afreecatv.com:8057/afreeca/player_live_api.php")
+        .post("http://live.afreecatv.com/afreeca/player_live_api.php")
         .header(REFERER, url)
         .form(&data)
         .send()
@@ -134,15 +109,49 @@ async fn get_hls_key(
 
 #[async_trait]
 impl Streamable for Afreeca {
-    async fn new(url: String) -> StreamResult<Box<Afreeca>> {
+    async fn new(mut url: String) -> StreamResult<Box<Afreeca>> {
+        if !url.ends_with('/') {
+            url.push('/');
+        }
         type ChannelInfo = AfreecaChannelInfo<AfreecaChannelInfoData>;
         let client = reqwest::Client::new();
-        let room_id_re = Regex::new(r"(?:http://[^/]+)?/([a-zA-Z0-9]+)(?:/[0-9]+)?")?;
-        let cap = room_id_re.captures(&url).ok_or_else(|| {
+        let room_id_re = Regex::new(r"(?:http://[^/]+)?/([a-zA-Z0-9]+)/([0-9]+)?")?;
+        let url_clone = url.clone();
+        let cap = room_id_re.captures(&url_clone).ok_or_else(|| {
             StreamError::Rsget(RsgetError::new("[Afreeca] Cannot capture room id"))
         })?;
         let room_id = String::from(&cap[1]);
+        let bno = match cap.get(2) {
+            Some(_) => String::from(&cap[2]),
+            None => {
+                warn!("Missing dno");
+                let text = client.get(&url).send().await?.text().await?;
+                let bno_re = Regex::new(r"var nBroadNo = (\d+);")?;
+                let cap = bno_re
+                    .captures(&text)
+                    .ok_or(StreamError::Rsget(RsgetError::Offline))?;
+                cap.get(1).ok_or_else(|| {
+                    StreamError::Rsget(RsgetError::new("[Afreeca] Cannot capture bno"))
+                })?;
+                if !url.ends_with('/') {
+                    url.push('/');
+                }
+                url.push_str(&cap[1]);
+
+                return Self::new(url).await;
+            }
+        };
         debug!("room_id: {}", room_id);
+
+        debug!("Getting hls_key");
+        let hls_key = get_hls_key(
+            client.clone(),
+            url.clone(),
+            String::from(&cap[1]),
+            bno.clone(),
+        )
+        .await?;
+
         let ci = {
             let data = AfreecaGetInfo {
                 bid: room_id,
@@ -150,7 +159,7 @@ impl Streamable for Afreeca {
                 player_type: String::from("html5"),
             };
             let res = client
-                .post("http://live.afreecatv.com:8057/afreeca/player_live_api.php")
+                .post("http://live.afreecatv.com/afreeca/player_live_api.php")
                 .form(&data)
                 .send()
                 .await?;
@@ -163,19 +172,10 @@ impl Streamable for Afreeca {
             })?;
             json
         };
-        debug!("Getting room_id");
-        let hls_key = get_hls_key(
-            client.clone(),
-            url.clone(),
-            String::from(&cap[1]),
-            ci.CHANNEL.BNO.clone(),
-        )
-        .await?;
         let json_url = format!(
-            "{}/broad_stream_assign.html?return_type={}&broad_key={}",
+            "{}/broad_stream_assign.html?return_type=gs_cdn_pc_web&broad_key={}",
             ci.CHANNEL.RMD.clone(),
-            ci.CHANNEL.CDN.clone(),
-            format!("{}-flash-original-hls", ci.CHANNEL.BNO.clone())
+            format!("{}-flash-original-hls", &bno)
         );
         debug!("Getting stream_info!");
         let stream_info: AfreecaStream = client.get(&json_url).send().await?.json().await?;
@@ -186,6 +186,7 @@ impl Streamable for Afreeca {
             hls_key,
             stream_info,
             client,
+            bno,
         };
         debug!("{:#?}", retval);
         Ok(Box::new(retval))
@@ -200,8 +201,6 @@ impl Streamable for Afreeca {
     }
 
     async fn is_online(&self) -> StreamResult<Status> {
-        Ok(Status::Online)
-        /*
         match self.afreeca_info.CHANNEL.RESULT {
             0 => Ok(Status::Offline),
             1 => Ok(Status::Online),
@@ -210,12 +209,9 @@ impl Streamable for Afreeca {
                 Ok(Status::Unknown)
             }
         }
-        */
     }
 
     async fn get_stream(&self) -> StreamResult<StreamType> {
-        let cdn = self.afreeca_info.CHANNEL.CDN.clone();
-        trace!("CDN: {}", &cdn);
         debug!("view_url: {}", self.stream_info.view_url);
         let url = format!("{}?aid={}", self.stream_info.view_url, self.hls_key);
 
