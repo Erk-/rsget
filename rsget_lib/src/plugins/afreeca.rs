@@ -113,7 +113,6 @@ impl Streamable for Afreeca {
         if !url.ends_with('/') {
             url.push('/');
         }
-        dbg!(&url);
         type ChannelInfo = AfreecaChannelInfo<AfreecaChannelInfoData>;
         let client = reqwest::Client::new();
         let room_id_re = Regex::new(r"(?:http://[^/]+)?/([a-zA-Z0-9]+)/([0-9]+)?")?;
@@ -202,7 +201,6 @@ impl Streamable for Afreeca {
     }
 
     async fn is_online(&self) -> StreamResult<Status> {
-        dbg!(&self.afreeca_info.CHANNEL.RESULT);
         match self.afreeca_info.CHANNEL.RESULT {
             0 => Ok(Status::Offline),
             1 => Ok(Status::Online),
