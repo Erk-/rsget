@@ -128,20 +128,20 @@ impl Streamable for Afreeca {
                 let text = client.get(&url).send().await?.text().await?;
                 let bno_re = Regex::new(r"var nBroadNo = (\d+);")?;
 
-                let cap = bno_re.captures(&text).ok_or_else(|| {
-                    StreamError::Rsget(RsgetError::Offline)
-                })?;
+                let cap = bno_re
+                    .captures(&text)
+                    .ok_or(StreamError::Rsget(RsgetError::Offline))?;
+
                 cap.get(1).ok_or_else(|| {
                     StreamError::Rsget(RsgetError::new("[Afreeca] Cannot capture bno"))
                 })?;
-                if url.ends_with('/') {
-                    url.push_str(&cap[1]);
-                } else {
+                if !url.ends_with('/') {
                     url.push('/');
-                    url.push_str(&cap[1]);
                 }
+                url.push_str(&cap[1]);
+
                 return Self::new(url).await;
-            },
+            }
         };
         debug!("room_id: {}", room_id);
 
