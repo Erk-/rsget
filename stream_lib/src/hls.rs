@@ -10,6 +10,8 @@ use tokio::io::AsyncWriteExt;
 use tokio::io::{AsyncWrite, BufWriter};
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 
+use tracing::{info, trace, warn};
+
 use hls_m3u8::MediaPlaylist;
 
 use futures_util::StreamExt;

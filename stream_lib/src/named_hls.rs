@@ -24,6 +24,8 @@ use std::time::Duration;
 #[cfg(feature = "spinner")]
 use std::sync::Arc;
 
+use tracing::{info, trace, warn};
+
 use crate::error::Error;
 
 #[derive(Debug, Clone)]

@@ -4,7 +4,7 @@ version = "0.3.0"
 authors = ["Valdemar Erk <v@erk.io>"]
 description = "Tool to download differnt types of streams"
 license = "ISC"
-edition = "2018"
+edition = "2021"
 documentation = "https://docs.rs/stream_lib"
 homepage = "https://github.com/Erk-/rsget"
 repository = "https://github.com/Erk-/rsget/tree/master/stream_lib"
@@ -12,11 +12,11 @@ repository = "https://github.com/Erk-/rsget/tree/master/stream_lib"
 [dependencies]
 hls_m3u8 = "0.4"
 reqwest = { version = "0.11.0", features = ["stream"] }
-log = "^0.4"
+tracing = "0.1"
 url = "2"
 futures-util = "0.3"
-tokio = { version = "1", features = ["full"] }
-patricia_tree = "0.3.0"
+tokio = { version = "1", default-features = false, features = [] }
+patricia_tree = "0.3.1"
 
 [dependencies.indicatif]
 optional = true

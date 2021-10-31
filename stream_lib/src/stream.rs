@@ -6,6 +6,8 @@ use reqwest::{Client as ReqwestClient, Request};
 
 use crate::error::Error;
 
+use tracing::info;
+
 /// A Enum with the types of streams supported
 #[derive(Debug)]
 pub enum StreamType {
