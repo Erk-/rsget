@@ -1,5 +1,6 @@
 use crate::{Status, Streamable};
 use regex::Regex;
+use tracing::{debug, warn};
 
 use crate::utils::error::{RsgetError, StreamError, StreamResult};
 
@@ -127,9 +128,11 @@ impl Streamable for Afreeca {
                 warn!("Missing dno");
                 let text = client.get(&url).send().await?.text().await?;
                 let bno_re = Regex::new(r"var nBroadNo = (\d+);")?;
+
                 let cap = bno_re
                     .captures(&text)
                     .ok_or(StreamError::Rsget(RsgetError::Offline))?;
+
                 cap.get(1).ok_or_else(|| {
                     StreamError::Rsget(RsgetError::new("[Afreeca] Cannot capture bno"))
                 })?;

@@ -2,6 +2,7 @@ use crate::{Status, Streamable};
 use regex::Regex;
 
 use stream_lib::StreamType;
+use tracing::debug;
 
 use crate::utils::error::RsgetError;
 use crate::utils::error::StreamError;

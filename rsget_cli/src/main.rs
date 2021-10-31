@@ -3,10 +3,9 @@ use std::path::Path;
 use std::process::Command;
 use tokio::fs::File;
 
-use flexi_logger::{opt_format, Logger};
-use log::warn;
 use rsget_lib::{Status, Streamable};
 use structopt::StructOpt;
+use tracing::warn;
 
 use rsget_lib::utils::error::{RsgetError, StreamError, StreamResult};
 use rsget_lib::utils::stream_type_to_url;
@@ -36,11 +35,7 @@ fn main() -> StreamResult<()> {
 }
 
 async fn async_main() -> StreamResult<()> {
-    Logger::try_with_env()
-        .expect("Could not create logger")
-        .format(opt_format)
-        .start()
-        .unwrap_or_else(|e| panic!("Logger initialization failed with {}", e));
+    tracing_subscriber::fmt::init();
 
     let opt = Opt::from_args();
     let url = opt.url;
