@@ -3,9 +3,20 @@
 
 mod error;
 pub mod hls;
-pub mod named_hls;
-pub mod stream;
+mod download_stream;
+//pub mod stream;
 
 pub use crate::error::Error;
-pub use crate::hls::HlsDownloader;
-pub use crate::stream::{Stream, StreamType};
+//pub use crate::stream::{Stream, StreamType};
+pub use crate::download_stream::{DownloadStream, Event};
+
+use crate::hls::HlsDownloader;
+use reqwest::{Client, Request};
+
+pub fn download_hls(http: Client, request: Request) -> DownloadStream {
+    HlsDownloader::new(request, http).download()
+}
+
+pub fn download_hls_named(http: Client, request: Request, name: String) -> DownloadStream {
+    HlsDownloader::new_named(request, http, name).download()
+}

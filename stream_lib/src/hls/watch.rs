@@ -1,20 +1,13 @@
-/// Write buffer
-pub const WRITE_SIZE: usize = 131_072;
-
-/// HLS will try and look for new segments 12 times,
-pub const HLS_MAX_RETRIES: usize = 12;
-
 use std::time::Duration;
 
 use hls_m3u8::MediaPlaylist;
 use patricia_tree::PatriciaSet;
 
-use reqwest::{Url, Client, Request};
+use reqwest::{Client, Request, Url};
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
-use tracing::{warn, trace, info};
+use tracing::{info, trace, warn};
 
-use crate::Error;
-
+use crate::{Error, hls::{clone_request, HlsQueue, HLS_MAX_RETRIES}};
 
 pub struct HlsWatch {
     tx: UnboundedSender<HlsQueue>,
@@ -23,20 +16,23 @@ pub struct HlsWatch {
     links: PatriciaSet,
     master_url: Url,
     timeout: Duration,
+    fail_counter: usize,
+    filter: Option<fn(&str) -> bool>,
 }
 
-#[derive(Debug, Clone)]
-pub enum HlsQueue {
-    Url(Url),
-    StreamOver,
-}
+
 
 impl HlsWatch {
-    pub fn new(request: Request, http: Client) -> (Self, UnboundedReceiver<HlsQueue>) {
+    /// Filter will filter any url that returns `false`, if `None` it will not filter anything.
+    /// For example if you want filter preloading segments use: `|e| !(e.contains("preloading"))`.
+    pub fn new(
+        request: Request,
+        http: Client,
+        filter: Option<fn(&str) -> bool>,
+    ) -> (Self, UnboundedReceiver<HlsQueue>) {
         let (tx, rx) = unbounded_channel();
         let master_url = request
             .url()
-            .clone()
             .join(".")
             .expect("Could not join url with '.'.");
         (
@@ -46,17 +42,19 @@ impl HlsWatch {
                 http,
                 links: PatriciaSet::new(),
                 master_url,
+                timeout: Duration::from_secs(10),
+                fail_counter: 0,
+                filter,
             },
             rx,
         )
     }
 
-    async fn run(mut self) -> Result<(), Error> {
+    pub async fn run(mut self) -> Result<(), Error> {
         info!("STARTING WATCH!");
-        let mut fail_counter = 0;
 
         loop {
-            if fail_counter > HLS_MAX_RETRIES {
+            if self.fail_counter > HLS_MAX_RETRIES {
                 // There have either been errors or no new segments
                 // for `HLS_MAX_RETRIES` times the segment duration given
                 // in the m3u8 playlist file.
@@ -66,37 +64,13 @@ impl HlsWatch {
                 break;
             }
 
-            // Use the same headers as the original request
-            let req = match self.request.try_clone() {
-                Some(mut r) => {
-                    *r.timeout_mut() = Some(Duration::from_secs(10));
-                    r
-                }
-                // If the body is not able to be cloned it will only clone the headers.
-                None => {
-                    warn!("[HLS] body not able to be cloned only clones headers.");
-                    match self
-                        .http
-                        .get(self.request.url().clone())
-                        .headers(self.request.headers().clone())
-                        .timeout(Duration::from_secs(10))
-                        .build()
-                    {
-                        Ok(br) => br,
-                        Err(e) => {
-                            warn!("[HLS] Request creation failed!\n{}", e);
-                            fail_counter += 1;
-                            continue;
-                        }
-                    }
-                }
-            };
-
+            // Clone the request so we can reuse it in the loop.
+            let req = clone_request(&self.request, self.timeout);
             let res = match self.http.execute(req).await {
                 Ok(r) => r,
                 Err(e) => {
                     warn!("[HLS] Playlist download failed!\n{}", e);
-                    fail_counter += 1;
+                    self.fail_counter += 1;
                     continue;
                 }
             };
@@ -105,7 +79,7 @@ impl HlsWatch {
                 Ok(t) => t,
                 Err(e) => {
                     warn!("[HLS] Playlist text failed!\n{}", e);
-                    fail_counter += 1;
+                    self.fail_counter += 1;
                     continue;
                 }
             };
@@ -122,7 +96,7 @@ impl HlsWatch {
                 Err(e) => {
                     warn!("[HLS] Parsing failed!\n{}", e);
                     trace!("[HLS]\n{}", &m3u8_string);
-                    fail_counter += 1;
+                    self.fail_counter += 1;
                     continue;
                 }
             };
@@ -131,31 +105,27 @@ impl HlsWatch {
             let target_duration = m3u8.target_duration;
 
             // Makes a iterator with the url parts from the playlist
-            let m3u8_iterator = m3u8
-                .segments
-                .iter()
-                .map(|(_, e)| String::from(e.uri().trim()));
-
-            for e in m3u8_iterator {
+            for e in m3u8.segments.iter().map(|(_, e)| e.uri().trim()) {
                 trace!("[HLS] Tries to inserts: {}", e);
                 // Check if we have the segment in our set already
-                if self.links.insert(e.clone()) {
+                if self.links.insert(e) {
                     // Reset the counter as we got a new segment.
-                    fail_counter = 0;
+                    self.fail_counter = 0;
 
                     // Construct a url from the master and the segment.
-                    let url_formatted = if let Ok(u) = Url::parse(&e) {
+                    let url_formatted = if let Ok(u) = Url::parse(e) {
                         u
                     } else {
+                        // Attempt to parse the url as a relative url.
                         Url::parse(&format!("{}{}", self.master_url.as_str(), &e)).expect(
                             "The m3u8 does not currently work with stream_lib, \
-                                     please report the issue on the github repo, with an \
-                                     example of the file if possible.",
+                             please report the issue on the github repo, with an \
+                             example of the file if possible.",
                         )
                     };
 
-                    // Check if the segment is a Afreeca preloading segment.
-                    if !(e.contains("preloading")) {
+                    // Check that the filter runs.
+                    if self.filter.map_or(true, |f| f(e)) {
                         info!("[HLS] Adds {}!", url_formatted);
                         // Add the segment to the queue.
                         if self.tx.send(HlsQueue::Url(url_formatted)).is_err() {
@@ -164,13 +134,18 @@ impl HlsWatch {
                     }
                 }
             }
-            warn!("[HLS] Sleeps for {:#?}", target_duration);
+
+            if m3u8.has_end_list {
+                tracing::debug!("List has end, no more segments expected.");
+                break;
+            }
+
+            trace!("[HLS] Sleeps for {:#?}", target_duration);
             // Sleeps for the target duration.
             tokio::time::sleep(target_duration).await;
-            fail_counter += 1;
+            self.fail_counter += 1;
         }
 
         Ok(())
     }
 }
-

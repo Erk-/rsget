@@ -15,12 +15,18 @@ reqwest = { version = "0.11.0", features = ["stream"] }
 tracing = "0.1"
 url = "2"
 futures-util = "0.3"
-tokio = { version = "1", default-features = false, features = [] }
+tokio = { version = "1", default-features = false, features = ["full"] }
 patricia_tree = "0.3.1"
+
+futures-core = "0.3.24"
+bytes = "1"
 
 [dependencies.indicatif]
 optional = true
 version = "0.16"
+
+[dev-dependencies]
+tracing-subscriber = "0.3.1"
 
 [features]
 default = []
