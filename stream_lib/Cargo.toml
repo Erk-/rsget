@@ -23,7 +23,7 @@ bytes = "1.2.1"
 
 [dev-dependencies]
 tracing-subscriber = "0.3.1"
-tokio = { version = "1.21.2", default-features = false, features = ["fs", "rt", "sync", "time"] }
+tokio = { version = "1.21.2", default-features = false, features = ["fs", "rt", "sync", "time", "macros"] }
 
 [features]
 default = []
