@@ -4,7 +4,8 @@ use crate::plugins::{
     mixer::Mixer, tiktok::TikTok, twitch::Twitch, vlive::Vlive,
 };
 */
-use crate::plugins::{Afreeca, Bilibili, DLive, Twitch, Vlive};
+use crate::plugins::Afreeca;
+//use crate::plugins::{Afreeca, Bilibili, DLive, Twitch, Vlive};
 use crate::utils::error::RsgetError;
 use crate::utils::error::StreamError;
 use crate::utils::error::StreamResult;
@@ -40,16 +41,18 @@ async fn _get_site(input: &str) -> StreamResult<Box<dyn Streamable + Send>> {
     match input {
         //url if re_douyu.is_match(url) => Ok(Douyu::new(String::from(url))?),
         url if re_afreeca.is_match(url) => Ok(Afreeca::new(String::from(url)).await?),
+        /*
         url if re_dlive.is_match(url) => Ok(DLive::new(String::from(url)).await?),
         url if re_twitch.is_match(url) => Ok(Twitch::new(String::from(url)).await?),
         url if re_bilibili.is_match(url) => Ok(Bilibili::new(String::from(url)).await?),
-        /*url if re_inke.is_match(url) => Ok(Inke::new(String::from(url))?),
+        url if re_inke.is_match(url) => Ok(Inke::new(String::from(url))?),
         url if re_douyin.is_match(url) => Ok(Douyin::new(String::from(url))?),
         url if re_tiktok.is_match(url) => Ok(TikTok::new(String::from(url))?),
         url if re_huya.is_match(url) => Ok(Huya::new(String::from(url))?),
         url if re_twitch.is_match(url) => Ok(Twitch::new(String::from(url))?),
-        url if re_dlive.is_match(url) => Ok(DLive::new(String::from(url))?),*/
+        url if re_dlive.is_match(url) => Ok(DLive::new(String::from(url))?),
         url if re_vlive.is_match(url) => Ok(Vlive::new(String::from(url)).await?),
+        */
         _ => Err(StreamError::Rsget(RsgetError::new("Site not supported."))),
     }
 }

@@ -8,7 +8,7 @@ use crate::utils::error::StreamResult;
 
 use std::boxed::Box;
 
-use stream_lib::StreamType;
+use stream_lib::DownloadStream;
 
 use async_trait::async_trait;
 
@@ -35,7 +35,7 @@ pub trait Streamable {
     /// Returns if the stream is online
     async fn is_online(&self) -> StreamResult<Status>;
     /// Gets the url of the stream
-    async fn get_stream(&self) -> StreamResult<StreamType>;
+    async fn get_stream(&self) -> StreamResult<DownloadStream>;
     /// Returns what extension the stream should be
     async fn get_ext(&self) -> StreamResult<String>;
     /// Gets the default name of the stream

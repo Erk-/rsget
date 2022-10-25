@@ -45,7 +45,24 @@ impl From<TokioIoError> for Error {
 
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        write!(f, "{}", &self)
+        match self {
+            Error::Hls(hls) => {
+                f.write_str("Hls Error: ")?;
+                Display::fmt(hls, f)
+            }
+            Error::Reqwest(req) => {
+                f.write_str("Reqwest Error: ")?;
+                Display::fmt(req, f)
+            }
+            Error::Url(url) => {
+                f.write_str("Url Error: ")?;
+                Display::fmt(url, f)
+            }
+            Error::TIO(io) => {
+                f.write_str("Tokio IO Error: ")?;
+                Display::fmt(io, f)
+            }
+        }
     }
 }
 

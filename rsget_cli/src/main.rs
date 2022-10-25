@@ -3,12 +3,14 @@ use std::path::Path;
 use std::process::Command;
 use tokio::fs::File;
 
+use futures_util::StreamExt as _;
 use rsget_lib::{Status, Streamable};
 use structopt::StructOpt;
+use tokio::io::AsyncWriteExt as _;
 use tracing::warn;
 
+use reqwest::Url;
 use rsget_lib::utils::error::{RsgetError, StreamError, StreamResult};
-use rsget_lib::utils::stream_type_to_url;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "rsget")]
@@ -39,6 +41,7 @@ async fn async_main() -> StreamResult<()> {
 
     let opt = Opt::from_args();
     let url = opt.url;
+    let parsed_url = Url::parse(&url).unwrap();
     let stream: Box<dyn Streamable + Send> = rsget_lib::utils::sites::get_site(&url).await?;
 
     match stream.is_online().await? {
@@ -57,7 +60,7 @@ async fn async_main() -> StreamResult<()> {
     if opt.play && !opt.network_play {
         let status = Command::new("mpv")
             .arg("--no-ytdl")
-            .arg(stream_type_to_url(stream.get_stream().await?))
+            .arg(parsed_url.as_str())
             .status()
             .expect("Mpv failed to start");
         std::process::exit(status.code().unwrap())
@@ -84,14 +87,35 @@ async fn async_main() -> StreamResult<()> {
     let file_name = opt.filename.unwrap_or(stream.get_default_name().await?);
     let full_path = format!("{}{}", path, strip_characters(&file_name, "<>:\"/\\|?*\0"));
     let path = Path::new(&full_path);
-    let file = Box::new(File::create(path).await?);
-    let st = stream.get_stream().await?;
-    let dl = stream_lib::Stream::new(st);
-    let http = reqwest::Client::new();
-    let size = dl.write_file(&http, file).await?;
+    let mut file = tokio::io::BufWriter::new(File::create(path).await?);
+    let mut dl = stream.get_stream().await?;
+
+    let spinsty = indicatif::ProgressStyle::default_spinner()
+        .template(
+            "{spinner} Elapsed time: {elapsed_precise}, {.blue}Total download: {bytes:30.yellow}",
+        )
+        .unwrap();
+    let spinner = indicatif::ProgressBar::new_spinner().with_style(spinsty);
+
+    let mut size = 0;
+
+    while let Some(event) = dl.next().await {
+        match event {
+            stream_lib::Event::Bytes { mut bytes } => {
+                spinner.inc(bytes.len() as u64);
+                size += bytes.len();
+                file.write_all_buf(&mut bytes).await?;
+            }
+            stream_lib::Event::End => break,
+            stream_lib::Event::Error { error } => {
+                eprintln!("Error occured when downloading stream: {}", error);
+                break;
+            }
+        }
+    }
+
     println!("Downloaded: {} MB", size as f64 / 1000.0 / 1000.0);
     Ok(())
-    //}
 }
 
 /*
