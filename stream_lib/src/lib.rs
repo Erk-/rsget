@@ -5,6 +5,8 @@ mod download_stream;
 mod error;
 mod hls;
 
+use std::time::Duration;
+
 pub use crate::download_stream::{DownloadStream, Event};
 pub use crate::error::Error;
 
@@ -32,6 +34,12 @@ pub fn download_hls_named(
 pub fn download_chunked(http: Client, request: Request) -> DownloadStream {
     let (dl, tx) = DownloadStream::new();
 
-    tokio::spawn(download_to_file(http.clone(), request, tx));
+    tokio::spawn(download_to_file(
+        http.clone(),
+        request,
+        tx,
+        None,
+        Some(Duration::from_secs(60)),
+    ));
     dl
 }

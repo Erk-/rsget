@@ -106,7 +106,10 @@ async fn async_main() -> StreamResult<()> {
                 size += bytes.len();
                 file.write_all_buf(&mut bytes).await?;
             }
-            stream_lib::Event::End => break,
+            stream_lib::Event::End => {
+                eprintln!("End received");
+                break;
+            }
             stream_lib::Event::Error { error } => {
                 eprintln!("Error occured when downloading stream: {}", error);
                 break;
