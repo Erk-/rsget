@@ -1,6 +1,6 @@
 use bytes::Bytes;
 use futures_core::stream::Stream;
-use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender, unbounded_channel};
+use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 
 #[derive(Debug)]
 pub enum StreamType {

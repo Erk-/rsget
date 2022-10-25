@@ -28,4 +28,4 @@ webbrowser = "0.5"
 default-features = false
 version = "0.3"
 path = "../stream_lib"
-features = ["spinner"]
+features = []

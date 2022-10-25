@@ -7,7 +7,10 @@ use reqwest::{Client, Request, Url};
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 use tracing::{info, trace, warn};
 
-use crate::{Error, hls::{clone_request, HlsQueue, HLS_MAX_RETRIES}};
+use crate::{
+    hls::{clone_request, HlsQueue, HLS_MAX_RETRIES},
+    Error,
+};
 
 pub struct HlsWatch {
     tx: UnboundedSender<HlsQueue>,
@@ -19,8 +22,6 @@ pub struct HlsWatch {
     fail_counter: usize,
     filter: Option<fn(&str) -> bool>,
 }
-
-
 
 impl HlsWatch {
     /// Filter will filter any url that returns `false`, if `None` it will not filter anything.

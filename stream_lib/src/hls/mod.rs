@@ -1,5 +1,5 @@
-mod watch;
 mod named_watch;
+mod watch;
 
 /// HLS will try and look for new segments 12 times,
 pub const HLS_MAX_RETRIES: usize = 12;
@@ -7,7 +7,7 @@ pub const HLS_MAX_RETRIES: usize = 12;
 use std::time::Duration;
 
 use reqwest::header::HeaderMap;
-use reqwest::{Client, Request, Url, Method};
+use reqwest::{Client, Method, Request, Url};
 
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 
@@ -16,8 +16,8 @@ use tracing::{info, trace, warn};
 
 use futures_util::StreamExt;
 
-use crate::error::Error;
 use crate::download_stream::{DownloadStream, Event};
+use crate::error::Error;
 
 use watch::HlsWatch;
 
@@ -28,7 +28,7 @@ pub enum HlsQueue {
     Url(Url),
     StreamOver,
 }
-pub(crate) struct HlsDownloader {
+pub struct HlsDownloader {
     http: Client,
     rx: UnboundedReceiver<HlsQueue>,
     watch: Watcher,
@@ -43,20 +43,16 @@ enum Watcher {
 impl Watcher {
     async fn run(self) -> Result<(), Error> {
         match self {
-            Watcher::Unnamed(watch) => {
-                watch.run().await
-            },
-            Watcher::Named(watch) => {
-                watch.run().await
-            },
+            Watcher::Unnamed(watch) => watch.run().await,
+            Watcher::Named(watch) => watch.run().await,
         }
     }
 }
 
 impl HlsDownloader {
-    pub(crate) fn new(request: Request, http: Client) -> Self {
+    pub(crate) fn new(request: Request, http: Client, filter: Option<fn(&str) -> bool>) -> Self {
         let headers = request.headers().clone();
-        let (watch, rx) =  HlsWatch::new(request, http.clone(), None);
+        let (watch, rx) = HlsWatch::new(request, http.clone(), filter);
         Self {
             http,
             rx,
@@ -65,9 +61,14 @@ impl HlsDownloader {
         }
     }
 
-    pub(crate) fn new_named(request: Request, http: Client, name: String) -> Self {
+    pub(crate) fn new_named(
+        request: Request,
+        http: Client,
+        name: String,
+        filter: Option<fn(&str) -> bool>,
+    ) -> Self {
         let headers = request.headers().clone();
-        let (watch, rx) = NamedHlsWatch::new(request, http.clone(), name, None);
+        let (watch, rx) = NamedHlsWatch::new(request, http.clone(), name, filter);
         Self {
             http,
             rx,
@@ -76,8 +77,7 @@ impl HlsDownloader {
         }
     }
 
-    pub(crate) fn download(self) -> DownloadStream
-    {
+    pub(crate) fn download(self) -> DownloadStream {
         info!("STARTING DOWNLOAD!");
         let rx = self.rx;
         let watch = self.watch;
@@ -93,27 +93,33 @@ impl HlsDownloader {
     }
 }
 
-async fn bytes_forwarder(http: Client, headers: HeaderMap, mut hls_rx: UnboundedReceiver<HlsQueue>, event_tx: UnboundedSender<Event>) {
+async fn bytes_forwarder(
+    http: Client,
+    headers: HeaderMap,
+    mut hls_rx: UnboundedReceiver<HlsQueue>,
+    event_tx: UnboundedSender<Event>,
+) {
     const TIMEOUT: Duration = Duration::from_secs(10);
     while let Some(hls) = hls_rx.recv().await {
         //println!("GOT ELEMENT");
-    match hls {
+        match hls {
             HlsQueue::Url(u) => {
                 // These two statements are not part of the spinner.
                 let req = http
-                .get(u)
-                .headers(headers.clone())
-                .timeout(TIMEOUT)
-                .build().unwrap();
-                if let Err(error) = download_to_file(&http, req, event_tx.clone()).await {
+                    .get(u)
+                    .headers(headers.clone())
+                    .timeout(TIMEOUT)
+                    .build()
+                    .unwrap();
+                if let Err(error) = download_to_file(http.clone(), req, event_tx.clone()).await {
                     if let Err(error) = event_tx.send(Event::Error { error }) {
                         tracing::warn!("Could not send event: {}", error);
                     };
                 }
             }
-        HlsQueue::StreamOver => {
+            HlsQueue::StreamOver => {
                 if let Err(error) = event_tx.send(Event::End) {
-                        tracing::warn!("Could not send event: {}", error);
+                    tracing::warn!("Could not send event: {}", error);
                 };
                 break;
             }
@@ -121,8 +127,8 @@ async fn bytes_forwarder(http: Client, headers: HeaderMap, mut hls_rx: Unbounded
     }
 }
 
-async fn download_to_file(
-    client: &Client,
+pub(crate) async fn download_to_file(
+    client: Client,
     mut request: Request,
     event_tx: UnboundedSender<Event>,
 ) -> Result<(), Error> {
@@ -134,14 +140,16 @@ async fn download_to_file(
         match item {
             Ok(bytes) => {
                 if let Err(error) = event_tx.send(Event::Bytes { bytes }) {
-                        tracing::warn!("Could not send event: {}", error);
+                    tracing::warn!("Could not send event: {}", error);
                 };
-            },
+            }
             Err(error) => {
-                if let Err(error) = event_tx.send(Event::Error { error: error.into() }) {
-                        tracing::warn!("Could not send event: {}", error);
+                if let Err(error) = event_tx.send(Event::Error {
+                    error: error.into(),
+                }) {
+                    tracing::warn!("Could not send event: {}", error);
                 };
-            },
+            }
         }
     }
 

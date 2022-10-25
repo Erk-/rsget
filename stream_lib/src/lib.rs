@@ -1,22 +1,37 @@
 //! This is a small tool to download streams
 //! It currently supports chunked streams and HLS.
 
-mod error;
-pub mod hls;
 mod download_stream;
-//pub mod stream;
+mod error;
+mod hls;
 
-pub use crate::error::Error;
-//pub use crate::stream::{Stream, StreamType};
 pub use crate::download_stream::{DownloadStream, Event};
+pub use crate::error::Error;
 
 use crate::hls::HlsDownloader;
+use hls::download_to_file;
 use reqwest::{Client, Request};
 
-pub fn download_hls(http: Client, request: Request) -> DownloadStream {
-    HlsDownloader::new(request, http).download()
+pub fn download_hls(
+    http: Client,
+    request: Request,
+    filter: Option<fn(&str) -> bool>,
+) -> DownloadStream {
+    HlsDownloader::new(request, http, filter).download()
 }
 
-pub fn download_hls_named(http: Client, request: Request, name: String) -> DownloadStream {
-    HlsDownloader::new_named(request, http, name).download()
+pub fn download_hls_named(
+    http: Client,
+    request: Request,
+    name: String,
+    filter: Option<fn(&str) -> bool>,
+) -> DownloadStream {
+    HlsDownloader::new_named(request, http, name, filter).download()
+}
+
+pub fn download_chunked(http: Client, request: Request) -> DownloadStream {
+    let (dl, tx) = DownloadStream::new();
+
+    tokio::spawn(download_to_file(http.clone(), request, tx));
+    dl
 }

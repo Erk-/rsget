@@ -8,8 +8,6 @@ use chrono::prelude::*;
 
 use reqwest::header::REFERER;
 
-use stream_lib::StreamType;
-
 use async_trait::async_trait;
 
 use std::str;
@@ -219,11 +217,12 @@ impl Streamable for Afreeca {
         let url = format!("{}?aid={}", self.stream_info.view_url, self.hls_key);
 
         Ok(stream_lib::download_hls(
+            self.client.clone(),
             self.client
                 .get(&url)
                 .header(REFERER, self.url.clone())
                 .build()?,
-            self.client.clone(),
+            Some(|e: &str| -> bool { !e.contains("preloading") }),
         ))
     }
 
