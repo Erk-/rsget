@@ -99,19 +99,27 @@ async fn bytes_forwarder(
     mut hls_rx: UnboundedReceiver<HlsQueue>,
     event_tx: UnboundedSender<Event>,
 ) {
-    const TIMEOUT: Duration = Duration::from_secs(10);
     while let Some(hls) = hls_rx.recv().await {
         //println!("GOT ELEMENT");
         match hls {
             HlsQueue::Url(u) => {
                 // These two statements are not part of the spinner.
+                const TIMEOUT: Duration = Duration::from_secs(10);
                 let req = http
                     .get(u)
                     .headers(headers.clone())
                     .timeout(TIMEOUT)
                     .build()
                     .unwrap();
-                if let Err(error) = download_to_file(http.clone(), req, event_tx.clone()).await {
+                if let Err(error) = download_to_file(
+                    http.clone(),
+                    req,
+                    event_tx.clone(),
+                    Some(TIMEOUT),
+                    Some(TIMEOUT),
+                )
+                .await
+                {
                     if let Err(error) = event_tx.send(Event::Error { error }) {
                         tracing::warn!("Could not send event: {}", error);
                     };
@@ -127,16 +135,22 @@ async fn bytes_forwarder(
     }
 }
 
+/// Timeout is the total duration the response may take set to none to make it unlimited.
+/// Download timeout is the timeout between two chunks of a streaming response.
 pub(crate) async fn download_to_file(
     client: Client,
     mut request: Request,
     event_tx: UnboundedSender<Event>,
+    timeout: Option<Duration>,
+    download_timeout: Option<Duration>,
 ) -> Result<(), Error> {
-    if request.timeout().is_none() {
-        *request.timeout_mut() = Some(Duration::from_secs(10));
-    }
+    const TIMEOUT_MAX: Duration = Duration::MAX;
+
+    *request.timeout_mut() = timeout;
     let mut stream = client.execute(request).await?.bytes_stream();
-    while let Some(item) = stream.next().await {
+    while let Ok(Some(item)) =
+        tokio::time::timeout(download_timeout.unwrap_or(TIMEOUT_MAX), stream.next()).await
+    {
         match item {
             Ok(bytes) => {
                 if let Err(error) = event_tx.send(Event::Bytes { bytes }) {

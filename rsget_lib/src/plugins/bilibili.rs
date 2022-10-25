@@ -1,7 +1,6 @@
 use crate::{Status, Streamable};
 use regex::Regex;
-
-use stream_lib::StreamType;
+use stream_lib::DownloadStream;
 
 use crate::utils::error::RsgetError;
 use crate::utils::error::StreamError;
@@ -42,7 +41,7 @@ struct Durl {
 #[derive(Debug, Clone)]
 pub struct Bilibili {
     client: reqwest::Client,
-    url: String,
+    room_id: String,
     room_init: RoomInit,
     durl_list: Vec<Durl>,
 }
@@ -60,6 +59,8 @@ impl Streamable for Bilibili {
             "https://api.live.bilibili.com/room/v1/Room/room_init?id={}",
             &cap[1]
         );
+
+        let room_id = String::from(&cap[1]);
 
         let client = reqwest::Client::new();
 
@@ -90,7 +91,7 @@ impl Streamable for Bilibili {
 
         Ok(Box::new(Bilibili {
             client,
-            url,
+            room_id,
             room_init,
             durl_list: durls,
         }))
@@ -101,7 +102,7 @@ impl Streamable for Bilibili {
     }
 
     async fn get_author(&self) -> StreamResult<String> {
-        Ok(self.room_init.room_id.to_string())
+        Ok(self.room_id.clone())
     }
 
     async fn is_online(&self) -> StreamResult<Status> {
@@ -112,8 +113,9 @@ impl Streamable for Bilibili {
         }
     }
 
-    async fn get_stream(&self) -> StreamResult<StreamType> {
-        Ok(StreamType::Chuncked(
+    async fn get_stream(&self) -> StreamResult<DownloadStream> {
+        Ok(stream_lib::download_chunked(
+            self.client.clone(),
             self.client
                 .get(&self.durl_list[0].url)
                 .header("User-Agent", USER_AGENT)
