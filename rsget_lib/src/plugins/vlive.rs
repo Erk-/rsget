@@ -3,7 +3,7 @@ use regex::Regex;
 
 use async_trait::async_trait;
 
-use stream_lib::StreamType;
+use stream_lib::DownloadStream;
 
 use crate::utils::error::StreamResult;
 
@@ -157,7 +157,7 @@ impl Streamable for Vlive {
         Ok(Status::Online)
     }
 
-    async fn get_stream(&self) -> StreamResult<StreamType> {
+    async fn get_stream(&self) -> StreamResult<DownloadStream> {
         // READ TODO At the beginning
         // let url = self.stream_url.clone().ok_or(StreamError::Rsget(RsgetError::new("No streams available")))?;
         // Ok(StreamType::HLS(self.client.make_request(&url, None)?))
@@ -166,7 +166,10 @@ impl Streamable for Vlive {
             .video_url
             .clone()
             .ok_or_else(|| StreamError::Rsget(RsgetError::new("No videos available")))?;
-        Ok(StreamType::Full(self.http.get(&url).build()?))
+        Ok(stream_lib::download_chunked(
+            self.http.clone(),
+            self.http.get(&url).build()?,
+        ))
     }
 
     async fn get_ext(&self) -> StreamResult<String> {
