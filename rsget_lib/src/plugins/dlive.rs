@@ -1,7 +1,6 @@
 use crate::{Status, Streamable};
 use regex::Regex;
-
-use stream_lib::StreamType;
+use stream_lib::DownloadStream;
 use tracing::debug;
 
 use crate::utils::error::RsgetError;
@@ -80,7 +79,7 @@ impl Streamable for DLive {
         }
     }
 
-    async fn get_stream(&self) -> StreamResult<StreamType> {
+    async fn get_stream(&self) -> StreamResult<DownloadStream> {
         let url = format!(
             "https://live.prd.dlive.tv/hls/live/{}.m3u8",
             &self.apollo_state["username"]
@@ -89,9 +88,11 @@ impl Streamable for DLive {
                 .trim_start_matches("%22")
                 .trim_end_matches("%22")
         );
-        Ok(StreamType::NamedPlaylist(
+        Ok(stream_lib::download_hls_named(
+            self.client.clone(),
             self.client.get(&url).build()?,
             String::from("src"),
+            None,
         ))
     }
 

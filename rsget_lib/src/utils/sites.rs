@@ -4,7 +4,7 @@ use crate::plugins::{
     mixer::Mixer, tiktok::TikTok, twitch::Twitch, vlive::Vlive,
 };
 */
-use crate::plugins::{Afreeca, Bilibili};
+use crate::plugins::{Afreeca, Bilibili, DLive, Twitch, Vlive};
 //use crate::plugins::{Afreeca, Bilibili, DLive, Twitch, Vlive};
 use crate::utils::error::RsgetError;
 use crate::utils::error::StreamError;
@@ -32,7 +32,8 @@ async fn _get_site(input: &str) -> StreamResult<Box<dyn Streamable + Send>> {
     let re_twitch = Regex::new(r"^(?:https?://)?(?:www\.)?twitch\.tv/([a-zA-Z0-9_]+)")?;
     let re_bilibili = Regex::new(r"^(?:https?://)?(?:www\.)?live\.bilibili\.com/([0-9]+)")?;
     //let re_douyu: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?douyu\.com/[a-zA-Z0-9]+/?")?;
-    /*let re_inke: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?inke\.cn/live\.html\?uid=[0-9]+")?;
+    /*
+    let re_inke: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?inke\.cn/live\.html\?uid=[0-9]+")?;
     let re_douyin: Regex = Regex::new(r"^(?:https?://)?(?:www\.)?iesdouyin\.com/.*")?;
     let re_tiktok: Regex =
         Regex::new(r"^(?:https?://)?(?:www\.)?(?:m\.)?tiktok\.com/v/(?:[a-zA-Z0-9]+)(?:\.html)?")?;
@@ -42,16 +43,17 @@ async fn _get_site(input: &str) -> StreamResult<Box<dyn Streamable + Send>> {
         //url if re_douyu.is_match(url) => Ok(Douyu::new(String::from(url))?),
         url if re_afreeca.is_match(url) => Ok(Afreeca::new(String::from(url)).await?),
         url if re_bilibili.is_match(url) => Ok(Bilibili::new(String::from(url)).await?),
-        /*
         url if re_dlive.is_match(url) => Ok(DLive::new(String::from(url)).await?),
         url if re_twitch.is_match(url) => Ok(Twitch::new(String::from(url)).await?),
+        url if re_vlive.is_match(url) => Ok(Vlive::new(String::from(url)).await?),
+        /*
         url if re_inke.is_match(url) => Ok(Inke::new(String::from(url))?),
-        url if re_douyin.is_match(url) => Ok(Douyin::new(String::from(url))?),
+        url if re_douyin.is_match(url) => Ok(Douyin::new(String::from(url)).await?),
         url if re_tiktok.is_match(url) => Ok(TikTok::new(String::from(url))?),
         url if re_huya.is_match(url) => Ok(Huya::new(String::from(url))?),
         url if re_twitch.is_match(url) => Ok(Twitch::new(String::from(url))?),
         url if re_dlive.is_match(url) => Ok(DLive::new(String::from(url))?),
-        url if re_vlive.is_match(url) => Ok(Vlive::new(String::from(url)).await?),
+
         */
         _ => Err(StreamError::Rsget(RsgetError::new("Site not supported."))),
     }

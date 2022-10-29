@@ -10,7 +10,7 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use stream_lib::StreamType;
+use stream_lib::DownloadStream;
 
 use crate::utils::error::RsgetError;
 use crate::utils::error::StreamError;
@@ -144,7 +144,7 @@ impl Streamable for Twitch {
             Ok(Status::Offline)
         }
     }
-    async fn get_stream(&self) -> StreamResult<StreamType> {
+    async fn get_stream(&self) -> StreamResult<DownloadStream> {
         let auth_endpoint = format!(
             "https://api.twitch.tv/api/channels/{}/access_token?client_id={}",
             self.username, TWITCH_CLIENT_ID_PRIVATE
@@ -176,9 +176,11 @@ impl Streamable for Twitch {
         let playlist = MasterPlaylist::try_from(playlist_res.as_str())?;
         let qu_name = playlist.media.get(0).unwrap().name();
 
-        Ok(StreamType::NamedPlaylist(
+        Ok(stream_lib::download_hls_named(
+            self.client.clone(),
             self.client.get(&playlist_url).build()?,
             String::from(qu_name.as_ref()),
+            None,
         ))
     }
     async fn get_ext(&self) -> StreamResult<String> {
