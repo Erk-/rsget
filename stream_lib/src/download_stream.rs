@@ -2,13 +2,8 @@ use bytes::Bytes;
 use futures_core::stream::Stream;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 
-#[derive(Debug)]
-pub enum StreamType {
-    Hls,
-    HlsNamed,
-    Http,
-}
-
+/// This struct implments a stream that is used to
+/// received data from chunked and hls streams.
 #[derive(Debug)]
 pub struct DownloadStream {
     rx: UnboundedReceiver<Event>,
@@ -18,12 +13,6 @@ impl DownloadStream {
     pub(crate) fn new() -> (Self, UnboundedSender<Event>) {
         let (tx, rx) = unbounded_channel();
         (DownloadStream { rx }, tx)
-    }
-}
-
-impl DownloadStream {
-    pub fn stream_type(&self) -> StreamType {
-        StreamType::Hls
     }
 }
 

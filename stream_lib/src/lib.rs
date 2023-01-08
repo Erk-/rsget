@@ -35,7 +35,7 @@ pub fn download_chunked(http: Client, request: Request) -> DownloadStream {
     let (dl, tx) = DownloadStream::new();
 
     tokio::spawn(download_to_file(
-        http.clone(),
+        http,
         request,
         tx,
         None,
