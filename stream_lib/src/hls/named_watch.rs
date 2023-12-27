@@ -4,7 +4,7 @@ use hls_m3u8::{tags::VariantStream, MasterPlaylist, MediaPlaylist};
 use patricia_tree::PatriciaSet;
 use reqwest::{Client, Request, Url};
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
-use tracing::{info, trace, warn};
+use tracing::{debug, trace, warn};
 
 use crate::{
     hls::{clone_request, HLS_MAX_RETRIES},
@@ -20,7 +20,7 @@ pub struct NamedHlsWatch {
     links: PatriciaSet,
     master_url: Url,
     timeout: Duration,
-    name: String,
+    name: Option<String>,
     filter: Option<fn(&str) -> bool>,
 }
 
@@ -45,7 +45,33 @@ impl NamedHlsWatch {
                 links: PatriciaSet::new(),
                 timeout: Duration::from_secs(10),
                 master_url,
-                name,
+                name: Some(name),
+                filter,
+            },
+            rx,
+        )
+    }
+
+    pub(crate) fn new_first(
+        request: Request,
+        http: Client,
+        filter: Option<fn(&str) -> bool>,
+    ) -> (Self, UnboundedReceiver<HlsQueue>) {
+        let (tx, rx) = unbounded_channel();
+        let master_url = request
+            .url()
+            .clone()
+            .join(".")
+            .expect("Could not join url with '.'.");
+        (
+            Self {
+                tx,
+                request,
+                http,
+                links: PatriciaSet::new(),
+                timeout: Duration::from_secs(10),
+                master_url,
+                name: None,
                 filter,
             },
             rx,
@@ -96,27 +122,37 @@ impl NamedHlsWatch {
                 }
             };
 
-            let ext_media = match master_playlist
-                .media
-                .iter()
-                .find(|e| e.name() == &self.name)
-            {
-                Some(em) => em,
-                None => {
-                    counter += 1;
-                    continue;
+            let ext_media = if let Some(name) = &self.name {
+                match master_playlist.media.iter().find(|e| e.name() == name) {
+                    Some(em) => Some(em),
+                    None => {
+                        counter += 1;
+                        continue;
+                    }
                 }
+            } else {
+                None
             };
 
-            let media = match master_playlist
-                .variant_streams
-                .iter()
-                .find(|e| e.is_associated(ext_media))
-            {
-                Some(m) => m,
-                None => {
-                    counter += 1;
-                    continue;
+            let media = if let Some(ext_media) = ext_media {
+                match master_playlist
+                    .variant_streams
+                    .iter()
+                    .find(|e| e.is_associated(ext_media))
+                {
+                    Some(m) => m,
+                    None => {
+                        counter += 1;
+                        continue;
+                    }
+                }
+            } else {
+                match master_playlist.variant_streams.iter().next() {
+                    Some(m) => m,
+                    None => {
+                        counter += 1;
+                        continue;
+                    }
                 }
             };
 
@@ -129,16 +165,23 @@ impl NamedHlsWatch {
                 self.master_url = u.join(".").expect("Could not join with '.'");
             }
 
+            let uri_formatted = if let Ok(u) = Url::parse(&uri) {
+                u
+            } else {
+                Url::parse(&format!("{}{}", self.master_url.as_str(), &uri))
+                    .expect("The m3u8 does not currently work with stream_lib, please report the issue on the github repo, with an example of the playlistfile.")
+            };
+
             let mp_hls = match self
                 .http
-                .get(uri.as_ref())
+                .get(uri_formatted.as_ref())
                 .headers(self.request.headers().clone())
                 .timeout(self.timeout)
                 .build()
             {
                 Ok(p) => p,
                 Err(e) => {
-                    info!("[HLS] URI!\n{}", e);
+                    debug!("[HLS] URI!\n{}", e);
                     trace!("[HLS]\n{}", media);
                     counter += 1;
                     continue;
@@ -206,7 +249,7 @@ impl NamedHlsWatch {
 
                     // Check that the filter runs.
                     if self.filter.map_or(true, |f| f(&e)) {
-                        info!("[HLS] Adds {}!", url_formatted);
+                        debug!("[HLS] Adds {}!", url_formatted);
                         // Add the segment to the queue.
                         if self.tx.send(HlsQueue::Url(url_formatted)).is_err() {
                             return Err(Error::TIO(std::io::Error::last_os_error()));
@@ -220,7 +263,7 @@ impl NamedHlsWatch {
                 break;
             }
 
-            warn!("[HLS] Sleeps for {:#?}", target_duration);
+            debug!("[HLS] Sleeps for {:#?}", target_duration);
             // Sleeps for the target duration.
             tokio::time::sleep(target_duration).await;
             counter += 1;

@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 use std::env;
 
 use chrono::prelude::*;

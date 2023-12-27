@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 use crate::{Status, Streamable};
 use regex::Regex;
 use tracing::{debug, warn};

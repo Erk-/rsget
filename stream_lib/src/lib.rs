@@ -31,6 +31,14 @@ pub fn download_hls_named(
     HlsDownloader::new_named(request, http, name, filter).download()
 }
 
+pub fn download_hls_master_first(
+    http: Client,
+    request: Request,
+    filter: Option<fn(&str) -> bool>,
+) -> DownloadStream {
+    HlsDownloader::new_master_first(request, http, filter).download()
+}
+
 pub fn download_chunked(http: Client, request: Request) -> DownloadStream {
     let (dl, tx) = DownloadStream::new();
 

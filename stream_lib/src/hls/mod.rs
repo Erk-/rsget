@@ -77,6 +77,21 @@ impl HlsDownloader {
         }
     }
 
+    pub(crate) fn new_master_first(
+        request: Request,
+        http: Client,
+        filter: Option<fn(&str) -> bool>,
+    ) -> Self {
+        let headers = request.headers().clone();
+        let (watch, rx) = NamedHlsWatch::new_first(request, http.clone(), filter);
+        Self {
+            http,
+            rx,
+            watch: Watcher::Named(watch),
+            headers,
+        }
+    }
+
     pub(crate) fn download(self) -> DownloadStream {
         info!("STARTING DOWNLOAD!");
         let rx = self.rx;

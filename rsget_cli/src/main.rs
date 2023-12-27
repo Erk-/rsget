@@ -167,7 +167,3 @@ fn strip_characters(original: &str, to_strip: &str) -> String {
         .filter(|&c| !to_strip.contains(c))
         .collect()
 }
-
-fn get_current_working_dir() -> PathBuf {
-    std::env::current_dir().unwrap()
-}
