@@ -11,18 +11,18 @@ repository = "https://github.com/Erk-/rsget/tree/master/stream_lib"
 
 [dependencies]
 hls_m3u8 = "0.4.1"
-reqwest = { version = "0.11.12", features = ["stream"] }
-tracing = "0.1.37"
-url = "2.3.1"
-futures-util = "0.3.25"
-tokio = { version = "1.21.2", default-features = false, features = ["rt", "sync", "time"] }
-patricia_tree = "0.3.2"
-futures-core = "0.3.25"
-bytes = "1.2.1"
+reqwest = { version = "0.11.23", features = ["stream"] }
+tracing = "0.1.40"
+url = "2.5.0"
+futures-util = "0.3.30"
+tokio = { version = "1.35.1", default-features = false, features = ["rt", "sync", "time"] }
+patricia_tree = "0.8.0"
+futures-core = "0.3.30"
+bytes = "1.5.0"
 
 [dev-dependencies]
-tracing-subscriber = "0.3.1"
-tokio = { version = "1.21.2", default-features = false, features = ["fs", "rt", "sync", "time", "macros"] }
+tracing-subscriber = "0.3.18"
+tokio = { version = "1.35.1", default-features = false, features = ["fs", "rt", "sync", "time", "macros"] }
 
 [features]
 default = []

@@ -1,45 +1,50 @@
-use std::boxed::Box;
-use std::path::Path;
-use std::process::Command;
-use tokio::fs::File;
+use std::{
+    path::{Path, PathBuf},
+    process::Command,
+    time::Duration,
+};
 
+use clap::Parser;
 use futures_util::StreamExt as _;
-use rsget_lib::{Status, Streamable};
-use structopt::StructOpt;
-use tokio::io::AsyncWriteExt as _;
+use reqwest::Url;
+use rsget_lib::{
+    utils::error::{RsgetError, StreamError, StreamResult},
+    Status, Streamable,
+};
+use tokio::{
+    fs::File,
+    io::{AsyncWriteExt as _, BufWriter},
+    runtime::Runtime,
+};
 use tracing::warn;
 
-use reqwest::Url;
-use rsget_lib::utils::error::{RsgetError, StreamError, StreamResult};
-
-#[derive(Debug, StructOpt)]
-#[structopt(name = "rsget")]
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
 struct Opt {
-    #[structopt(short = "p", long = "play")]
+    #[arg(short = 'p', long = "play")]
     play: bool,
-    #[structopt(short = "i", long = "info")]
+    #[arg(short = 'i', long = "info")]
     info: bool,
-    #[structopt(short = "O", long = "path", default_value = "./")]
-    path: String,
-    #[structopt(short = "o", long = "output")]
+    #[arg(short = 'O', long = "folder", default_value = "./")]
+    folder: PathBuf,
+    #[arg(short = 'o', long = "output")]
     filename: Option<String>,
-    #[structopt(short = "n", long = "network-play")]
+    #[arg(short = 'n', long = "network-play")]
     network_play: bool,
     url: String,
 }
 
-use tokio::runtime::Runtime;
 fn main() -> StreamResult<()> {
     let runtime = Runtime::new()?;
     runtime.block_on(async move { async_main().await })?;
-    runtime.shutdown_timeout(std::time::Duration::from_millis(100));
+    runtime.shutdown_timeout(Duration::from_millis(100));
     Ok(())
 }
 
 async fn async_main() -> StreamResult<()> {
     tracing_subscriber::fmt::init();
 
-    let opt = Opt::from_args();
+    let opt = Opt::parse();
     let url = opt.url;
     let parsed_url = Url::parse(&url).unwrap();
     let stream: Box<dyn Streamable + Send> = rsget_lib::utils::sites::get_site(&url).await?;
@@ -83,11 +88,23 @@ async fn async_main() -> StreamResult<()> {
         Ok(())
     } else {
     */
-    let path = opt.path;
-    let file_name = opt.filename.unwrap_or(stream.get_default_name().await?);
-    let full_path = format!("{}{}", path, strip_characters(&file_name, "<>:\"/\\|?*\0"));
+
+    let folder = opt.folder;
+    if !folder.is_dir() {
+        eprintln!(
+            "The --folder argument was not a directonary. ({:?})",
+            folder
+        );
+        return Ok(());
+    }
+
+    let file_name = strip_characters(
+        &opt.filename.unwrap_or(stream.get_default_name().await?),
+        "<>:\"/\\|?*\0",
+    );
+    let full_path = folder.join(file_name);
     let path = Path::new(&full_path);
-    let mut file = tokio::io::BufWriter::new(File::create(path).await?);
+    let mut file = BufWriter::new(File::create(path).await?);
     let mut dl = stream.get_stream().await?;
 
     let spinsty = indicatif::ProgressStyle::default_spinner()
@@ -142,9 +159,15 @@ where
 }
 */
 
+/// Strip characters not allowed on some file systems such as Posix
+/// and NTFS.
 fn strip_characters(original: &str, to_strip: &str) -> String {
     original
         .chars()
         .filter(|&c| !to_strip.contains(c))
         .collect()
+}
+
+fn get_current_working_dir() -> PathBuf {
+    std::env::current_dir().unwrap()
 }

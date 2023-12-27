@@ -20,7 +20,8 @@ use crate::{Status, Streamable};
 use async_trait::async_trait;
 
 const TWITCH_CLIENT_ID: &str = "fmdejdpeuc71dz6i5q24kpz8kiiynv";
-// The reason we need to use this is explained here: https://github.com/streamlink/streamlink/issues/2680#issuecomment-557605851
+// The reason we need to use this is explained here:
+// https://github.com/streamlink/streamlink/issues/2680#issuecomment-557605851
 const TWITCH_CLIENT_ID_PRIVATE: &str = "kimne78kx3ncx6brgo4mv6wki5h1ko";
 
 #[derive(Serialize, Deserialize, Debug)]

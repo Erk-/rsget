@@ -4,6 +4,7 @@ members = [
     "rsget_cli",
     "stream_lib",
 ]
+resolver = "2"
 
 [profile.release]
 panic = "abort"
