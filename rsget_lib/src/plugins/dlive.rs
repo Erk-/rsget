@@ -92,7 +92,7 @@ impl Streamable for DLive {
         );
         Ok(stream_lib::download_hls_named(
             self.client.clone(),
-            self.client.get(&url).build()?,
+            self.client.get(url).build()?,
             String::from("src"),
             None,
         ))

@@ -21,7 +21,8 @@ pub struct Vlive {
     video_url: Option<String>,
     // TODO FOR ERK: This field is currently unused. This is due to Rsgets design being too focused on making plugin
     // implementation easier for developers, but at the expense of more "native" per site support. To access the m3u8
-    // files and the .ts files from vlive you need to provide a session key for the requests. If you look at where I
+    // files and the .ts files from vlive you need to provide a session key for the requests. If you look at where I73
+    
     // define VideoInfo, theres is a list field `streams`. Each of these streams has field "key" which has a name and
     // a value, which must be appended as a url parameter to every request to that stream. For example:
     // {
@@ -170,7 +171,7 @@ impl Streamable for Vlive {
             .ok_or_else(|| StreamError::Rsget(RsgetError::new("No videos available")))?;
         Ok(stream_lib::download_chunked(
             self.http.clone(),
-            self.http.get(&url).build()?,
+            self.http.get(url).build()?,
         ))
     }
 

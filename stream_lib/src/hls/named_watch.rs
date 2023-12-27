@@ -147,7 +147,7 @@ impl NamedHlsWatch {
                     }
                 }
             } else {
-                match master_playlist.variant_streams.iter().next() {
+                match master_playlist.variant_streams.first() {
                     Some(m) => m,
                     None => {
                         counter += 1;
@@ -165,7 +165,7 @@ impl NamedHlsWatch {
                 self.master_url = u.join(".").expect("Could not join with '.'");
             }
 
-            let uri_formatted = if let Ok(u) = Url::parse(&uri) {
+            let uri_formatted = if let Ok(u) = Url::parse(uri) {
                 u
             } else {
                 Url::parse(&format!("{}{}", self.master_url.as_str(), &uri))

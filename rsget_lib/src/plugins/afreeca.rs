@@ -176,9 +176,9 @@ impl Streamable for Afreeca {
             json
         };
         let json_url = format!(
-            "{}/broad_stream_assign.html?return_type=gs_cdn_pc_web&broad_key={}",
+            "{}/broad_stream_assign.html?return_type=gs_cdn_pc_web&broad_key={}-flash-original-hls",
             ci.CHANNEL.RMD.clone(),
-            format!("{}-flash-original-hls", &bno)
+            &bno,
         );
         debug!("Getting stream_info!");
         let stream_info: AfreecaStream = client.get(&json_url).send().await?.json().await?;
@@ -221,7 +221,7 @@ impl Streamable for Afreeca {
         Ok(stream_lib::download_hls(
             self.client.clone(),
             self.client
-                .get(&url)
+                .get(url)
                 .header(REFERER, self.url.clone())
                 .build()?,
             Some(|e: &str| -> bool { !e.contains("preloading") }),
