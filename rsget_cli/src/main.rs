@@ -11,6 +11,7 @@ use rsget_lib::{
     utils::error::{RsgetError, StreamError, StreamResult},
     Status, Streamable,
 };
+use stream_lib::Event;
 use tokio::{
     fs::File,
     io::{AsyncWriteExt as _, BufWriter},
@@ -98,6 +99,11 @@ async fn async_main() -> StreamResult<()> {
         return Ok(());
     }
 
+    if opt.filename.as_ref().is_some_and(|f| f == "-") {
+        stream_to_stdout(stream).await?;
+        return Ok(());
+    }
+
     let file_name = strip_characters(
         &opt.filename.unwrap_or(stream.get_default_name().await?),
         "<>:\"/\\|?*\0",
@@ -105,6 +111,7 @@ async fn async_main() -> StreamResult<()> {
     let full_path = folder.join(file_name);
     let path = Path::new(&full_path);
     let mut file = BufWriter::new(File::create(path).await?);
+
     let mut dl = stream.get_stream().await?;
 
     let spinsty = indicatif::ProgressStyle::default_spinner()
@@ -118,16 +125,16 @@ async fn async_main() -> StreamResult<()> {
 
     while let Some(event) = dl.next().await {
         match event {
-            stream_lib::Event::Bytes { mut bytes } => {
+            Event::Bytes { mut bytes } => {
                 spinner.inc(bytes.len() as u64);
                 size += bytes.len();
                 file.write_all_buf(&mut bytes).await?;
             }
-            stream_lib::Event::End => {
+            Event::End => {
                 eprintln!("End received");
                 break;
             }
-            stream_lib::Event::Error { error } => {
+            Event::Error { error } => {
                 eprintln!("Error occured when downloading stream: {}", error);
                 break;
             }
@@ -135,6 +142,32 @@ async fn async_main() -> StreamResult<()> {
     }
 
     println!("Downloaded: {} MB", size as f64 / 1000.0 / 1000.0);
+    Ok(())
+}
+
+async fn stream_to_stdout<S>(stream: Box<S>) -> Result<(), StreamError>
+where
+    S: Streamable + Send + ?Sized,
+{
+    let mut file = BufWriter::new(tokio::io::stdout());
+    let mut dl = stream.get_stream().await?;
+
+    while let Some(event) = dl.next().await {
+        match event {
+            Event::Bytes { mut bytes } => {
+                file.write_all_buf(&mut bytes).await?;
+            }
+            Event::End => {
+                eprintln!("End received");
+                break;
+            }
+            Event::Error { error } => {
+                eprintln!("Error occured when downloading stream: {}", error);
+                break;
+            }
+        }
+    }
+
     Ok(())
 }
 
