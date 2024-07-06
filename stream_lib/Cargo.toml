@@ -11,7 +11,7 @@ repository = "https://github.com/Erk-/rsget/tree/master/stream_lib"
 
 [dependencies]
 hls_m3u8 = "0.4.1"
-reqwest = { version = "0.11.23", features = ["stream"] }
+reqwest = { version = "0.12.2", features = ["stream"] }
 tracing = "0.1.40"
 url = "2.5.0"
 futures-util = "0.3.30"
