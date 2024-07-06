@@ -11,8 +11,7 @@ use reqwest::{Client, Method, Request, Url};
 
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 
-#[allow(unused_imports)]
-use tracing::{info, trace, warn};
+use tracing::warn;
 
 use futures_util::StreamExt;
 
@@ -93,7 +92,6 @@ impl HlsDownloader {
     }
 
     pub(crate) fn download(self) -> DownloadStream {
-        info!("STARTING DOWNLOAD!");
         let rx = self.rx;
         let watch = self.watch;
 
@@ -136,13 +134,13 @@ async fn bytes_forwarder(
                 .await
                 {
                     if let Err(error) = event_tx.send(Event::Error { error }) {
-                        tracing::warn!("Could not send event: {}", error);
+                        warn!("Could not send event: {}", error);
                     };
                 }
             }
             HlsQueue::StreamOver => {
                 if let Err(error) = event_tx.send(Event::End) {
-                    tracing::warn!("Could not send event: {}", error);
+                    warn!("Could not send event: {}", error);
                 };
                 break;
             }
@@ -169,14 +167,14 @@ pub(crate) async fn download_to_file(
         match item {
             Ok(bytes) => {
                 if let Err(error) = event_tx.send(Event::Bytes { bytes }) {
-                    tracing::warn!("Could not send event: {}", error);
+                    warn!("Could not send event: {}", error);
                 };
             }
             Err(error) => {
                 if let Err(error) = event_tx.send(Event::Error {
                     error: error.into(),
                 }) {
-                    tracing::warn!("Could not send event: {}", error);
+                    warn!("Could not send event: {}", error);
                 };
             }
         }

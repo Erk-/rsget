@@ -5,7 +5,7 @@ use patricia_tree::PatriciaSet;
 
 use reqwest::{Client, Request, Url};
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
-use tracing::{info, trace, warn};
+use tracing::{debug, trace, warn};
 
 use crate::{
     hls::{clone_request, HlsQueue, HLS_MAX_RETRIES},
@@ -52,8 +52,6 @@ impl HlsWatch {
     }
 
     pub async fn run(mut self) -> Result<(), Error> {
-        info!("STARTING WATCH!");
-
         loop {
             if self.fail_counter > HLS_MAX_RETRIES {
                 // There have either been errors or no new segments
@@ -127,7 +125,7 @@ impl HlsWatch {
 
                     // Check that the filter runs.
                     if self.filter.map_or(true, |f| f(e)) {
-                        info!("[HLS] Adds {}!", url_formatted);
+                        debug!("[HLS] Adds {}!", url_formatted);
                         // Add the segment to the queue.
                         if self.tx.send(HlsQueue::Url(url_formatted)).is_err() {
                             return Err(Error::TIO(std::io::Error::last_os_error()));

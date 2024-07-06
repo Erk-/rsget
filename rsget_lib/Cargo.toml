@@ -26,6 +26,6 @@ webbrowser = "0.8"
 
 [dependencies.stream_lib]
 default-features = false
-version = "0.3"
+version = "0.4"
 path = "../stream_lib"
 features = []
