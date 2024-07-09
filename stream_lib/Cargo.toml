@@ -11,18 +11,27 @@ repository = "https://github.com/Erk-/rsget/tree/master/stream_lib"
 
 [dependencies]
 hls_m3u8 = "0.4.1"
-reqwest = { version = "0.11.22", features = ["stream"] }
+reqwest = { version = "0.11.22", default-features = false, features = ["stream"] }
 tracing = "0.1.40"
 url = "2.5.0"
 futures-util = "0.3.30"
-tokio = { version = "1.35.1", default-features = false, features = ["rt", "sync", "time"] }
+tokio = { version = "1.38.0", default-features = false, features = ["rt", "sync", "time"] }
 patricia_tree = "0.8.0"
 futures-core = "0.3.30"
 bytes = "1.5.0"
 
 [dev-dependencies]
 tracing-subscriber = "0.3.18"
-tokio = { version = "1.35.1", default-features = false, features = ["fs", "rt", "sync", "time", "macros"] }
+tokio = { version = "1.38", default-features = false, features = ["fs", "rt", "sync", "time", "macros"] }
 
 [features]
-default = []
+# Default to rustls so we don't pull in openssl
+default = ["rustls-tls"]
+rustls-tls = [
+  "reqwest/rustls-tls",
+  "reqwest/rustls-tls-webpki-roots",
+]
+native-tls = [
+  "reqwest/native-tls",
+  "reqwest/rustls-tls-native-roots",
+]
