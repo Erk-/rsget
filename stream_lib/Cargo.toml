@@ -33,5 +33,4 @@ rustls-tls = [
 ]
 native-tls = [
   "reqwest/native-tls",
-  "reqwest/rustls-tls-native-roots",
 ]
