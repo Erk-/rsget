@@ -116,7 +116,7 @@ impl Streamable for Twitch {
                     e
                 })?;
 
-            match payload.data.get(0) {
+            match payload.data.first() {
                 Some(data) => Ok(data.title.clone()),
                 None => Err(StreamError::Rsget(RsgetError::new(
                     "[Twitch] User is offline",
@@ -177,7 +177,7 @@ impl Streamable for Twitch {
             .text()
             .await?;
         let playlist = MasterPlaylist::try_from(playlist_res.as_str())?;
-        let qu_name = playlist.media.get(0).unwrap().name();
+        let qu_name = playlist.media.first().unwrap().name();
 
         Ok(stream_lib::download_hls_named(
             self.client.clone(),
