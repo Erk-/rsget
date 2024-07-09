@@ -131,7 +131,7 @@ impl Streamable for Vlive {
         let info = page_req.json::<VideoInfo>().await?;
         let stream_url = info
             .streams
-            .get(0)
+            .first()
             .map(|stream| format!("{}?{}={}", stream.source, stream.key.name, stream.key.value));
 
         let mut videos = info.videos.list;
