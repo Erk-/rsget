@@ -72,7 +72,7 @@ impl Streamable for Vlive {
             .ok_or_else(|| StreamError::Rsget(RsgetError::new("No capture found")))?[1]
             .to_string();
 
-        let page_req = http.get(&format!("https://global.apis.naver.com/rmcnmv/rmcnmv/vod_play_videoInfo.json?key={}&videoId={}", key, id)).send().await?;
+        let page_req = http.get(format!("https://global.apis.naver.com/rmcnmv/rmcnmv/vod_play_videoInfo.json?key={}&videoId={}", key, id)).send().await?;
 
         // all these structs are quite excessive for what we actually need but i want to be ready for the "Quality Update"
         // Currently this backend just chooses the video with the highest file size, aka most likely to be highest quality

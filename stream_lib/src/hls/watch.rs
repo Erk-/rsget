@@ -124,7 +124,7 @@ impl HlsWatch {
                     };
 
                     // Check that the filter runs.
-                    if self.filter.map_or(true, |f| f(e)) {
+                    if self.filter.is_none_or(|f| f(e)) {
                         debug!("[HLS] Adds {}!", url_formatted);
                         // Add the segment to the queue.
                         if self.tx.send(HlsQueue::Url(url_formatted)).is_err() {

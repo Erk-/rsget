@@ -15,14 +15,14 @@ serde = "^1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
 serde_urlencoded = "0.7"
-regex = "1.10"
-http = "0.2.11"
+regex = "1.12"
+http = "1.4"
 chrono = "0.4"
-hls_m3u8 = "0.4"
+hls_m3u8 = "0.5"
 reqwest = { version = ">=0.13", default-features = false, features = ["form", "json", "query"] }
-rand = { version ="0.8", features = ["small_rng"] }
+rand = "0.10"
 async-trait = "0.1"
-webbrowser = "0.8"
+webbrowser = "1.1"
 
 [dependencies.stream_lib]
 default-features = false

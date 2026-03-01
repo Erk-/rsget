@@ -10,19 +10,19 @@ homepage = "https://github.com/Erk-/rsget"
 repository = "https://github.com/Erk-/rsget/tree/master/stream_lib"
 
 [dependencies]
-hls_m3u8 = "0.4.1"
-reqwest = { version = ">=0.12", default-features = false, features = ["stream"] }
-tracing = "0.1.40"
-url = "2.5.0"
-futures-util = "0.3.30"
-tokio = { version = "1.38.0", default-features = false, features = ["rt", "sync", "time"] }
-patricia_tree = "0.8.0"
-futures-core = "0.3.30"
-bytes = "1.5.0"
+hls_m3u8 = "0.5.1"
+reqwest = { version = ">=0.13", default-features = false, features = ["stream"] }
+tracing = "0.1.44"
+url = "2.5.8"
+futures-util = "0.3.32"
+tokio = { version = "1.49.0", default-features = false, features = ["rt", "sync", "time"] }
+patricia_tree = "0.10.1"
+futures-core = "0.3.32"
+bytes = "1.11.1"
 
 [dev-dependencies]
-tracing-subscriber = "0.3.18"
-tokio = { version = "1.38", default-features = false, features = ["fs", "rt", "sync", "time", "macros"] }
+tracing-subscriber = "0.3.22"
+tokio = { version = "1.49", default-features = false, features = ["fs", "rt", "sync", "time", "macros"] }
 
 [features]
 # Default to rustls so we don't pull in openssl
