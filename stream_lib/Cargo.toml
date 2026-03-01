@@ -26,10 +26,9 @@ tokio = { version = "1.38", default-features = false, features = ["fs", "rt", "s
 
 [features]
 # Default to rustls so we don't pull in openssl
-default = ["rustls-tls"]
-rustls-tls = [
-  "reqwest/rustls-tls",
-  "reqwest/rustls-tls-webpki-roots",
+default = ["rustls"]
+rustls = [
+  "reqwest/rustls",
 ]
 native-tls = [
   "reqwest/native-tls",

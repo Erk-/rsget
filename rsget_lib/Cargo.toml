@@ -19,7 +19,7 @@ regex = "1.10"
 http = "0.2.11"
 chrono = "0.4"
 hls_m3u8 = "0.4"
-reqwest = { version = "0.12", default-features = false, features = ["json"] }
+reqwest = { version = ">=0.13", default-features = false, features = ["form", "json", "query"] }
 rand = { version ="0.8", features = ["small_rng"] }
 async-trait = "0.1"
 webbrowser = "0.8"
@@ -32,12 +32,10 @@ features = []
 
 [features]
 # Default to rustls so we don't pull in openssl
-default = ["rustls-tls"]
-rustls-tls = [
-  "reqwest/rustls-tls",
-  "reqwest/rustls-tls-webpki-roots",
+default = ["rustls"]
+rustls = [
+  "reqwest/rustls",
 ]
 native-tls = [
   "reqwest/native-tls",
-  "reqwest/rustls-tls-native-roots",
 ]
