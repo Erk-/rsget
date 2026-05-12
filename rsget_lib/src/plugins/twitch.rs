@@ -4,7 +4,7 @@ use std::env;
 
 use chrono::prelude::*;
 use hls_m3u8::MasterPlaylist;
-use rand::{rngs::SmallRng, Rng, SeedableRng};
+use rand::{rngs::SmallRng, Rng, RngExt, SeedableRng};
 use regex::Regex;
 
 use std::{
@@ -81,10 +81,7 @@ impl Streamable for Twitch {
             Err(_) => String::from(TWITCH_CLIENT_ID),
         };
 
-        let access_token = match env::var("RSGET_TWITCH_ACCESS_TOKEN") {
-            Ok(val) => Some(val),
-            Err(_) => None,
-        };
+        let access_token = env::var("RSGET_TWITCH_ACCESS_TOKEN").ok();
 
         let twitch = Twitch {
             client,
@@ -167,7 +164,7 @@ impl Streamable for Twitch {
             .as_secs();
         let mut rng = SmallRng::seed_from_u64(time);
         let playlist_url = format!("https://usher.ttvnw.net/api/channel/hls/{}.m3u8?player=twitchweb&token={}&sig={}&allow_audio_only=true&allow_source=true&type=any&p={}",
-                                    self.username, acs.token, acs.sig, rng.gen_range(1..=999_999));
+                                    self.username, acs.token, acs.sig, rng.random_range(1..=999_999));
 
         let playlist_res = self
             .client
