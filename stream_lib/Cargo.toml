@@ -4,25 +4,25 @@ version = "0.5.2"
 authors = ["Valdemar Erk <cargo@erk.dev>"]
 description = "Tool to download differnt types of streams"
 license = "ISC"
-edition = "2021"
+edition.workspace = true
 documentation = "https://docs.rs/stream_lib"
 homepage = "https://github.com/Erk-/rsget"
 repository = "https://github.com/Erk-/rsget/tree/master/stream_lib"
 
 [dependencies]
-hls_m3u8 = "0.5.1"
-reqwest = { version = ">=0.13", default-features = false, features = ["stream"] }
-tracing = "0.1.44"
+hls_m3u8.workspace = true
+reqwest = { workspace = true, default-features = false, features = ["stream"] }
+tracing.workspace = true
 url = "2.5.8"
-futures-util = "0.3.32"
-tokio = { version = "1.49.0", default-features = false, features = ["rt", "sync", "time"] }
+futures-util.workspace = true
+tokio = { workspace = true, default-features = false, features = ["rt", "sync", "time"] }
 patricia_tree = "0.10.1"
 futures-core = "0.3.32"
 bytes = "1.11.1"
 
 [dev-dependencies]
-tracing-subscriber = "0.3.22"
-tokio = { version = "1.49", default-features = false, features = ["fs", "rt", "sync", "time", "macros"] }
+tracing-subscriber.workspace = true
+tokio = { workspace = true, default-features = false, features = ["fs", "rt", "sync", "time", "macros"] }
 
 [features]
 # Default to rustls so we don't pull in openssl

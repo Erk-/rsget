@@ -132,10 +132,9 @@ async fn bytes_forwarder(
                     Some(TIMEOUT),
                 )
                 .await
+                    && let Err(error) = event_tx.send(Event::Error { error })
                 {
-                    if let Err(error) = event_tx.send(Event::Error { error }) {
-                        warn!("Could not send event: {}", error);
-                    };
+                    warn!("Could not send event: {}", error);
                 }
             }
             HlsQueue::StreamOver => {
@@ -184,14 +183,17 @@ pub(crate) async fn download_to_file(
 }
 
 pub fn clone_request(request: &Request, timeout: Duration) -> Request {
-    if let Some(mut r) = request.try_clone() {
-        *r.timeout_mut() = Some(timeout);
-        r
-    } else {
-        warn!("[HLS] body not able to be cloned only clones headers.");
-        let mut r = Request::new(Method::GET, request.url().clone());
-        *r.headers_mut() = request.headers().clone();
-        *r.timeout_mut() = Some(timeout);
-        r
+    match request.try_clone() {
+        Some(mut r) => {
+            *r.timeout_mut() = Some(timeout);
+            r
+        }
+        _ => {
+            warn!("[HLS] body not able to be cloned only clones headers.");
+            let mut r = Request::new(Method::GET, request.url().clone());
+            *r.headers_mut() = request.headers().clone();
+            *r.timeout_mut() = Some(timeout);
+            r
+        }
     }
 }
