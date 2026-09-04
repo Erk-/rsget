@@ -5,11 +5,11 @@ use crate::plugins::{
 };
 */
 //use crate::plugins::{Afreeca, Bilibili, DLive, Twitch, Vlive};
+use crate::Streamable;
 use crate::plugins::{Afreeca, Bilibili, DLive, Drdk, Twitch, Vlive};
 use crate::utils::error::RsgetError;
 use crate::utils::error::StreamError;
 use crate::utils::error::StreamResult;
-use crate::Streamable;
 use regex::Regex;
 
 pub async fn get_site(input: &str) -> StreamResult<Box<dyn Streamable + Send>> {

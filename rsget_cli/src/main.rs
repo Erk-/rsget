@@ -8,8 +8,8 @@ use clap::Parser;
 use futures_util::StreamExt as _;
 use reqwest::Url;
 use rsget_lib::{
-    utils::error::{RsgetError, StreamError, StreamResult},
     Status, Streamable,
+    utils::error::{RsgetError, StreamError, StreamResult},
 };
 use stream_lib::Event;
 use tokio::{

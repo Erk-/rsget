@@ -8,8 +8,8 @@ use regex::Regex;
 use stream_lib::DownloadStream;
 
 use crate::{
-    utils::error::{RsgetError, StreamError, StreamResult},
     Status, Streamable,
+    utils::error::{RsgetError, StreamError, StreamResult},
 };
 
 pub struct Drdk {

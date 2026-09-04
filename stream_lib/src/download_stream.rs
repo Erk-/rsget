@@ -1,6 +1,6 @@
 use bytes::Bytes;
 use futures_core::stream::Stream;
-use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
+use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender, unbounded_channel};
 
 /// This struct implments a stream that is used to
 /// received data from chunked and hls streams.

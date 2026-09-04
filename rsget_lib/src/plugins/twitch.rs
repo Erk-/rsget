@@ -4,7 +4,7 @@ use std::env;
 
 use chrono::prelude::*;
 use hls_m3u8::MasterPlaylist;
-use rand::{rngs::SmallRng, Rng, RngExt, SeedableRng};
+use rand::{Rng, RngExt, SeedableRng, rngs::SmallRng};
 use regex::Regex;
 
 use std::{
@@ -120,11 +120,12 @@ impl Streamable for Twitch {
                 ))),
             }
         } else {
-            println!("Access token is not set please complete this flow and set the environment variable RSGET_TWITCH_ACCESS_TOKEN with the value of the access_token after the redirect and rerun");
+            println!(
+                "Access token is not set please complete this flow and set the environment variable RSGET_TWITCH_ACCESS_TOKEN with the value of the access_token after the redirect and rerun"
+            );
             let oauth_url = format!(
                 "https://id.twitch.tv/oauth2/authorize?client_id={}&redirect_uri={}&response_type=token+id_token&scope=openid",
-                self.client_id,
-                "http://localhost",
+                self.client_id, "http://localhost",
             );
 
             webbrowser::open(&oauth_url).unwrap();
@@ -163,8 +164,13 @@ impl Streamable for Twitch {
             .unwrap()
             .as_secs();
         let mut rng = SmallRng::seed_from_u64(time);
-        let playlist_url = format!("https://usher.ttvnw.net/api/channel/hls/{}.m3u8?player=twitchweb&token={}&sig={}&allow_audio_only=true&allow_source=true&type=any&p={}",
-                                    self.username, acs.token, acs.sig, rng.random_range(1..=999_999));
+        let playlist_url = format!(
+            "https://usher.ttvnw.net/api/channel/hls/{}.m3u8?player=twitchweb&token={}&sig={}&allow_audio_only=true&allow_source=true&type=any&p={}",
+            self.username,
+            acs.token,
+            acs.sig,
+            rng.random_range(1..=999_999)
+        );
 
         let playlist_res = self
             .client

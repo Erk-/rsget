@@ -1,8 +1,8 @@
 mod afreeca;
 mod bilibili;
 mod dlive;
-mod twitch;
 mod drdk;
+mod twitch;
 mod vlive;
 
 pub use afreeca::Afreeca;

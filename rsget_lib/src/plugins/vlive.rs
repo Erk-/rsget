@@ -22,7 +22,7 @@ pub struct Vlive {
     // TODO FOR ERK: This field is currently unused. This is due to Rsgets design being too focused on making plugin
     // implementation easier for developers, but at the expense of more "native" per site support. To access the m3u8
     // files and the .ts files from vlive you need to provide a session key for the requests. If you look at where I73
-    
+
     // define VideoInfo, theres is a list field `streams`. Each of these streams has field "key" which has a name and
     // a value, which must be appended as a url parameter to every request to that stream. For example:
     // {

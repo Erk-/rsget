@@ -4,12 +4,12 @@ use hls_m3u8::MediaPlaylist;
 use patricia_tree::PatriciaSet;
 
 use reqwest::{Client, Request, Url};
-use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
+use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender, unbounded_channel};
 use tracing::{debug, trace, warn};
 
 use crate::{
-    hls::{clone_request, HlsQueue, HLS_MAX_RETRIES},
     Error,
+    hls::{HLS_MAX_RETRIES, HlsQueue, clone_request},
 };
 
 pub struct HlsWatch {
