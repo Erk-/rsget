@@ -84,7 +84,7 @@ impl Streamable for Drdk {
             local.day(),
             local.hour(),
             local.minute(),
-            &self.title,
+            self.title,
             self.get_ext().await?
         ))
     }

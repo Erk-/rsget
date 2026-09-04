@@ -84,7 +84,7 @@ impl Streamable for DLive {
     async fn get_stream(&self) -> StreamResult<DownloadStream> {
         let url = format!(
             "https://live.prd.dlive.tv/hls/live/{}.m3u8",
-            &self.apollo_state["username"]
+            self.apollo_state["username"]
                 .as_str()
                 .unwrap()
                 .trim_start_matches("%22")

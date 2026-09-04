@@ -178,7 +178,7 @@ impl Streamable for Afreeca {
         let json_url = format!(
             "{}/broad_stream_assign.html?return_type=gs_cdn_pc_web&broad_key={}-flash-original-hls",
             ci.CHANNEL.RMD.clone(),
-            &bno,
+            bno,
         );
         debug!("Getting stream_info!");
         let stream_info: AfreecaStream = client.get(&json_url).send().await?.json().await?;

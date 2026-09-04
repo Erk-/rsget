@@ -168,7 +168,7 @@ impl NamedHlsWatch {
             let uri_formatted = if let Ok(u) = Url::parse(uri) {
                 u
             } else {
-                Url::parse(&format!("{}{}", self.master_url.as_str(), &uri))
+                Url::parse(&format!("{}{}", self.master_url.as_str(), uri))
                     .expect("The m3u8 does not currently work with stream_lib, please report the issue on the github repo, with an example of the playlistfile.")
             };
 
