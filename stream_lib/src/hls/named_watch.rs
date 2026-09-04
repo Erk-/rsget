@@ -240,12 +240,7 @@ impl NamedHlsWatch {
                     counter = 0;
 
                     // Construct a url from the master and the segment.
-                    let url_formatted = if let Ok(u) = Url::parse(&e) {
-                        u
-                    } else {
-                        Url::parse(&format!("{}{}", self.master_url.as_str(), &e))
-                        .expect("The m3u8 does not currently work with stream_lib, please report the issue on the github repo, with an example of the playlistfile.")
-                    };
+                    let url_formatted = self.master_url.join(&e)?;
 
                     // Check that the filter runs.
                     if self.filter.is_none_or(|f| f(&e)) {
